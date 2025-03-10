@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
@@ -5,7 +6,6 @@ import config from './config/config.js';
 
 const app = express();
 
-// Middleware
 app.use(
   cors({
     origin: config.corsOrigin,
@@ -15,9 +15,8 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Database connection
 mongoose
-  .connect(config.mongoUri)
+  .connect(config.dbConnection)
   .then(() => {
     console.log('Connected to MongoDB');
   })
