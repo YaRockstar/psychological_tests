@@ -1,5 +1,7 @@
 import { UserRepository } from '../repositories/interfaces/UserRepository.ts';
 import { UserEntity } from '../entities/UserEntity.ts';
+import { UserDto } from '../dto/UserDto.ts';
+import { Mapper } from '../utils/Mapper.ts';
 
 /**
  * User service.
@@ -19,23 +21,28 @@ export class UserService {
     return UserService.instance;
   }
 
-  public async createUser(user: UserEntity): Promise<UserEntity> {
-    return this.userRepository.create(user);
+  public async createUser(userDto: UserDto): Promise<UserDto> {
+    const userEntity = Mapper.toUserEntity(userDto);
+    const createdUser = await this.userRepository.create(userEntity);
+    return Mapper.toUserDto(createdUser);
   }
 
-  public async getUserByEmail(email: string): Promise<UserEntity | null> {
-    return this.userRepository.findByEmail(email);
+  public async getUserByEmail(email: string): Promise<UserDto | null> {
+    const userEntity = await this.userRepository.findByEmail(email);
+    return userEntity ? Mapper.toUserDto(userEntity) : null;
   }
 
-  public async getUserById(id: string): Promise<UserEntity | null> {
-    return this.userRepository.findById(id);
+  public async getUserById(id: string): Promise<UserDto | null> {
+    const userEntity = await this.userRepository.findById(id);
+    return userEntity ? Mapper.toUserDto(userEntity) : null;
   }
 
-  public async updateUser(
-    id: string,
-    data: Partial<UserEntity>
-  ): Promise<UserEntity | null> {
-    return this.userRepository.update(id, data);
+  public async updateUser(id: string, data: Partial<UserDto>): Promise<UserDto | null> {
+    const userEntity = await this.userRepository.update(
+      id,
+      Mapper.toUserEntity(data as UserDto)
+    );
+    return userEntity ? Mapper.toUserDto(userEntity) : null;
   }
 
   public async deleteUser(id: string): Promise<boolean> {
