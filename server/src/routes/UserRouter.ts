@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { UserController } from '../controllers/UserController.ts';
 import { UserService } from '../services/UserService.ts';
 import { UserRepositoryMongo } from '../repositories/mongoDB/UserRepositoryMongo.ts';
@@ -18,8 +18,10 @@ export class UserRouter {
   }
 
   private initializeRoutes() {
-    this.router.post('/users', (req, res) => this.userController.createUser(req, res));
-    this.router.get('/users/:id', (req, res) =>
+    this.router.post('/users', (req: Request, res: Response) =>
+      this.userController.createUser(req, res)
+    );
+    this.router.get('/users/:id', (req: Request, res: Response) =>
       this.userController.getUserById(req, res)
     );
   }

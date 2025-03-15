@@ -13,12 +13,7 @@ export class Validator {
    * @throws {NotValidError} if user required fields are not valid
    */
   public static validateUserDto(user: UserDto): void {
-    if (
-      this.isEmail(user.email) &&
-      this.isNotEmptyField(user.id) &&
-      this.isNotEmptyField(user.firstName) &&
-      this.isNotEmptyField(user.role)
-    ) {
+    if (this.isEmail(user.email) && this.isNotEmptyField(user.firstName)) {
       return;
     }
 
@@ -73,7 +68,7 @@ export class Validator {
    * @param field field
    * @returns true if field is not empty, false otherwise
    */
-  private static isNotEmptyField(field: any): boolean {
+  private static isNotEmptyField(field: unknown): boolean {
     return field !== undefined && field !== null && field !== '';
   }
 }

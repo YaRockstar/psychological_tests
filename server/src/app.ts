@@ -1,9 +1,9 @@
 import express from 'express';
-import mongoose from 'mongoose';
 import cors from 'cors';
 import config from './config/config.js';
+import { DbConnector } from './utils/dbConnector.ts';
 
-const app = express();
+const app: express.Application = express();
 
 app.use(
   cors({
@@ -14,14 +14,8 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-mongoose
-  .connect(config.dbConnection)
-  .then(() => {
-    console.log('Connected to MongoDB');
-  })
-  .catch(error => {
-    console.error('MongoDB connection error:', error);
-  });
+const dbConnector: DbConnector = DbConnector.getInstance();
+dbConnector.connect(config.dbConnection);
 
 app.listen(config.port, () => {
   console.log(`Server is running on port ${config.port}`);
