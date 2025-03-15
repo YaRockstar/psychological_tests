@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import logger from './Logger.ts';
 
 /**
  * DbConnector class.
@@ -28,9 +29,9 @@ export class DbConnector {
   public async connect(connection: string) {
     try {
       await mongoose.connect(connection);
-      console.log('Connected to MongoDB');
+      logger.info('Connected to MongoDB');
     } catch (error: unknown) {
-      console.error('MongoDB connection error:', error);
+      logger.error('MongoDB connection error:', error);
     }
   }
 }
