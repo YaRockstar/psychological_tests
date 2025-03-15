@@ -13,13 +13,13 @@ export class Mapper {
    */
   public static toUserEntity(userDto: UserDto): UserEntity {
     return UserEntity.builder()
-      .setId(userDto.id)
+      .setFirstName(userDto.firstName)
       .setEmail(userDto.email)
       .setPassword('')
-      .setFirstName(userDto.firstName)
+      .setId(userDto.id ?? '')
       .setLastName(userDto?.lastName ?? '')
       .setMiddleName(userDto?.middleName ?? '')
-      .setRole(userDto.role)
+      .setRole(userDto.role ?? '')
       .build();
   }
 
@@ -30,13 +30,13 @@ export class Mapper {
    * @returns the mapped user dto
    */
   public static toUserDto(entity: UserEntity): UserDto {
-    return new UserDto(
-      entity._id,
-      entity.firstName,
-      entity.email,
-      entity.role,
-      entity.lastName,
-      entity.middleName
-    );
+    return UserDto.builder()
+      .setId(entity._id)
+      .setFirstName(entity.firstName)
+      .setEmail(entity.email)
+      .setRole(entity.role)
+      .setLastName(entity.lastName ?? '')
+      .setMiddleName(entity.middleName ?? '')
+      .build();
   }
 }
