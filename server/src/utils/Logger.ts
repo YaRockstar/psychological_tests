@@ -1,11 +1,15 @@
-import winston from 'winston';
+import * as winston from 'winston';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import config from '../config/config.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-export class Logger {
+/**
+ * Logger class.
+ */
+class Logger {
   private static instance: Logger;
   private logger: winston.Logger;
 
@@ -18,7 +22,7 @@ export class Logger {
     });
 
     this.logger = createLogger({
-      level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+      level: config.appEnv === 'production' ? 'info' : 'debug',
       format: combine(timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), logFormat),
       transports: [
         new transports.Console({

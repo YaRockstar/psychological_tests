@@ -1,3 +1,5 @@
+import { Schema } from 'mongoose';
+
 /**
  * User entity.
  */
@@ -6,10 +8,12 @@ export class UserEntity {
     public readonly _id: string,
     public readonly firstName: string,
     public readonly email: string,
-    public readonly password: string,
-    public readonly role: string,
+    public readonly password?: string,
+    public readonly role?: Schema.Types.ObjectId,
     public readonly lastName?: string,
     public readonly middleName?: string,
+    public readonly description?: string,
+    public readonly birthDate?: Date,
     public readonly createdAt?: Date,
     public readonly updatedAt?: Date
   ) {}
@@ -25,10 +29,12 @@ export class UserEntity {
     private _id: string = '';
     private firstName: string = '';
     private email: string = '';
-    private password: string = '';
-    private role: string = '';
+    private password?: string;
+    private role?: Schema.Types.ObjectId;
     private lastName?: string;
     private middleName?: string;
+    private description?: string;
+    private birthDate?: Date;
     private createdAt?: Date;
     private updatedAt?: Date;
 
@@ -62,8 +68,18 @@ export class UserEntity {
       return this;
     }
 
-    public setRole(role: string): this {
+    public setRole(role: Schema.Types.ObjectId): this {
       this.role = role;
+      return this;
+    }
+
+    public setDescription(description: string): this {
+      this.description = description;
+      return this;
+    }
+
+    public setBirthdate(birthDate: Date): this {
+      this.birthDate = birthDate;
       return this;
     }
 
@@ -78,7 +94,7 @@ export class UserEntity {
     }
 
     public build(): UserEntity {
-      if (!this._id || !this.firstName || !this.email || !this.password || !this.role) {
+      if (!this._id || !this.firstName || !this.email) {
         throw new Error('Required fields are missing');
       }
 
@@ -90,6 +106,8 @@ export class UserEntity {
         this.role,
         this.lastName,
         this.middleName,
+        this.description,
+        this.birthDate,
         this.createdAt,
         this.updatedAt
       );

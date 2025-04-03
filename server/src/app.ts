@@ -15,14 +15,23 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use((req, res, next) => {
+app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
   logger.info(`${req.method} ${req.url}`);
   next();
 });
 
-const dbConnector: DbConnector = DbConnector.getInstance();
-dbConnector.connect(config.dbConnection);
+const main = async () => {
+  const dbConnector: DbConnector = DbConnector.getInstance();
+  await dbConnector.connect(config.dbConnection);
+  app.listen(config.port, () => {
+    logger.info(`Server is running on port ${config.port}`);
+    // console.info(`Server is running on port ${config.port}`);
+  });
+};
 
-app.listen(config.port, () => {
-  logger.info(`Server is running on port ${config.port}`);
-});
+try {
+  main();
+} catch (e: any) {
+  logger.error(e);
+  // console.error(e);
+}

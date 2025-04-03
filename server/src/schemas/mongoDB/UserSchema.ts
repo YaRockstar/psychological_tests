@@ -11,7 +11,9 @@ export const UserSchema = new Schema<UserEntity & Document>(
     middleName: { type: String },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    role: { type: String, ref: 'Role', required: true },
+    birthDate: { type: Date },
+    description: { type: String },
+    role: { type: Schema.Types.ObjectId, ref: 'Role', required: true },
   },
   { timestamps: true }
 );

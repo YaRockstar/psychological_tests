@@ -26,12 +26,14 @@ export class DbConnector {
    *
    * @param connection the connection string
    */
-  public async connect(connection: string) {
+  public async connect(connection: string): Promise<void> {
     try {
       await mongoose.connect(connection);
       logger.info('Connected to MongoDB');
+      // console.info('Connected to MongoDB');
     } catch (error: unknown) {
       logger.error('MongoDB connection error:', error);
+      // console.error('MongoDB connection error:', error);
     }
   }
 }
