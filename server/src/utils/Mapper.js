@@ -1,42 +1,39 @@
-import { UserDto } from '../dto/UserDto.js';
-import { UserEntity } from '../entities/UserEntity.js';
+import { createUserDto } from '../dto/UserDto.js';
+import { createUserEntity } from '../entities/UserEntity.js';
 
 /**
- * Mapper class.
+ * Функции для маппинга объектов
  */
-export class Mapper {
-  /**
-   * Map a user to an entity.
-   *
-   * @param userDto user DTO
-   * @returns the mapped user entity
-   */
-  static toUserEntity(userDto) {
-    return UserEntity.builder()
-      .setFirstName(userDto.firstName)
-      .setEmail(userDto.email)
-      .setPassword('')
-      .setId(userDto.id ?? '')
-      .setLastName(userDto?.lastName ?? '')
-      .setMiddleName(userDto?.middleName ?? '')
-      .setRole(userDto.role ?? '')
-      .build();
-  }
 
-  /**
-   * Map a user entity to a dto.
-   *
-   * @param entity user entity
-   * @returns the mapped user dto
-   */
-  static toUserDto(entity) {
-    return UserDto.builder()
-      .setId(entity._id)
-      .setFirstName(entity.firstName)
-      .setEmail(entity.email)
-      .setRole(entity.role)
-      .setLastName(entity.lastName ?? '')
-      .setMiddleName(entity.middleName ?? '')
-      .build();
-  }
+/**
+ * Преобразует DTO пользователя в сущность
+ * @param {Object} userDto - DTO пользователя
+ * @returns {Object} - Сущность пользователя
+ */
+export function toUserEntity(userDto) {
+  return createUserEntity({
+    _id: userDto.id || '',
+    firstName: userDto.firstName,
+    email: userDto.email,
+    password: '',
+    lastName: userDto.lastName || '',
+    middleName: userDto.middleName || '',
+    role: userDto.role || '',
+  });
+}
+
+/**
+ * Преобразует сущность пользователя в DTO
+ * @param {Object} entity - Сущность пользователя
+ * @returns {Object} - DTO пользователя
+ */
+export function toUserDto(entity) {
+  return createUserDto({
+    id: entity._id,
+    firstName: entity.firstName,
+    email: entity.email,
+    role: entity.role,
+    lastName: entity.lastName || '',
+    middleName: entity.middleName || '',
+  });
 }

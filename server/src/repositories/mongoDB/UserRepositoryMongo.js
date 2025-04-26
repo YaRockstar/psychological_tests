@@ -1,75 +1,65 @@
 import { UserModel } from '../../models/models.js';
 
 /**
- * UserRepository implementation for MongoDB.
+ * Преобразует MongoDB документ в сущность
+ * @param {Object} user - MongoDB документ
+ * @returns {Object} - Сущность пользователя
  */
-export class UserRepositoryMongo {
-  /**
-   * Create a new user.
-   *
-   * @param user the user to create
-   * @returns the created user
-   */
-  async create(user) {
-    const created = await UserModel.create(user);
-    return this.transformToEntity(created);
-  }
+function transformToEntity(user) {
+  const { _id, ...rest } = user;
+  return {
+    ...rest,
+    _id: _id.toString(),
+  };
+}
 
-  /**
-   * Find a user by email.
-   *
-   * @param email user email
-   * @returns the user or null if not found
-   */
-  async findByEmail(email) {
-    const user = await UserModel.findOne({ email }).exec();
-    return user ? this.transformToEntity(user) : null;
-  }
+/**
+ * Создает нового пользователя
+ * @param {Object} user - Данные пользователя
+ * @returns {Promise<Object>} - Созданный пользователь
+ */
+export async function createUser(user) {
+  const created = await UserModel.create(user);
+  return transformToEntity(created);
+}
 
-  /**
-   * Find a user by id.
-   *
-   * @param id user id
-   * @returns the user or null if not found
-   */
-  async findById(id) {
-    const user = await UserModel.findById(id).exec();
-    return user ? this.transformToEntity(user) : null;
-  }
+/**
+ * Ищет пользователя по email
+ * @param {string} email - Email пользователя
+ * @returns {Promise<Object|null>} - Найденный пользователь или null
+ */
+export async function findUserByEmail(email) {
+  const user = await UserModel.findOne({ email }).exec();
+  return user ? transformToEntity(user) : null;
+}
 
-  /**
-   * Update a user.
-   *
-   * @param id user id
-   * @param data user data
-   */
-  async update(id, data) {
-    const user = await UserModel.findByIdAndUpdate(id, data, { new: true }).exec();
-    return user ? this.transformToEntity(user) : null;
-  }
+/**
+ * Ищет пользователя по ID
+ * @param {string} id - ID пользователя
+ * @returns {Promise<Object|null>} - Найденный пользователь или null
+ */
+export async function findUserById(id) {
+  const user = await UserModel.findById(id).exec();
+  return user ? transformToEntity(user) : null;
+}
 
-  /**
-   * Delete a user.
-   *
-   * @param id user id
-   * @returns true if the user was deleted, false otherwise
-   */
-  async delete(id) {
-    const result = await UserModel.findByIdAndDelete(id).exec();
-    return Boolean(result);
-  }
+/**
+ * Обновляет пользователя
+ * @param {string} id - ID пользователя
+ * @param {Object} data - Данные для обновления
+ * @returns {Promise<Object|null>} - Обновленный пользователь или null
+ */
+export async function updateUser(id, data) {
+  const user = await UserModel.findByIdAndUpdate(id, data, { new: true }).exec();
+  return user ? transformToEntity(user) : null;
+}
 
-  /**
-   * Transform a user to an entity.
-   *
-   * @param user the user to transform
-   * @returns the transformed user
-   */
-  transformToEntity(user) {
-    const { _id, ...rest } = user;
-    return {
-      ...rest,
-      _id: _id.toString(),
-    };
-  }
+/**
+ * Удаляет пользователя
+ * @param {string} id - ID пользователя
+ * @returns {Promise<boolean>} - Результат удаления
+ */
+export async function deleteUser(id) {
+  const result = await UserModel.findByIdAndDelete(id).exec();
+  return Boolean(result);
 }
