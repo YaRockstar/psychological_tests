@@ -1,12 +1,20 @@
 import { Router } from 'express';
-import * as UserController from '../controllers/UserController.js';
+import {
+  register,
+  login,
+  getCurrentUser,
+  getUserById,
+} from '../controllers/UserController.js';
+import { authenticate } from '../middleware/auth.js';
 
 /**
  * Маршрутизатор для работы с пользователями.
  */
 const router = Router();
 
-router.post('/users', UserController.createUser);
-router.get('/users/:id', UserController.getUserById);
+router.post('/register', register);
+router.post('/login', login);
+router.get('/me', authenticate, getCurrentUser);
+router.get('/users/:id', getUserById);
 
 export default router;
