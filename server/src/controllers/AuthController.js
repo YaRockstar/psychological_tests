@@ -4,6 +4,7 @@ import * as UserService from '../services/UserService.js';
 import { HttpStatusCode } from '../utils/HttpStatusCode.js';
 import config from '../config/config.js';
 import logger from '../utils/Logger.js';
+import { validateUser } from '../utils/UserUtils.js';
 
 /**
  * Регистрация нового пользователя.
@@ -16,7 +17,15 @@ export async function register(req, res) {
     const userData = req.body;
     logger.debug('User registration data received:', userData);
 
-    // Проверяем, существует ли пользователь с таким email
+    try {
+      validateUser(userData, true);
+    } catch (error) {
+      logger.warn(`Registration validation failed: ${error.message}`);
+      return res.status(HttpStatusCode.BAD_REQUEST).json({
+        message: error.message,
+      });
+    }
+
     const existingUser = await UserService.getUserByEmail(userData.email);
     if (existingUser) {
       logger.warn(`Registration failed: Email ${userData.email} already exists`);
@@ -26,15 +35,12 @@ export async function register(req, res) {
       });
     }
 
-    // Хешируем пароль
     const salt = await bcrypt.genSalt(10);
     userData.password = await bcrypt.hash(userData.password, salt);
 
-    // Создаем пользователя
     const createdUser = await UserService.createUser(userData);
     logger.info(`User registered with id: ${createdUser.id}`);
 
-    // Создаем JWT токен
     const token = jwt.sign(
       {
         id: createdUser.id,
@@ -45,7 +51,6 @@ export async function register(req, res) {
       { expiresIn: '24h' }
     );
 
-    // Возвращаем данные пользователя без пароля и токен
     res.status(HttpStatusCode.CREATED).json({
       user: createdUser,
       token,
@@ -53,7 +58,6 @@ export async function register(req, res) {
   } catch (error) {
     logger.error('Error during registration:', error);
 
-    // Обрабатываем ошибки валидации
     if (error.name === 'NotValidError') {
       return res.status(HttpStatusCode.BAD_REQUEST).json({
         message: error.message,
@@ -76,8 +80,7 @@ export async function login(req, res) {
   try {
     const { email, password } = req.body;
 
-    // Проверяем, существует ли пользователь
-    const user = await UserService.getUserByEmail(email);
+    const user = await UserService.getUserByEmail(email, true);
     if (!user) {
       logger.warn(`Login failed: User with email ${email} not found`);
       return res.status(HttpStatusCode.UNAUTHORIZED).json({
@@ -85,7 +88,6 @@ export async function login(req, res) {
       });
     }
 
-    // Проверяем пароль
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       logger.warn(`Login failed: Invalid password for user ${email}`);
@@ -94,7 +96,8 @@ export async function login(req, res) {
       });
     }
 
-    // Создаем JWT токен
+    delete user.password;
+
     const token = jwt.sign(
       {
         id: user.id,
@@ -107,7 +110,6 @@ export async function login(req, res) {
 
     logger.info(`User ${email} logged in successfully`);
 
-    // Возвращаем данные пользователя и токен
     res.status(HttpStatusCode.OK).json({
       user,
       token,

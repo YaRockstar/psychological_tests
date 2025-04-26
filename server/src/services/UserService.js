@@ -1,5 +1,8 @@
-import { normalizeUserData, formatUserResponse } from '../utils/Mapper.js';
-import { validateUser } from '../utils/Validator.js';
+import {
+  normalizeUserData,
+  formatUserResponse,
+  validateUser,
+} from '../utils/UserUtils.js';
 import logger from '../utils/Logger.js';
 import * as userRepository from '../repositories/UserRepository.js';
 
@@ -25,15 +28,16 @@ export async function createUser(userData) {
 /**
  * Получение пользователя по email.
  * @param {string} email - Email пользователя.
+ * @param {boolean} includePassword - Включать ли пароль в ответ.
  * @returns {Promise<Object|null>} - Найденный пользователь или null.
  */
-export async function getUserByEmail(email) {
+export async function getUserByEmail(email, includePassword = false) {
   logger.info(`Getting user by email: ${email}`);
   try {
     const user = await userRepository.findUserByEmail(email);
     if (user) {
       logger.info(`User found by email: ${email}`);
-      return formatUserResponse(user);
+      return formatUserResponse(user, includePassword);
     } else {
       logger.warn(`User not found by email: ${email}`);
       return null;
@@ -47,15 +51,16 @@ export async function getUserByEmail(email) {
 /**
  * Получение пользователя по ID.
  * @param {string} id - ID пользователя.
+ * @param {boolean} includePassword - Включать ли пароль в ответ.
  * @returns {Promise<Object|null>} - Найденный пользователь или null.
  */
-export async function getUserById(id) {
+export async function getUserById(id, includePassword = false) {
   logger.info(`Getting user by id: ${id}`);
   try {
     const user = await userRepository.findUserById(id);
     if (user) {
       logger.info(`User found by id: ${id}`);
-      return formatUserResponse(user);
+      return formatUserResponse(user, includePassword);
     } else {
       logger.warn(`User not found by id: ${id}`);
       return null;
