@@ -1,10 +1,9 @@
-import { Schema, Document } from 'mongoose';
-import { UserEntity } from '../../entities/UserEntity.ts';
+import mongoose from 'mongoose';
 
 /**
  * MongoDB schema for User.
  */
-export const UserSchema = new Schema<UserEntity & Document>(
+export const UserSchema = new mongoose.Schema(
   {
     firstName: { type: String, required: true },
     lastName: { type: String },
@@ -13,7 +12,7 @@ export const UserSchema = new Schema<UserEntity & Document>(
     password: { type: String, required: true },
     birthDate: { type: Date },
     description: { type: String },
-    role: { type: Schema.Types.ObjectId, ref: 'Role', required: true },
+    role: { type: mongoose.Schema.Types.ObjectId, ref: 'Role', required: true },
   },
   { timestamps: true }
 );

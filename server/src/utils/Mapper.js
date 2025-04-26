@@ -1,5 +1,5 @@
-import { UserDto } from '../dto/UserDto.ts';
-import { UserEntity } from '../entities/UserEntity.ts';
+import { UserDto } from '../dto/UserDto.js';
+import { UserEntity } from '../entities/UserEntity.js';
 
 /**
  * Mapper class.
@@ -11,7 +11,7 @@ export class Mapper {
    * @param userDto user DTO
    * @returns the mapped user entity
    */
-  public static toUserEntity(userDto: UserDto): UserEntity {
+  static toUserEntity(userDto) {
     return UserEntity.builder()
       .setFirstName(userDto.firstName)
       .setEmail(userDto.email)
@@ -29,7 +29,7 @@ export class Mapper {
    * @param entity user entity
    * @returns the mapped user dto
    */
-  public static toUserDto(entity: UserEntity): UserDto {
+  static toUserDto(entity) {
     return UserDto.builder()
       .setId(entity._id)
       .setFirstName(entity.firstName)

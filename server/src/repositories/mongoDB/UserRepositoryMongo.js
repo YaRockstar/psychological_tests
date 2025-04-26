@@ -1,18 +1,16 @@
-import { UserRepository } from '../interfaces/UserRepository.ts';
-import { UserModel } from '../../models/models.ts';
-import { UserEntity } from '../../entities/UserEntity.ts';
+import { UserModel } from '../../models/models.js';
 
 /**
  * UserRepository implementation for MongoDB.
  */
-export class UserRepositoryMongo implements UserRepository {
+export class UserRepositoryMongo {
   /**
    * Create a new user.
    *
    * @param user the user to create
    * @returns the created user
    */
-  public async create(user: UserEntity): Promise<UserEntity> {
+  async create(user) {
     const created = await UserModel.create(user);
     return this.transformToEntity(created);
   }
@@ -23,7 +21,7 @@ export class UserRepositoryMongo implements UserRepository {
    * @param email user email
    * @returns the user or null if not found
    */
-  public async findByEmail(email: string): Promise<UserEntity | null> {
+  async findByEmail(email) {
     const user = await UserModel.findOne({ email }).exec();
     return user ? this.transformToEntity(user) : null;
   }
@@ -34,7 +32,7 @@ export class UserRepositoryMongo implements UserRepository {
    * @param id user id
    * @returns the user or null if not found
    */
-  public async findById(id: string): Promise<UserEntity | null> {
+  async findById(id) {
     const user = await UserModel.findById(id).exec();
     return user ? this.transformToEntity(user) : null;
   }
@@ -45,7 +43,7 @@ export class UserRepositoryMongo implements UserRepository {
    * @param id user id
    * @param data user data
    */
-  public async update(id: string, data: Partial<UserEntity>): Promise<UserEntity | null> {
+  async update(id, data) {
     const user = await UserModel.findByIdAndUpdate(id, data, { new: true }).exec();
     return user ? this.transformToEntity(user) : null;
   }
@@ -56,7 +54,7 @@ export class UserRepositoryMongo implements UserRepository {
    * @param id user id
    * @returns true if the user was deleted, false otherwise
    */
-  public async delete(id: string): Promise<boolean> {
+  async delete(id) {
     const result = await UserModel.findByIdAndDelete(id).exec();
     return Boolean(result);
   }
@@ -67,11 +65,11 @@ export class UserRepositoryMongo implements UserRepository {
    * @param user the user to transform
    * @returns the transformed user
    */
-  private transformToEntity(user: UserEntity): UserEntity {
+  transformToEntity(user) {
     const { _id, ...rest } = user;
     return {
       ...rest,
       _id: _id.toString(),
-    } as UserEntity;
+    };
   }
 }

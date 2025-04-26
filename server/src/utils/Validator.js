@@ -1,6 +1,4 @@
-import { UserDto } from '../dto/UserDto.ts';
-import { UserEntity } from '../entities/UserEntity.ts';
-import { NotValidError } from '../errors/NotValidError.ts';
+import { NotValidError } from '../errors/NotValidError.js';
 
 /**
  * Fields validator.
@@ -12,7 +10,7 @@ export class Validator {
    * @param user user dto
    * @throws {NotValidError} if user required fields are not valid
    */
-  public static validateUserDto(user: UserDto): void {
+  static validateUserDto(user) {
     if (this.isEmail(user.email) && this.isNotEmptyField(user.firstName)) {
       return;
     }
@@ -26,7 +24,7 @@ export class Validator {
    * @param user user entity
    * @throws {NotValidError} if user required fields are not valid
    */
-  public static validateUserEntity(user: UserEntity): void {
+  static validateUserEntity(user) {
     if (
       this.isEmail(user.email) &&
       this.isPassword(user.password) &&
@@ -46,7 +44,7 @@ export class Validator {
    * @param email email
    * @returns true if email is valid, false otherwise
    */
-  private static isEmail(email: string): boolean {
+  static isEmail(email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 
@@ -56,7 +54,7 @@ export class Validator {
    * @param password password
    * @returns true if password is valid, false otherwise
    */
-  private static isPassword(password: string): boolean {
+  static isPassword(password) {
     return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(
       password
     );
@@ -68,7 +66,7 @@ export class Validator {
    * @param field field
    * @returns true if field is not empty, false otherwise
    */
-  private static isNotEmptyField(field: unknown): boolean {
+  static isNotEmptyField(field) {
     return field !== undefined && field !== null && field !== '';
   }
 }

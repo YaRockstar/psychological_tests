@@ -1,41 +1,38 @@
-import { UserRepository } from '../repositories/interfaces/UserRepository.ts';
-import { UserDto } from '../dto/UserDto.ts';
-import { Mapper } from '../utils/Mapper.ts';
-import logger from '../utils/Logger.ts';
+import { Mapper } from '../utils/Mapper.js';
+import logger from '../utils/Logger.js';
 
 /**
  * User service.
  */
 export class UserService {
-  private static instance: UserService;
-  private userRepository: UserRepository;
+  static instance;
 
-  private constructor(userRepository: UserRepository) {
+  constructor(userRepository) {
     this.userRepository = userRepository;
     logger.info('UserService initialized');
   }
 
-  public static getInstance(userRepository: UserRepository): UserService {
+  static getInstance(userRepository) {
     if (!UserService.instance) {
       UserService.instance = new UserService(userRepository);
     }
     return UserService.instance;
   }
 
-  public async createUser(userDto: UserDto): Promise<UserDto> {
+  async createUser(userDto) {
     logger.info(`Creating user with email: ${userDto.email}`);
     try {
       const userEntity = Mapper.toUserEntity(userDto);
       const createdUser = await this.userRepository.create(userEntity);
       logger.info(`User created with id: ${createdUser._id}`);
       return Mapper.toUserDto(createdUser);
-    } catch (error: unknown) {
+    } catch (error) {
       logger.error('Error creating user:', error);
       throw error;
     }
   }
 
-  public async getUserByEmail(email: string): Promise<UserDto | null> {
+  async getUserByEmail(email) {
     logger.info(`Getting user by email: ${email}`);
     try {
       const userEntity = await this.userRepository.findByEmail(email);
@@ -45,13 +42,13 @@ export class UserService {
         logger.warn(`User not found by email: ${email}`);
       }
       return userEntity ? Mapper.toUserDto(userEntity) : null;
-    } catch (error: unknown) {
+    } catch (error) {
       logger.error(`Error getting user by email ${email}:`, error);
       throw error;
     }
   }
 
-  public async getUserById(id: string): Promise<UserDto | null> {
+  async getUserById(id) {
     logger.info(`Getting user by id: ${id}`);
     try {
       const userEntity = await this.userRepository.findById(id);
@@ -61,32 +58,29 @@ export class UserService {
         logger.warn(`User not found by id: ${id}`);
       }
       return userEntity ? Mapper.toUserDto(userEntity) : null;
-    } catch (error: unknown) {
+    } catch (error) {
       logger.error(`Error getting user by id ${id}:`, error);
       throw error;
     }
   }
 
-  public async updateUser(id: string, data: Partial<UserDto>): Promise<UserDto | null> {
+  async updateUser(id, data) {
     logger.info(`Updating user with id: ${id}`);
     try {
-      const userEntity = await this.userRepository.update(
-        id,
-        Mapper.toUserEntity(data as UserDto)
-      );
+      const userEntity = await this.userRepository.update(id, Mapper.toUserEntity(data));
       if (userEntity) {
         logger.info(`User updated with id: ${id}`);
       } else {
         logger.warn(`User with id ${id} not found for update`);
       }
       return userEntity ? Mapper.toUserDto(userEntity) : null;
-    } catch (error: unknown) {
+    } catch (error) {
       logger.error(`Error updating user with id ${id}:`, error);
       throw error;
     }
   }
 
-  public async deleteUser(id: string): Promise<boolean> {
+  async deleteUser(id) {
     logger.info(`Deleting user with id: ${id}`);
     try {
       const result = await this.userRepository.delete(id);
@@ -96,7 +90,7 @@ export class UserService {
         logger.warn(`User with id ${id} not found for deletion`);
       }
       return result;
-    } catch (error: unknown) {
+    } catch (error) {
       logger.error(`Error deleting user with id ${id}:`, error);
       throw error;
     }
