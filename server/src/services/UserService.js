@@ -1,19 +1,21 @@
-import { toUserDto, toUserEntity } from '../utils/Mapper.js';
+import { normalizeUserData, formatUserResponse } from '../utils/Mapper.js';
+import { validateUser } from '../utils/Validator.js';
 import logger from '../utils/Logger.js';
 import * as userRepository from '../repositories/mongoDB/UserRepositoryMongo.js';
 
 /**
  * Создание нового пользователя.
- * @param {Object} userDto - DTO пользователя.
+ * @param {Object} userData - Данные пользователя.
  * @returns {Promise<Object>} - Созданный пользователь.
  */
-export async function createUser(userDto) {
-  logger.info(`Creating user with email: ${userDto.email}`);
+export async function createUser(userData) {
+  logger.info(`Creating user with email: ${userData.email}`);
   try {
-    const userEntity = toUserEntity(userDto);
-    const createdUser = await userRepository.createUser(userEntity);
+    validateUser(userData, true);
+    const normalizedData = normalizeUserData(userData);
+    const createdUser = await userRepository.createUser(normalizedData);
     logger.info(`User created with id: ${createdUser._id}`);
-    return toUserDto(createdUser);
+    return formatUserResponse(createdUser);
   } catch (error) {
     logger.error('Error creating user:', error);
     throw error;
@@ -28,13 +30,14 @@ export async function createUser(userDto) {
 export async function getUserByEmail(email) {
   logger.info(`Getting user by email: ${email}`);
   try {
-    const userEntity = await userRepository.findUserByEmail(email);
-    if (userEntity) {
+    const user = await userRepository.findUserByEmail(email);
+    if (user) {
       logger.info(`User found by email: ${email}`);
+      return formatUserResponse(user);
     } else {
       logger.warn(`User not found by email: ${email}`);
+      return null;
     }
-    return userEntity ? toUserDto(userEntity) : null;
   } catch (error) {
     logger.error(`Error getting user by email ${email}:`, error);
     throw error;
@@ -49,13 +52,14 @@ export async function getUserByEmail(email) {
 export async function getUserById(id) {
   logger.info(`Getting user by id: ${id}`);
   try {
-    const userEntity = await userRepository.findUserById(id);
-    if (userEntity) {
+    const user = await userRepository.findUserById(id);
+    if (user) {
       logger.info(`User found by id: ${id}`);
+      return formatUserResponse(user);
     } else {
       logger.warn(`User not found by id: ${id}`);
+      return null;
     }
-    return userEntity ? toUserDto(userEntity) : null;
   } catch (error) {
     logger.error(`Error getting user by id ${id}:`, error);
     throw error;
@@ -65,19 +69,22 @@ export async function getUserById(id) {
 /**
  * Обновление пользователя.
  * @param {string} id - ID пользователя.
- * @param {Object} data - Данные для обновления.
+ * @param {Object} userData - Данные для обновления.
  * @returns {Promise<Object|null>} - Обновленный пользователь или null.
  */
-export async function updateUser(id, data) {
+export async function updateUser(id, userData) {
   logger.info(`Updating user with id: ${id}`);
   try {
-    const userEntity = await userRepository.updateUser(id, toUserEntity(data));
-    if (userEntity) {
+    validateUser(userData);
+    const normalizedData = normalizeUserData(userData);
+    const updatedUser = await userRepository.updateUser(id, normalizedData);
+    if (updatedUser) {
       logger.info(`User updated with id: ${id}`);
+      return formatUserResponse(updatedUser);
     } else {
       logger.warn(`User with id ${id} not found for update`);
+      return null;
     }
-    return userEntity ? toUserDto(userEntity) : null;
   } catch (error) {
     logger.error(`Error updating user with id ${id}:`, error);
     throw error;

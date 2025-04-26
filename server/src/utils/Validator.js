@@ -30,33 +30,17 @@ export function isNotEmptyField(field) {
 }
 
 /**
- * Валидация DTO пользователя.
- * @param {Object} user - DTO пользователя.
+ * Валидация данных пользователя.
+ * @param {Object} user - Данные пользователя.
+ * @param {boolean} requiresPassword - Требуется ли проверка пароля.
  * @throws {NotValidError} - Если данные невалидны.
  */
-export function validateUserDto(user) {
-  if (isEmail(user.email) && isNotEmptyField(user.firstName)) {
-    return;
+export function validateUser(user, requiresPassword = false) {
+  if (!isEmail(user.email) || !isNotEmptyField(user.firstName)) {
+    throw new NotValidError('Email и имя пользователя обязательны');
   }
 
-  throw new NotValidError('User required fields are not valid');
-}
-
-/**
- * Валидация сущности пользователя.
- * @param {Object} user - Сущность пользователя.
- * @throws {NotValidError} - Если данные невалидны.
- */
-export function validateUserEntity(user) {
-  if (
-    isEmail(user.email) &&
-    isPassword(user.password) &&
-    isNotEmptyField(user._id) &&
-    isNotEmptyField(user.firstName) &&
-    isNotEmptyField(user.role)
-  ) {
-    return;
+  if (requiresPassword && !isPassword(user.password)) {
+    throw new NotValidError('Пароль не соответствует требованиям безопасности');
   }
-
-  throw new NotValidError('User required fields are not valid');
 }

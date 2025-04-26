@@ -1,12 +1,15 @@
 import { UserModel } from '../../models/models.js';
 
 /**
- * Преобразование MongoDB документа в сущность.
- * @param {Object} user - MongoDB документ.
- * @returns {Object} - Сущность пользователя.
+ * Преобразование MongoDB документа в объект с обычными полями.
+ * @param {Object} document - MongoDB документ.
+ * @returns {Object} - Объект с данными пользователя.
  */
-function transformToEntity(user) {
-  const { _id, ...rest } = user;
+function transformDocument(document) {
+  if (!document) return null;
+
+  const userObject = document.toObject ? document.toObject() : document;
+  const { _id, ...rest } = userObject;
   return {
     ...rest,
     _id: _id.toString(),
@@ -15,12 +18,12 @@ function transformToEntity(user) {
 
 /**
  * Создание нового пользователя.
- * @param {Object} user - Данные пользователя.
+ * @param {Object} userData - Данные пользователя.
  * @returns {Promise<Object>} - Созданный пользователь.
  */
-export async function createUser(user) {
-  const created = await UserModel.create(user);
-  return transformToEntity(created);
+export async function createUser(userData) {
+  const created = await UserModel.create(userData);
+  return transformDocument(created);
 }
 
 /**
@@ -30,7 +33,7 @@ export async function createUser(user) {
  */
 export async function findUserByEmail(email) {
   const user = await UserModel.findOne({ email }).exec();
-  return user ? transformToEntity(user) : null;
+  return transformDocument(user);
 }
 
 /**
@@ -40,18 +43,18 @@ export async function findUserByEmail(email) {
  */
 export async function findUserById(id) {
   const user = await UserModel.findById(id).exec();
-  return user ? transformToEntity(user) : null;
+  return transformDocument(user);
 }
 
 /**
  * Обновление пользователя.
  * @param {string} id - ID пользователя.
- * @param {Object} data - Данные для обновления.
+ * @param {Object} userData - Данные для обновления.
  * @returns {Promise<Object|null>} - Обновленный пользователь или null.
  */
-export async function updateUser(id, data) {
-  const user = await UserModel.findByIdAndUpdate(id, data, { new: true }).exec();
-  return user ? transformToEntity(user) : null;
+export async function updateUser(id, userData) {
+  const user = await UserModel.findByIdAndUpdate(id, userData, { new: true }).exec();
+  return transformDocument(user);
 }
 
 /**

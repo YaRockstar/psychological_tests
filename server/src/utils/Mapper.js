@@ -1,39 +1,35 @@
-import { createUserDto } from '../dto/UserDto.js';
-import { createUserEntity } from '../entities/UserEntity.js';
-
 /**
  * Функции для маппинга объектов.
  */
 
 /**
- * Преобразование DTO пользователя в сущность.
- * @param {Object} userDto - DTO пользователя.
- * @returns {Object} - Сущность пользователя.
+ * Нормализация данных пользователя от клиента для сохранения в базу.
+ * @param {Object} userData - Данные пользователя от клиента.
+ * @returns {Object} - Данные для сохранения в базу.
  */
-export function toUserEntity(userDto) {
-  return createUserEntity({
-    _id: userDto.id || '',
-    firstName: userDto.firstName,
-    email: userDto.email,
-    password: '',
-    lastName: userDto.lastName || '',
-    middleName: userDto.middleName || '',
-    role: userDto.role || '',
-  });
+export function normalizeUserData(userData) {
+  return {
+    firstName: userData.firstName,
+    email: userData.email,
+    password: userData.password || '',
+    lastName: userData.lastName || '',
+    middleName: userData.middleName || '',
+    role: userData.role || '',
+  };
 }
 
 /**
- * Преобразование сущности пользователя в DTO.
- * @param {Object} entity - Сущность пользователя.
- * @returns {Object} - DTO пользователя.
+ * Форматирование данных пользователя из базы для отправки клиенту.
+ * @param {Object} user - Данные пользователя из базы.
+ * @returns {Object} - Данные для клиента.
  */
-export function toUserDto(entity) {
-  return createUserDto({
-    id: entity._id,
-    firstName: entity.firstName,
-    email: entity.email,
-    role: entity.role,
-    lastName: entity.lastName || '',
-    middleName: entity.middleName || '',
-  });
+export function formatUserResponse(user) {
+  return {
+    id: user._id,
+    firstName: user.firstName,
+    email: user.email,
+    role: user.role,
+    lastName: user.lastName || '',
+    middleName: user.middleName || '',
+  };
 }
