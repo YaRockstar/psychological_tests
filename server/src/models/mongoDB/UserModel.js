@@ -2,6 +2,6 @@ import mongoose from 'mongoose';
 import { UserSchema } from '../../schemas/mongoDB/UserSchema.js';
 
 /**
- * MongoDB User model.
+ * MongoDB модель пользователя.
  */
 export default mongoose.model('User', UserSchema);

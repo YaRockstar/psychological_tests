@@ -1,18 +1,18 @@
 import { NotValidError } from '../errors/NotValidError.js';
 
 /**
- * Проверяет валидность email
- * @param {string} email - Email для проверки
- * @returns {boolean} - Результат проверки
+ * Проверка валидности email.
+ * @param {string} email - Email для проверки.
+ * @returns {boolean} - Результат проверки.
  */
 export function isEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 /**
- * Проверяет валидность пароля
- * @param {string} password - Пароль для проверки
- * @returns {boolean} - Результат проверки
+ * Проверка валидности пароля.
+ * @param {string} password - Пароль для проверки.
+ * @returns {boolean} - Результат проверки.
  */
 export function isPassword(password) {
   return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(
@@ -21,18 +21,18 @@ export function isPassword(password) {
 }
 
 /**
- * Проверяет, что поле не пустое
- * @param {*} field - Поле для проверки
- * @returns {boolean} - Результат проверки
+ * Проверка, что поле не пустое.
+ * @param {*} field - Поле для проверки.
+ * @returns {boolean} - Результат проверки.
  */
 export function isNotEmptyField(field) {
   return field !== undefined && field !== null && field !== '';
 }
 
 /**
- * Проверяет валидность DTO пользователя
- * @param {Object} user - DTO пользователя
- * @throws {NotValidError} - Если данные невалидны
+ * Валидация DTO пользователя.
+ * @param {Object} user - DTO пользователя.
+ * @throws {NotValidError} - Если данные невалидны.
  */
 export function validateUserDto(user) {
   if (isEmail(user.email) && isNotEmptyField(user.firstName)) {
@@ -43,9 +43,9 @@ export function validateUserDto(user) {
 }
 
 /**
- * Проверяет валидность сущности пользователя
- * @param {Object} user - Сущность пользователя
- * @throws {NotValidError} - Если данные невалидны
+ * Валидация сущности пользователя.
+ * @param {Object} user - Сущность пользователя.
+ * @throws {NotValidError} - Если данные невалидны.
  */
 export function validateUserEntity(user) {
   if (

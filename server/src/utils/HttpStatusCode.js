@@ -1,3 +1,6 @@
+/**
+ * Константы HTTP статус-кодов.
+ */
 export const HttpStatusCode = {
   OK: 200,
   CREATED: 201,

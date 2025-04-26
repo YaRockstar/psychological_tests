@@ -7,7 +7,6 @@ import userRouter from './routes/UserRouter.js';
 
 const app = express();
 
-// Middleware
 app.use(
   cors({
     origin: config.corsOrigin,
@@ -17,16 +16,16 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Логирование запросов
 app.use((req, res, next) => {
   logger.info(`${req.method} ${req.url}`);
   next();
 });
 
-// Маршруты
 app.use('/api', userRouter);
 
-// Подключение к базе данных и запуск сервера
+/**
+ * Запуск сервера и подключение к базе данных.
+ */
 async function startServer() {
   try {
     await mongoose.connect(config.dbConnection);

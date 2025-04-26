@@ -1,7 +1,7 @@
 /**
- * Создает объект DTO пользователя
- * @param {Object} params - Параметры пользователя
- * @returns {Object} - Объект DTO пользователя
+ * Создание объекта DTO пользователя.
+ * @param {Object} params - Параметры пользователя.
+ * @returns {Object} - Объект DTO пользователя.
  */
 export function createUserDto({
   firstName = '',

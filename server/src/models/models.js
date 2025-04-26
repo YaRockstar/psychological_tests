@@ -1,7 +1,7 @@
 import MongoDbUserModel from './mongoDB/UserModel.js';
 
 /**
- * User model.
+ * Модель пользователя.
  */
 const UserModel = MongoDbUserModel;
 export { UserModel };

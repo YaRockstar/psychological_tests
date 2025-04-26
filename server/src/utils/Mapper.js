@@ -2,13 +2,13 @@ import { createUserDto } from '../dto/UserDto.js';
 import { createUserEntity } from '../entities/UserEntity.js';
 
 /**
- * Функции для маппинга объектов
+ * Функции для маппинга объектов.
  */
 
 /**
- * Преобразует DTO пользователя в сущность
- * @param {Object} userDto - DTO пользователя
- * @returns {Object} - Сущность пользователя
+ * Преобразование DTO пользователя в сущность.
+ * @param {Object} userDto - DTO пользователя.
+ * @returns {Object} - Сущность пользователя.
  */
 export function toUserEntity(userDto) {
   return createUserEntity({
@@ -23,9 +23,9 @@ export function toUserEntity(userDto) {
 }
 
 /**
- * Преобразует сущность пользователя в DTO
- * @param {Object} entity - Сущность пользователя
- * @returns {Object} - DTO пользователя
+ * Преобразование сущности пользователя в DTO.
+ * @param {Object} entity - Сущность пользователя.
+ * @returns {Object} - DTO пользователя.
  */
 export function toUserDto(entity) {
   return createUserDto({

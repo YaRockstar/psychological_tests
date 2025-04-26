@@ -1,5 +1,5 @@
 /**
- * Not valid error.
+ * Ошибка валидации данных.
  */
 export class NotValidError extends Error {
   constructor(message) {

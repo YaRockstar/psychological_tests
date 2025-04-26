@@ -1,5 +1,8 @@
 import 'dotenv/config';
 
+/**
+ * Конфигурация приложения.
+ */
 const config = {
   port: Number(process.env.PORT),
   dbConnection: process.env.DB_CONNECTION,

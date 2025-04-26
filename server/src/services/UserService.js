@@ -3,9 +3,9 @@ import logger from '../utils/Logger.js';
 import * as userRepository from '../repositories/mongoDB/UserRepositoryMongo.js';
 
 /**
- * Создает нового пользователя
- * @param {Object} userDto - DTO пользователя
- * @returns {Promise<Object>} - Созданный пользователь
+ * Создание нового пользователя.
+ * @param {Object} userDto - DTO пользователя.
+ * @returns {Promise<Object>} - Созданный пользователь.
  */
 export async function createUser(userDto) {
   logger.info(`Creating user with email: ${userDto.email}`);
@@ -21,9 +21,9 @@ export async function createUser(userDto) {
 }
 
 /**
- * Получает пользователя по email
- * @param {string} email - Email пользователя
- * @returns {Promise<Object|null>} - Найденный пользователь или null
+ * Получение пользователя по email.
+ * @param {string} email - Email пользователя.
+ * @returns {Promise<Object|null>} - Найденный пользователь или null.
  */
 export async function getUserByEmail(email) {
   logger.info(`Getting user by email: ${email}`);
@@ -42,9 +42,9 @@ export async function getUserByEmail(email) {
 }
 
 /**
- * Получает пользователя по ID
- * @param {string} id - ID пользователя
- * @returns {Promise<Object|null>} - Найденный пользователь или null
+ * Получение пользователя по ID.
+ * @param {string} id - ID пользователя.
+ * @returns {Promise<Object|null>} - Найденный пользователь или null.
  */
 export async function getUserById(id) {
   logger.info(`Getting user by id: ${id}`);
@@ -63,10 +63,10 @@ export async function getUserById(id) {
 }
 
 /**
- * Обновляет пользователя
- * @param {string} id - ID пользователя
- * @param {Object} data - Данные для обновления
- * @returns {Promise<Object|null>} - Обновленный пользователь или null
+ * Обновление пользователя.
+ * @param {string} id - ID пользователя.
+ * @param {Object} data - Данные для обновления.
+ * @returns {Promise<Object|null>} - Обновленный пользователь или null.
  */
 export async function updateUser(id, data) {
   logger.info(`Updating user with id: ${id}`);
@@ -85,9 +85,9 @@ export async function updateUser(id, data) {
 }
 
 /**
- * Удаляет пользователя
- * @param {string} id - ID пользователя
- * @returns {Promise<boolean>} - Результат удаления
+ * Удаление пользователя.
+ * @param {string} id - ID пользователя.
+ * @returns {Promise<boolean>} - Результат удаления.
  */
 export async function deleteUser(id) {
   logger.info(`Deleting user with id: ${id}`);

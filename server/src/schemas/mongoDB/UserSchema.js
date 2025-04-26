@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 /**
- * MongoDB schema for User.
+ * MongoDB схема пользователя.
  */
 export const UserSchema = new mongoose.Schema(
   {

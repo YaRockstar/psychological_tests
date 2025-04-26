@@ -3,9 +3,9 @@ import { HttpStatusCode } from '../utils/HttpStatusCode.js';
 import logger from '../utils/Logger.js';
 
 /**
- * Создает нового пользователя
- * @param {Object} req - HTTP запрос
- * @param {Object} res - HTTP ответ
+ * Создание нового пользователя.
+ * @param {Object} req - HTTP запрос.
+ * @param {Object} res - HTTP ответ.
  */
 export async function createUser(req, res) {
   logger.info('Request to create user');
@@ -24,9 +24,9 @@ export async function createUser(req, res) {
 }
 
 /**
- * Получает пользователя по ID
- * @param {Object} req - HTTP запрос
- * @param {Object} res - HTTP ответ
+ * Получение пользователя по ID.
+ * @param {Object} req - HTTP запрос.
+ * @param {Object} res - HTTP ответ.
  */
 export async function getUserById(req, res) {
   const userId = req.params.id;

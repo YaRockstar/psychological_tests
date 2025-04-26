@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import * as UserController from '../controllers/UserController.js';
 
+/**
+ * Маршрутизатор для работы с пользователями.
+ */
 const router = Router();
 
-// Инициализация маршрутов
 router.post('/users', UserController.createUser);
 router.get('/users/:id', UserController.getUserById);
 

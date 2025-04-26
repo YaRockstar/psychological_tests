@@ -1,7 +1,7 @@
 /**
- * Создает сущность пользователя
- * @param {Object} params - Параметры пользователя
- * @returns {Object} - Сущность пользователя
+ * Создание сущности пользователя.
+ * @param {Object} params - Параметры пользователя.
+ * @returns {Object} - Сущность пользователя.
  */
 export function createUserEntity({
   _id = '',

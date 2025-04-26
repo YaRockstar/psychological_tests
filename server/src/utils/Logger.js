@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /**
- * Logger class.
+ * Класс для логирования.
  */
 class Logger {
   static instance;
@@ -43,6 +43,10 @@ class Logger {
     });
   }
 
+  /**
+   * Возвращает экземпляр логгера (Singleton).
+   * @returns {Logger} Экземпляр логгера.
+   */
   static getInstance() {
     if (!Logger.instance) {
       Logger.instance = new Logger();
@@ -50,18 +54,38 @@ class Logger {
     return Logger.instance;
   }
 
+  /**
+   * Логирует информационное сообщение.
+   * @param {string} message - Сообщение для логирования.
+   * @param {...any} meta - Дополнительные данные.
+   */
   info(message, ...meta) {
     this.logger.info(message, ...meta);
   }
 
+  /**
+   * Логирует сообщение об ошибке.
+   * @param {string} message - Сообщение для логирования.
+   * @param {...any} meta - Дополнительные данные.
+   */
   error(message, ...meta) {
     this.logger.error(message, ...meta);
   }
 
+  /**
+   * Логирует предупреждающее сообщение.
+   * @param {string} message - Сообщение для логирования.
+   * @param {...any} meta - Дополнительные данные.
+   */
   warn(message, ...meta) {
     this.logger.warn(message, ...meta);
   }
 
+  /**
+   * Логирует отладочное сообщение.
+   * @param {string} message - Сообщение для логирования.
+   * @param {...any} meta - Дополнительные данные.
+   */
   debug(message, ...meta) {
     this.logger.debug(message, ...meta);
   }
