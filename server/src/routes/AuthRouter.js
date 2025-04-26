@@ -1,15 +1,14 @@
 import { Router } from 'express';
-import * as AuthController from '../controllers/AuthController.js';
+import { register, login, getCurrentUser } from '../controllers/UserController.js';
 import { authenticate } from '../middleware/auth.js';
 
 /**
- * Маршрутизатор для аутентификации.
+ * Маршрутизатор для аутентификации пользователей.
  */
 const router = Router();
 
-// Маршруты для аутентификации
-router.post('/register', AuthController.register);
-router.post('/login', AuthController.login);
-router.get('/me', authenticate, AuthController.getCurrentUser);
+router.post('/register', register);
+router.post('/login', login);
+router.get('/me', authenticate, getCurrentUser);
 
 export default router;
