@@ -1,10 +1,6 @@
 import { NotValidError } from '../errors/NotValidError.js';
 
 /**
- * Утилиты для работы с данными пользователя.
- */
-
-/**
  * Проверка валидности email.
  * @param {string} email - Email для проверки.
  * @returns {boolean} - Результат проверки.
