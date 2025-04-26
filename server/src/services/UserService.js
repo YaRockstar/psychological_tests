@@ -1,7 +1,7 @@
 import { normalizeUserData, formatUserResponse } from '../utils/Mapper.js';
 import { validateUser } from '../utils/Validator.js';
 import logger from '../utils/Logger.js';
-import * as userRepository from '../repositories/mongoDB/UserRepositoryMongo.js';
+import * as userRepository from '../repositories/UserRepository.js';
 
 /**
  * Создание нового пользователя.
