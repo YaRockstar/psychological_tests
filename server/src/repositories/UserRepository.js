@@ -1,4 +1,4 @@
-import { UserModel } from '../models/models.js';
+import UserModel from '../models/UserModel.js';
 
 /**
  * Преобразование MongoDB документа в объект с обычными полями.

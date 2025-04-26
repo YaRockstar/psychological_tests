@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 /**
  * MongoDB схема пользователя.
  */
-export const UserSchema = new mongoose.Schema(
+const UserSchema = new mongoose.Schema(
   {
     firstName: { type: String, required: true },
     lastName: { type: String },
@@ -16,3 +16,10 @@ export const UserSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+/**
+ * Модель пользователя MongoDB.
+ */
+const UserModel = mongoose.model('User', UserSchema);
+
+export default UserModel;
