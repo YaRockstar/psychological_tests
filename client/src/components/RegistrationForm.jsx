@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 
 function RegistrationForm() {
   const [formData, setFormData] = useState({
@@ -13,6 +14,8 @@ function RegistrationForm() {
   });
 
   const [isAuthor, setIsAuthor] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [emailError, setEmailError] = useState('');
 
   const handleInputChange = e => {
     const { name, value } = e.target;
@@ -23,9 +26,44 @@ function RegistrationForm() {
     setIsAuthor(!isAuthor);
   };
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
-    // Добавьте логику валидации и отправки данных
+    // Валидация почты
+    if (!formData.email) {
+      setEmailError('Почта не введена');
+      return;
+    }
+    const emailRegex = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/;
+    if (!emailRegex.test(formData.email)) {
+      setEmailError('Некорректный адрес электронной почты');
+      return;
+    }
+    setEmailError('');
+
+    // Валидация паролей
+    if (formData.password !== formData.confirmPassword) {
+      setPasswordError('Пароли не совпадают');
+      return;
+    }
+    setPasswordError('');
+
+    try {
+      const response = await axios.post('https://your-backend-api.com/register', {
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        middleName: formData.middleName,
+        description: formData.description,
+        birthDate: formData.birthDate,
+        isAuthor,
+      });
+
+      localStorage.setItem('token', response.data.token);
+      console.log('Регистрация успешна!');
+    } catch (error) {
+      console.error('Ошибка регистрации:', error);
+    }
   };
 
   return (
@@ -37,19 +75,21 @@ function RegistrationForm() {
       <input
         type="email"
         name="email"
-        placeholder="Почта*"
+        placeholder="Почта *"
         value={formData.email}
         onChange={handleInputChange}
-        className="w-full p-2 mb-4 border border-gray-300 rounded"
+        className="w-full p-2 mb-1 border border-gray-300 rounded"
       />
+      {emailError && <p className="text-red-500 text-sm mb-4">{emailError}</p>}
       <input
         type="password"
         name="password"
-        placeholder="Пароль*"
+        placeholder="Пароль *"
         value={formData.password}
         onChange={handleInputChange}
-        className="w-full p-2 mb-4 border border-gray-300 rounded"
+        className="w-full p-2 mb-1 border border-gray-300 rounded"
       />
+      {passwordError && <p className="text-red-500 text-sm mb-4">{passwordError}</p>}
       <input
         type="password"
         name="confirmPassword"
