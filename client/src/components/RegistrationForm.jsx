@@ -135,109 +135,93 @@ function RegistrationForm() {
         </div>
       )}
 
-      <div className="mb-4">
-        <input
-          type="email"
-          name="email"
-          placeholder="Почта *"
-          value={formData.email}
-          onChange={handleInputChange}
-          className={`w-full p-2 border ${
-            errors.email ? 'border-red-500' : 'border-gray-300'
-          } rounded`}
-        />
-        {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
-      </div>
+      <input
+        type="email"
+        name="email"
+        placeholder="Почта *"
+        value={formData.email}
+        onChange={handleInputChange}
+        className={`w-full p-2 mb-4 border ${
+          errors.email ? 'border-red-500' : 'border-gray-300'
+        } rounded`}
+      />
+      {errors.email && <p className="text-red-500 text-sm -mt-3 mb-4">{errors.email}</p>}
 
-      <div className="mb-4">
-        <input
-          type="password"
-          name="password"
-          placeholder="Пароль *"
-          value={formData.password}
-          onChange={handleInputChange}
-          className={`w-full p-2 border ${
-            errors.password ? 'border-red-500' : 'border-gray-300'
-          } rounded`}
-        />
-        {errors.password && (
-          <p className="text-red-500 text-sm mt-1">{errors.password}</p>
-        )}
-      </div>
+      <input
+        type="password"
+        name="password"
+        placeholder="Пароль *"
+        value={formData.password}
+        onChange={handleInputChange}
+        className={`w-full p-2 mb-4 border ${
+          errors.password ? 'border-red-500' : 'border-gray-300'
+        } rounded`}
+      />
+      {errors.password && (
+        <p className="text-red-500 text-sm -mt-3 mb-4">{errors.password}</p>
+      )}
 
-      <div className="mb-4">
-        <input
-          type="password"
-          name="confirmPassword"
-          placeholder="Подтверждение пароля *"
-          value={formData.confirmPassword}
-          onChange={handleInputChange}
-          className={`w-full p-2 border ${
-            errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
-          } rounded`}
-        />
-        {errors.confirmPassword && (
-          <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>
-        )}
-      </div>
+      <input
+        type="password"
+        name="confirmPassword"
+        placeholder="Подтверждение пароля *"
+        value={formData.confirmPassword}
+        onChange={handleInputChange}
+        className={`w-full p-2 mb-4 border ${
+          errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+        } rounded`}
+      />
+      {errors.confirmPassword && (
+        <p className="text-red-500 text-sm -mt-3 mb-4">{errors.confirmPassword}</p>
+      )}
 
-      <div className="mb-4">
-        <input
-          type="text"
-          name="firstName"
-          placeholder="Имя *"
-          value={formData.firstName}
-          onChange={handleInputChange}
-          className={`w-full p-2 border ${
-            errors.firstName ? 'border-red-500' : 'border-gray-300'
-          } rounded`}
-        />
-        {errors.firstName && (
-          <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>
-        )}
-      </div>
+      <input
+        type="text"
+        name="firstName"
+        placeholder="Имя *"
+        value={formData.firstName}
+        onChange={handleInputChange}
+        className={`w-full p-2 mb-4 border ${
+          errors.firstName ? 'border-red-500' : 'border-gray-300'
+        } rounded`}
+      />
+      {errors.firstName && (
+        <p className="text-red-500 text-sm -mt-3 mb-4">{errors.firstName}</p>
+      )}
 
-      <div className="mb-4">
-        <input
-          type="text"
-          name="lastName"
-          placeholder="Фамилия"
-          value={formData.lastName}
-          onChange={handleInputChange}
-          className="w-full p-2 border border-gray-300 rounded"
-        />
-      </div>
+      <input
+        type="text"
+        name="lastName"
+        placeholder="Фамилия"
+        value={formData.lastName}
+        onChange={handleInputChange}
+        className="w-full p-2 mb-4 border border-gray-300 rounded"
+      />
 
-      <div className="mb-4">
-        <input
-          type="text"
-          name="middleName"
-          placeholder="Отчество"
-          value={formData.middleName}
-          onChange={handleInputChange}
-          className="w-full p-2 border border-gray-300 rounded"
-        />
-      </div>
+      <input
+        type="text"
+        name="middleName"
+        placeholder="Отчество"
+        value={formData.middleName}
+        onChange={handleInputChange}
+        className="w-full p-2 mb-4 border border-gray-300 rounded"
+      />
 
-      <div className="mb-4">
-        <textarea
-          name="description"
-          placeholder="Описание пользователя"
-          value={formData.description}
-          onChange={handleInputChange}
-          className="w-full p-2 border border-gray-300 rounded"
-        />
-      </div>
+      <textarea
+        name="description"
+        placeholder="Описание пользователя"
+        value={formData.description}
+        onChange={handleInputChange}
+        className="w-full p-2 mb-4 border border-gray-300 rounded"
+      />
 
-      <div className="mb-4">
-        <input
-          type="date"
-          name="birthDate"
-          value={formData.birthDate}
-          onChange={handleInputChange}
-          className="w-full p-2 border border-gray-300 rounded"
-        />
-      </div>
+      <input
+        type="date"
+        name="birthDate"
+        value={formData.birthDate}
+        onChange={handleInputChange}
+        className="w-full p-2 mb-4 border border-gray-300 rounded"
+      />
 
       <div className="checkbox mb-4">
         <label className="text-lg">
