@@ -133,23 +133,10 @@ function ProfileEdit() {
 
       setSuccessMessage('Данные успешно обновлены');
     } catch (error) {
-      if (error.response) {
-        if (
-          error.response.status === 403 &&
-          error.response.data &&
-          error.response.data.message &&
-          error.response.data.message.includes('CSRF')
-        ) {
-          // Обработка ошибок CSRF
-          setErrors({
-            general:
-              'Ошибка безопасности. Пожалуйста, обновите страницу и попробуйте снова.',
-          });
-        } else if (error.response.data) {
-          setErrors({
-            general: error.response.data.message || 'Ошибка при обновлении профиля',
-          });
-        }
+      if (error.response && error.response.data) {
+        setErrors({
+          general: error.response.data.message || 'Ошибка при обновлении профиля',
+        });
       } else {
         setErrors({
           general: 'Сервер недоступен. Попробуйте позже.',
