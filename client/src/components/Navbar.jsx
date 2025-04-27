@@ -10,20 +10,33 @@ function Navbar() {
     const token = localStorage.getItem('token');
     if (token) {
       setIsLoggedIn(true);
-      // Здесь в будущем можно добавить запрос данных пользователя
-      // чтобы отобразить его имя после входа
+      // Получаем данные о пользователе из localStorage
+      const userData = localStorage.getItem('userData');
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          setUserName(user.firstName || '');
+        } catch (e) {
+          console.error('Ошибка при получении данных пользователя', e);
+        }
+      }
+    } else {
+      setIsLoggedIn(false);
+      setUserName('');
     }
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('userData');
     setIsLoggedIn(false);
     setUserName('');
+    window.location.href = '/';
   };
 
   return (
-    <nav className="bg-white shadow-md py-4 w-full">
-      <div className="w-full px-4 sm:px-6 lg:px-8 max-w-[2000px] mx-auto flex justify-between items-center">
+    <nav className="bg-white shadow-md py-4">
+      <div className="w-full px-4 sm:px-6 lg:px-8 mx-auto flex justify-between items-center">
         <Link to="/" className="text-2xl font-bold text-indigo-600">
           PsyTests
         </Link>
