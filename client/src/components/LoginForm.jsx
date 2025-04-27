@@ -38,6 +38,7 @@ function LoginForm() {
       const response = await userAPI.login({
         email: formData.email,
         password: formData.password,
+        role: isAuthor ? 'author' : 'user',
       });
 
       if (response.data && response.data.token) {
