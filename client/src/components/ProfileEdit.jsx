@@ -13,24 +13,57 @@ function ProfileEdit() {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Загрузка данных пользователя при монтировании компонента
   useEffect(() => {
     const fetchUserData = async () => {
       try {
+        setIsLoading(true);
+
+        // Пробуем сначала получить данные из localStorage для быстрого отображения
+        const userFromStorage = localStorage.getItem('userData');
+        if (userFromStorage) {
+          try {
+            const parsedUser = JSON.parse(userFromStorage);
+            if (parsedUser) {
+              setUserData({
+                firstName: parsedUser.firstName || '',
+                lastName: parsedUser.lastName || '',
+                middleName: parsedUser.middleName || '',
+                description: parsedUser.description || '',
+                birthDate: parsedUser.birthDate ? parsedUser.birthDate.split('T')[0] : '',
+              });
+            }
+            // eslint-disable-next-line no-unused-vars
+          } catch (parseError) {
+            // Ничего не делаем, продолжаем попытку загрузки с сервера
+          }
+        }
+
+        // Затем делаем запрос к API для получения актуальных данных
         const response = await userAPI.getCurrentUser();
         const user = response.data;
 
-        setUserData({
-          firstName: user.firstName || '',
-          lastName: user.lastName || '',
-          middleName: user.middleName || '',
-          description: user.description || '',
-          birthDate: user.birthDate ? user.birthDate.split('T')[0] : '',
-        });
+        if (user) {
+          setUserData({
+            firstName: user.firstName || '',
+            lastName: user.lastName || '',
+            middleName: user.middleName || '',
+            description: user.description || '',
+            birthDate: user.birthDate ? user.birthDate.split('T')[0] : '',
+          });
+          setErrors({});
+        }
         // eslint-disable-next-line no-unused-vars
       } catch (error) {
-        setErrors({ general: 'Ошибка при загрузке данных пользователя' });
+        // Если не удалось загрузить данные с сервера, но есть данные из localStorage,
+        // не показываем ошибку, т.к. у нас уже есть данные для отображения
+        const hasLocalData = localStorage.getItem('userData');
+        if (!hasLocalData) {
+          setErrors({ general: 'Ошибка при загрузке данных пользователя' });
+        }
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -44,7 +77,6 @@ function ProfileEdit() {
       setErrors({ ...errors, [name]: '' });
     }
 
-    // Сбрасываем сообщение об успехе при любом изменении
     if (successMessage) {
       setSuccessMessage('');
     }
@@ -70,6 +102,7 @@ function ProfileEdit() {
 
     setIsSubmitting(true);
     setSuccessMessage('');
+    setErrors({});
 
     try {
       const dataToUpdate = {
@@ -80,19 +113,43 @@ function ProfileEdit() {
         birthDate: userData.birthDate || null,
       };
 
-      await userAPI.updateProfile(dataToUpdate);
+      const response = await userAPI.updateProfile(dataToUpdate);
+
+      // Получаем обновленные данные пользователя из ответа сервера
+      const updatedUser = response.data;
 
       // Обновляем данные пользователя в localStorage
       const userFromStorage = JSON.parse(localStorage.getItem('userData') || '{}');
-      const updatedUserData = { ...userFromStorage, ...dataToUpdate };
-      localStorage.setItem('userData', JSON.stringify(updatedUserData));
+      const newUserData = {
+        ...userFromStorage,
+        firstName: updatedUser.firstName || userData.firstName,
+        lastName: updatedUser.lastName || userData.lastName,
+        middleName: updatedUser.middleName || userData.middleName,
+        description: updatedUser.description || userData.description,
+        birthDate: updatedUser.birthDate || userData.birthDate,
+      };
+
+      localStorage.setItem('userData', JSON.stringify(newUserData));
 
       setSuccessMessage('Данные успешно обновлены');
     } catch (error) {
-      if (error.response && error.response.data) {
-        setErrors({
-          general: error.response.data.message || 'Ошибка при обновлении профиля',
-        });
+      if (error.response) {
+        if (
+          error.response.status === 403 &&
+          error.response.data &&
+          error.response.data.message &&
+          error.response.data.message.includes('CSRF')
+        ) {
+          // Обработка ошибок CSRF
+          setErrors({
+            general:
+              'Ошибка безопасности. Пожалуйста, обновите страницу и попробуйте снова.',
+          });
+        } else if (error.response.data) {
+          setErrors({
+            general: error.response.data.message || 'Ошибка при обновлении профиля',
+          });
+        }
       } else {
         setErrors({
           general: 'Сервер недоступен. Попробуйте позже.',
@@ -103,11 +160,22 @@ function ProfileEdit() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+        <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">
+          Загрузка данных...
+        </h2>
+        <div className="flex justify-center">
+          <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md mx-auto mb-8">
-      <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
-        Редактирование профиля
-      </h2>
+    <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+      <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">Личные данные</h2>
 
       {errors.general && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
@@ -123,16 +191,11 @@ function ProfileEdit() {
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label
-            htmlFor="firstName"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Имя *
-          </label>
           <input
             type="text"
             id="firstName"
             name="firstName"
+            placeholder="Имя *"
             value={userData.firstName}
             onChange={handleInputChange}
             className={`w-full p-3 border ${
@@ -145,16 +208,11 @@ function ProfileEdit() {
         </div>
 
         <div>
-          <label
-            htmlFor="lastName"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Фамилия
-          </label>
           <input
             type="text"
             id="lastName"
             name="lastName"
+            placeholder="Фамилия"
             value={userData.lastName}
             onChange={handleInputChange}
             className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
@@ -162,16 +220,11 @@ function ProfileEdit() {
         </div>
 
         <div>
-          <label
-            htmlFor="middleName"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Отчество
-          </label>
           <input
             type="text"
             id="middleName"
             name="middleName"
+            placeholder="Отчество"
             value={userData.middleName}
             onChange={handleInputChange}
             className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
@@ -179,36 +232,27 @@ function ProfileEdit() {
         </div>
 
         <div>
-          <label
-            htmlFor="birthDate"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Дата рождения
-          </label>
           <input
             type="date"
             id="birthDate"
             name="birthDate"
+            placeholder="Дата рождения"
             value={userData.birthDate}
             onChange={handleInputChange}
             max={new Date().toISOString().split('T')[0]}
             className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
           />
+          <p className="mt-1 text-xs text-gray-500">Дата рождения</p>
         </div>
 
         <div>
-          <label
-            htmlFor="description"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            О себе
-          </label>
           <textarea
             id="description"
             name="description"
+            placeholder="О себе"
             value={userData.description}
             onChange={handleInputChange}
-            rows="4"
+            rows="3"
             className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
           />
         </div>

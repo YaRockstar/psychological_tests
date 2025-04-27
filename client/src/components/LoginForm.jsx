@@ -1,62 +1,76 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { userAPI } from '../utils/api';
+import { authAPI } from '../utils/api';
 
 function LoginForm() {
-  const [formData, setFormData] = useState({
+  const [credentials, setCredentials] = useState({
     email: '',
     password: '',
   });
-
   const [isAuthor, setIsAuthor] = useState(false);
+  const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState('');
 
   const handleInputChange = e => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    // Сбрасываем ошибку при изменении полей
-    if (error) setError('');
+    setCredentials({ ...credentials, [name]: value });
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: '' });
+    }
   };
 
   const handleCheckboxChange = () => {
     setIsAuthor(!isAuthor);
   };
 
+  const validateForm = () => {
+    const newErrors = {};
+
+    if (!credentials.email) {
+      newErrors.email = 'Почта обязательна';
+    }
+
+    if (!credentials.password) {
+      newErrors.password = 'Пароль обязателен';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSubmit = async e => {
     e.preventDefault();
 
-    if (!formData.email || !formData.password) {
-      setError('Пожалуйста, заполните все поля');
+    if (!validateForm()) {
       return;
     }
 
     setIsSubmitting(true);
-    setError('');
 
     try {
-      const response = await userAPI.login({
-        email: formData.email,
-        password: formData.password,
+      const response = await authAPI.login({
+        ...credentials,
         role: isAuthor ? 'author' : 'user',
       });
 
       if (response.data && response.data.token) {
         localStorage.setItem('token', response.data.token);
 
-        // Сохраняем данные пользователя
         if (response.data.user) {
           localStorage.setItem('userData', JSON.stringify(response.data.user));
         }
 
-        // Перенаправляем пользователя на главную страницу с перезагрузкой
         window.location.href = '/';
       }
     } catch (error) {
-      if (error.response && error.response.data && error.response.data.message) {
-        setError(error.response.data.message);
+      if (error.response && error.response.data) {
+        setErrors({
+          general: error.response.data.message || 'Ошибка при входе в систему',
+        });
       } else {
-        setError('Произошла ошибка при входе в систему');
+        setErrors({
+          general: 'Сервер недоступен. Попробуйте позже.',
+        });
       }
     } finally {
       setIsSubmitting(false);
@@ -69,9 +83,9 @@ function LoginForm() {
         Вход в систему
       </h2>
 
-      {error && (
+      {errors.general && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-          {error}
+          {errors.general}
         </div>
       )}
 
@@ -80,7 +94,7 @@ function LoginForm() {
           type="email"
           name="email"
           placeholder="Введите вашу почту"
-          value={formData.email}
+          value={credentials.email}
           onChange={handleInputChange}
           required
           className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
@@ -90,7 +104,7 @@ function LoginForm() {
           type="password"
           name="password"
           placeholder="Введите ваш пароль"
-          value={formData.password}
+          value={credentials.password}
           onChange={handleInputChange}
           required
           className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"

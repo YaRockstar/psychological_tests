@@ -4,6 +4,8 @@ import * as UserService from '../services/UserService.js';
 import { HttpStatusCode } from '../utils/HttpStatusCode.js';
 import config from '../config/config.js';
 import { validateUser } from '../utils/UserUtils.js';
+import * as UserRepository from '../repositories/UserRepository.js';
+import logger from '../utils/logger.js';
 
 /**
  * Регистрация нового пользователя.
@@ -175,20 +177,34 @@ export async function updateCurrentUser(req, res) {
     const userId = req.user.id;
     const userData = req.body;
 
-    // Запрещаем изменение роли и email через этот эндпоинт
-    delete userData.role;
-    delete userData.email;
-    delete userData.password;
-
-    try {
-      validateUser(userData, false);
-    } catch (error) {
-      return res.status(HttpStatusCode.BAD_REQUEST).json({
-        message: error.message,
+    // Получаем текущего пользователя
+    const currentUser = await UserService.getUserById(userId);
+    if (!currentUser) {
+      return res.status(HttpStatusCode.NOT_FOUND).json({
+        message: 'Пользователь не найден',
       });
     }
 
-    const updatedUser = await UserService.updateUser(userId, userData);
+    // Сохраняем email и роль из текущего пользователя
+    const dataToUpdate = {
+      firstName: userData.firstName || currentUser.firstName,
+      lastName: userData.lastName || currentUser.lastName || '',
+      middleName: userData.middleName || currentUser.middleName || '',
+      description: userData.description || currentUser.description || '',
+      birthDate: userData.birthDate || currentUser.birthDate || null,
+      email: currentUser.email, // Всегда используем текущий email
+      role: currentUser.role, // Всегда используем текущую роль
+    };
+
+    // Проверяем только обязательное поле firstName
+    if (!dataToUpdate.firstName) {
+      return res.status(HttpStatusCode.BAD_REQUEST).json({
+        message: 'Имя пользователя обязательно',
+      });
+    }
+
+    // Обновляем пользователя напрямую, без обычной валидации через UserService
+    const updatedUser = await UserRepository.updateUser(userId, dataToUpdate);
 
     if (!updatedUser) {
       return res.status(HttpStatusCode.NOT_FOUND).json({
@@ -221,6 +237,9 @@ export async function updatePassword(req, res) {
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
+      logger.warn(
+        `Попытка обновления пароля без указания текущего или нового пароля. UserId: ${userId}`
+      );
       return res.status(HttpStatusCode.BAD_REQUEST).json({
         message: 'Текущий и новый пароль обязательны',
       });
@@ -230,6 +249,9 @@ export async function updatePassword(req, res) {
     const user = await UserService.getUserById(userId, true);
 
     if (!user) {
+      logger.warn(
+        `Попытка обновления пароля для несуществующего пользователя. UserId: ${userId}`
+      );
       return res.status(HttpStatusCode.NOT_FOUND).json({
         message: 'Пользователь не найден',
       });
@@ -238,13 +260,24 @@ export async function updatePassword(req, res) {
     // Проверяем текущий пароль
     const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
     if (!isPasswordValid) {
+      logger.warn(`Неверный текущий пароль при попытке обновления. UserId: ${userId}`);
       return res.status(HttpStatusCode.BAD_REQUEST).json({
         message: 'Текущий пароль неверный',
       });
     }
 
+    // Проверка на совпадение нового пароля с текущим
+    const isSamePassword = await bcrypt.compare(newPassword, user.password);
+    if (isSamePassword) {
+      logger.warn(`Попытка установить тот же пароль. UserId: ${userId}`);
+      return res.status(HttpStatusCode.BAD_REQUEST).json({
+        message: 'Новый пароль должен отличаться от текущего',
+      });
+    }
+
     // Валидация нового пароля
     if (newPassword.length < 8) {
+      logger.warn(`Новый пароль недостаточной длины. UserId: ${userId}`);
       return res.status(HttpStatusCode.BAD_REQUEST).json({
         message: 'Пароль должен содержать не менее 8 символов',
       });
@@ -253,6 +286,9 @@ export async function updatePassword(req, res) {
     const passwordRegex =
       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_\-#^])[A-Za-z\d@$!%*?&_\-#^]{8,}$/;
     if (!passwordRegex.test(newPassword)) {
+      logger.warn(
+        `Новый пароль не соответствует требованиям безопасности. UserId: ${userId}`
+      );
       return res.status(HttpStatusCode.BAD_REQUEST).json({
         message:
           'Пароль должен содержать заглавные и строчные буквы, цифры и специальные символы',
@@ -268,8 +304,10 @@ export async function updatePassword(req, res) {
       password: hashedPassword,
     });
 
+    logger.info(`Пароль успешно обновлен для пользователя. UserId: ${userId}`);
     res.status(HttpStatusCode.OK).json({ message: 'Пароль успешно обновлен' });
   } catch (error) {
+    logger.error(`Ошибка при обновлении пароля: ${error.message}`);
     res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
       message: 'Ошибка при обновлении пароля',
     });

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { userAPI } from '../utils/api';
+import { authAPI } from '../utils/api';
 
 function RegistrationForm() {
   const [formData, setFormData] = useState({
@@ -88,7 +88,7 @@ function RegistrationForm() {
         role: isAuthor ? 'author' : 'user',
       };
 
-      const response = await userAPI.register(userData);
+      const response = await authAPI.register(userData);
 
       if (response.data && response.data.token) {
         localStorage.setItem('token', response.data.token);

@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { userAPI } from '../utils/api';
+import { useNavigate } from 'react-router-dom';
 
 function PasswordChange() {
+  const navigate = useNavigate();
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -45,6 +47,11 @@ function PasswordChange() {
       }
     }
 
+    // Проверка на совпадение текущего и нового пароля
+    if (passwordData.currentPassword === passwordData.newPassword) {
+      newErrors.newPassword = 'Новый пароль должен отличаться от текущего';
+    }
+
     if (passwordData.newPassword !== passwordData.confirmNewPassword) {
       newErrors.confirmNewPassword = 'Пароли не совпадают';
     }
@@ -77,11 +84,29 @@ function PasswordChange() {
       });
 
       setSuccessMessage('Пароль успешно изменен');
+
+      // Перенаправление на профиль через 2 секунды после успешной смены пароля
+      setTimeout(() => {
+        navigate('/profile');
+      }, 2000);
     } catch (error) {
-      if (error.response && error.response.data) {
-        setErrors({
-          general: error.response.data.message || 'Ошибка при изменении пароля',
-        });
+      if (error.response) {
+        if (
+          error.response.status === 403 &&
+          error.response.data &&
+          error.response.data.message &&
+          error.response.data.message.includes('CSRF')
+        ) {
+          // Обработка ошибок CSRF
+          setErrors({
+            general:
+              'Ошибка безопасности. Пожалуйста, обновите страницу и попробуйте снова.',
+          });
+        } else if (error.response.data) {
+          setErrors({
+            general: error.response.data.message || 'Ошибка при изменении пароля',
+          });
+        }
       } else {
         setErrors({
           general: 'Сервер недоступен. Попробуйте позже.',
@@ -93,35 +118,30 @@ function PasswordChange() {
   };
 
   return (
-    <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md mx-auto">
-      <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+    <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+      <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">
         Изменение пароля
       </h2>
 
-      {errors.general && (
+      {errors.general && errors.general.trim() !== '' && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
           {errors.general}
         </div>
       )}
 
-      {successMessage && (
+      {successMessage && successMessage.trim() !== '' && (
         <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
           {successMessage}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label
-            htmlFor="currentPassword"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Текущий пароль *
-          </label>
           <input
             type="password"
             id="currentPassword"
             name="currentPassword"
+            placeholder="Текущий пароль *"
             value={passwordData.currentPassword}
             onChange={handleInputChange}
             className={`w-full p-3 border ${
@@ -134,16 +154,11 @@ function PasswordChange() {
         </div>
 
         <div>
-          <label
-            htmlFor="newPassword"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Новый пароль *
-          </label>
           <input
             type="password"
             id="newPassword"
             name="newPassword"
+            placeholder="Новый пароль *"
             value={passwordData.newPassword}
             onChange={handleInputChange}
             className={`w-full p-3 border ${
@@ -160,16 +175,11 @@ function PasswordChange() {
         </div>
 
         <div>
-          <label
-            htmlFor="confirmNewPassword"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Подтверждение нового пароля *
-          </label>
           <input
             type="password"
             id="confirmNewPassword"
             name="confirmNewPassword"
+            placeholder="Подтверждение нового пароля *"
             value={passwordData.confirmNewPassword}
             onChange={handleInputChange}
             className={`w-full p-3 border ${

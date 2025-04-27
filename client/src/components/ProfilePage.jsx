@@ -29,29 +29,34 @@ function ProfilePage() {
           <button
             type="button"
             onClick={() => setActiveTab('profile')}
-            className={`px-4 py-2 text-sm font-medium rounded-l-lg ${
+            className={`px-6 py-2 text-sm font-medium rounded-l-lg ${
               activeTab === 'profile'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-100'
-            } border border-gray-200`}
+            } border border-gray-200 transition-colors`}
           >
             Личные данные
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('password')}
-            className={`px-4 py-2 text-sm font-medium rounded-r-lg ${
+            className={`px-6 py-2 text-sm font-medium rounded-r-lg ${
               activeTab === 'password'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-100'
-            } border border-gray-200`}
+            } border border-gray-200 transition-colors`}
           >
             Изменить пароль
           </button>
         </div>
       </div>
 
-      {activeTab === 'profile' ? <ProfileEdit /> : <PasswordChange />}
+      <div
+        className="flex justify-center items-center"
+        style={{ minHeight: 'calc(100vh - 350px)' }}
+      >
+        {activeTab === 'profile' ? <ProfileEdit /> : <PasswordChange />}
+      </div>
     </div>
   );
 }

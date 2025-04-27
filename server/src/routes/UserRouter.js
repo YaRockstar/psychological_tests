@@ -1,24 +1,24 @@
 import { Router } from 'express';
 import {
-  register,
-  login,
   getCurrentUser,
   getUserById,
   updateCurrentUser,
   updatePassword,
 } from '../controllers/UserController.js';
 import { authenticate } from '../middleware/auth.js';
+import { validateCsrfToken } from '../middleware/csrf.js';
 
 /**
  * Маршрутизатор для работы с пользователями.
  */
 const router = Router();
 
-router.post('/register', register);
-router.post('/login', login);
-router.get('/me', authenticate, getCurrentUser);
-router.get('/users/:id', getUserById);
-router.put('/me', authenticate, updateCurrentUser);
-router.put('/me/password', authenticate, updatePassword);
+// Маршруты для текущего аутентифицированного пользователя
+router.get('/current', authenticate, getCurrentUser);
+router.patch('/current', authenticate, validateCsrfToken, updateCurrentUser);
+router.patch('/current/password', authenticate, validateCsrfToken, updatePassword);
+
+// Маршруты для конкретных пользователей по ID
+router.get('/:id', getUserById);
 
 export default router;
