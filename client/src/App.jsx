@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import HomePage from './components/HomePage';
 import LoginForm from './components/LoginForm';
 import RegistrationForm from './components/RegistrationForm';
+import ProfilePage from './components/ProfilePage';
 import './App.css';
 
 function App() {
@@ -43,6 +44,14 @@ function App() {
               >
                 <RegistrationForm />
               </div>
+            </Layout>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <Layout>
+              <ProfilePage />
             </Layout>
           }
         />

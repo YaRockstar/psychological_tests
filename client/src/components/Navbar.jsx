@@ -16,8 +16,9 @@ function Navbar() {
         try {
           const user = JSON.parse(userData);
           setUserName(user.firstName || '');
-        } catch (e) {
-          console.error('Ошибка при получении данных пользователя', e);
+          // eslint-disable-next-line no-unused-vars
+        } catch (error) {
+          // Ошибка при получении данных пользователя
         }
       }
     } else {
@@ -44,6 +45,12 @@ function Navbar() {
           {isLoggedIn ? (
             <>
               <span className="text-gray-700">Привет, {userName || 'пользователь'}!</span>
+              <Link
+                to="/profile"
+                className="text-indigo-600 hover:text-indigo-800 font-medium"
+              >
+                Мой профиль
+              </Link>
               <button
                 onClick={handleLogout}
                 className="text-sm px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600 transition"

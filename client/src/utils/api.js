@@ -25,6 +25,8 @@ export const userAPI = {
   login: credentials => api.post('/api/login', credentials),
   getCurrentUser: () => api.get('/api/me'),
   getUserById: id => api.get(`/api/users/${id}`),
+  updateProfile: userData => api.put('/api/me', userData),
+  updatePassword: passwordData => api.put('/api/me/password', passwordData),
 };
 
 export default api;
