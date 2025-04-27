@@ -164,3 +164,114 @@ export async function getUserById(req, res) {
     });
   }
 }
+
+/**
+ * Обновление данных текущего пользователя.
+ * @param {Object} req - HTTP запрос.
+ * @param {Object} res - HTTP ответ.
+ */
+export async function updateCurrentUser(req, res) {
+  try {
+    const userId = req.user.id;
+    const userData = req.body;
+
+    // Запрещаем изменение роли и email через этот эндпоинт
+    delete userData.role;
+    delete userData.email;
+    delete userData.password;
+
+    try {
+      validateUser(userData, false);
+    } catch (error) {
+      return res.status(HttpStatusCode.BAD_REQUEST).json({
+        message: error.message,
+      });
+    }
+
+    const updatedUser = await UserService.updateUser(userId, userData);
+
+    if (!updatedUser) {
+      return res.status(HttpStatusCode.NOT_FOUND).json({
+        message: 'Пользователь не найден',
+      });
+    }
+
+    res.status(HttpStatusCode.OK).json(updatedUser);
+  } catch (error) {
+    if (error.name === 'NotValidError') {
+      return res.status(HttpStatusCode.BAD_REQUEST).json({
+        message: error.message,
+      });
+    }
+
+    res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
+      message: 'Ошибка при обновлении данных пользователя',
+    });
+  }
+}
+
+/**
+ * Обновление пароля текущего пользователя.
+ * @param {Object} req - HTTP запрос.
+ * @param {Object} res - HTTP ответ.
+ */
+export async function updatePassword(req, res) {
+  try {
+    const userId = req.user.id;
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(HttpStatusCode.BAD_REQUEST).json({
+        message: 'Текущий и новый пароль обязательны',
+      });
+    }
+
+    // Получаем пользователя с паролем
+    const user = await UserService.getUserById(userId, true);
+
+    if (!user) {
+      return res.status(HttpStatusCode.NOT_FOUND).json({
+        message: 'Пользователь не найден',
+      });
+    }
+
+    // Проверяем текущий пароль
+    const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+    if (!isPasswordValid) {
+      return res.status(HttpStatusCode.BAD_REQUEST).json({
+        message: 'Текущий пароль неверный',
+      });
+    }
+
+    // Валидация нового пароля
+    if (newPassword.length < 8) {
+      return res.status(HttpStatusCode.BAD_REQUEST).json({
+        message: 'Пароль должен содержать не менее 8 символов',
+      });
+    }
+
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_\-#^])[A-Za-z\d@$!%*?&_\-#^]{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
+      return res.status(HttpStatusCode.BAD_REQUEST).json({
+        message:
+          'Пароль должен содержать заглавные и строчные буквы, цифры и специальные символы',
+      });
+    }
+
+    // Хэшируем новый пароль
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Обновляем пароль пользователя
+    const updatedUser = await UserService.updateUser(userId, {
+      password: hashedPassword,
+    });
+
+    res.status(HttpStatusCode.OK).json({ message: 'Пароль успешно обновлен' });
+  } catch (error) {
+    res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
+      message: 'Ошибка при обновлении пароля',
+    });
+  }
+}
