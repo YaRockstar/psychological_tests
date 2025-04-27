@@ -50,6 +50,13 @@ function RegistrationForm() {
       newErrors.password = 'Пароль обязателен';
     } else if (formData.password.length < 8) {
       newErrors.password = 'Пароль должен содержать не менее 8 символов';
+    } else {
+      const passwordRegex =
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_\-#^])[A-Za-z\d@$!%*?&_\-#^]{8,}$/;
+      if (!passwordRegex.test(formData.password)) {
+        newErrors.password =
+          'Пароль должен содержать заглавные и строчные буквы, цифры и специальные символы (@, $, !, %, *, ?, &, _, -, #, ^)';
+      }
     }
 
     if (formData.password !== formData.confirmPassword) {
@@ -90,12 +97,9 @@ function RegistrationForm() {
           localStorage.setItem('userData', JSON.stringify(response.data.user));
         }
 
-        console.log('Регистрация успешна!');
         window.location.href = '/';
       }
     } catch (error) {
-      console.error('Ошибка регистрации:', error);
-
       if (error.response && error.response.data) {
         if (error.response.data.field) {
           setErrors({
@@ -148,13 +152,17 @@ function RegistrationForm() {
           <input
             type="password"
             name="password"
-            placeholder="Пароль (минимум 8 символов) *"
+            placeholder="Пароль *"
             value={formData.password}
             onChange={handleInputChange}
             className={`w-full p-3 border ${
               errors.password ? 'border-red-500' : 'border-gray-300'
             } rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition`}
           />
+          <p className="mt-1 text-xs text-gray-500">
+            Минимум 8 символов, включая заглавные и строчные буквы, цифры и специальные
+            символы (@, $, !, %, *, ?, &, _, -, #, ^)
+          </p>
           {errors.password && (
             <p className="mt-1 text-red-500 text-sm">{errors.password}</p>
           )}

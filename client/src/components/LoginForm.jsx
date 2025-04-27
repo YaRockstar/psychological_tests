@@ -49,14 +49,10 @@ function LoginForm() {
           localStorage.setItem('userData', JSON.stringify(response.data.user));
         }
 
-        console.log('Авторизация успешна!');
-
         // Перенаправляем пользователя на главную страницу с перезагрузкой
         window.location.href = '/';
       }
     } catch (error) {
-      console.error('Ошибка авторизации:', error);
-
       if (error.response && error.response.data && error.response.data.message) {
         setError(error.response.data.message);
       } else {

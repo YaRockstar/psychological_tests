@@ -31,7 +31,7 @@ function Navbar() {
     localStorage.removeItem('userData');
     setIsLoggedIn(false);
     setUserName('');
-    window.location.href = '/';
+    window.location.href = '/login';
   };
 
   return (
