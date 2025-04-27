@@ -1,69 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 
 function HomePage() {
-  const [userName, setUserName] = useState('');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  // Проверяем авторизацию пользователя при загрузке страницы
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      setIsLoggedIn(true);
-      // Здесь в будущем можно добавить запрос данных пользователя
-      // чтобы отобразить его имя после входа
-    }
-  }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    setIsLoggedIn(false);
-    setUserName('');
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-100">
-      {/* Навигационная панель */}
-      <nav className="bg-white shadow-md py-4">
-        <div className="container mx-auto px-4 flex justify-between items-center">
-          <Link to="/" className="text-2xl font-bold text-indigo-600">
-            PsyTests
-          </Link>
-          <div className="flex items-center space-x-6">
-            {isLoggedIn ? (
-              <>
-                <span className="text-gray-700">
-                  Привет, {userName || 'пользователь'}!
-                </span>
-                <button
-                  onClick={handleLogout}
-                  className="text-sm px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600 transition"
-                >
-                  Выйти
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="text-indigo-600 hover:text-indigo-800 font-medium"
-                >
-                  Войти
-                </Link>
-                <Link
-                  to="/register"
-                  className="text-sm px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 transition"
-                >
-                  Регистрация
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </nav>
-
+    <>
       {/* Основной контент */}
-      <div className="container mx-auto px-4 py-12">
+      <div className="py-12">
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
             Платформа психологических тестов
@@ -100,7 +42,7 @@ function HomePage() {
               title: 'Эмоциональный интеллект',
               description: 'Определите свою способность понимать эмоции и управлять ими.',
               image:
-                'https://images.unsplash.com/photo-1523803326055-13109e8eea26?ixlib=rb-4.0.3',
+                'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?ixlib=rb-4.0.3',
               time: '15 минут',
             },
           ].map(test => (
@@ -174,49 +116,7 @@ function HomePage() {
           </Link>
         </div>
       </div>
-
-      {/* Подвал */}
-      <footer className="bg-gray-800 text-white py-8 mt-16">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <h3 className="text-xl font-bold mb-4">PsyTests</h3>
-              <p className="text-gray-400">
-                Платформа психологических тестов для личностного роста и самопознания
-              </p>
-            </div>
-            <div>
-              <h3 className="text-lg font-bold mb-4">Ссылки</h3>
-              <ul className="space-y-2">
-                <li>
-                  <a href="#" className="text-gray-400 hover:text-white transition">
-                    О нас
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-gray-400 hover:text-white transition">
-                    Контакты
-                  </a>
-                </li>
-                <li>
-                  <a href="#" className="text-gray-400 hover:text-white transition">
-                    Политика конфиденциальности
-                  </a>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-bold mb-4">Контакты</h3>
-              <p className="text-gray-400 mb-2">Email: info@psytests.ru</p>
-              <p className="text-gray-400">Телефон: +7 (123) 456-78-90</p>
-            </div>
-          </div>
-          <div className="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400">
-            &copy; {new Date().getFullYear()} PsyTests. Все права защищены.
-          </div>
-        </div>
-      </footer>
-    </div>
+    </>
   );
 }
 
