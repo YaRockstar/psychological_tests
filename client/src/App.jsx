@@ -14,7 +14,7 @@ function App() {
           path="/"
           element={
             <Layout>
-              <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-24">
+              <div className="w-full px-4 sm:px-6 lg:px-8">
                 <HomePage />
               </div>
             </Layout>
