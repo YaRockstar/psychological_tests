@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { userAPI } from '../utils/api';
 
 function LoginForm() {
-  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -43,10 +42,16 @@ function LoginForm() {
 
       if (response.data && response.data.token) {
         localStorage.setItem('token', response.data.token);
+
+        // Сохраняем данные пользователя
+        if (response.data.user) {
+          localStorage.setItem('userData', JSON.stringify(response.data.user));
+        }
+
         console.log('Авторизация успешна!');
 
-        // Перенаправляем пользователя на главную страницу
-        navigate('/');
+        // Перенаправляем пользователя на главную страницу с перезагрузкой
+        window.location.href = '/';
       }
     } catch (error) {
       console.error('Ошибка авторизации:', error);
