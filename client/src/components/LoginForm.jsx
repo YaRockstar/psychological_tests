@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { userAPI } from '../utils/api';
 
 function LoginForm() {
@@ -62,57 +62,77 @@ function LoginForm() {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-white p-6 rounded-lg shadow-md w-full max-w-md"
-    >
-      <h2 className="text-2xl font-bold mb-4 text-center">Авторизация</h2>
+    <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+      <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">
+        Вход в систему
+      </h2>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
           {error}
         </div>
       )}
 
-      <input
-        type="email"
-        name="email"
-        placeholder="Почта"
-        value={formData.email}
-        onChange={handleInputChange}
-        required
-        className="w-full p-2 mb-4 border border-gray-300 rounded"
-      />
-      <input
-        type="password"
-        name="password"
-        placeholder="Пароль"
-        value={formData.password}
-        onChange={handleInputChange}
-        required
-        className="w-full p-2 mb-4 border border-gray-300 rounded"
-      />
-      <div className="checkbox mb-4">
-        <label className="text-lg">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <input
+          type="email"
+          name="email"
+          placeholder="Введите вашу почту"
+          value={formData.email}
+          onChange={handleInputChange}
+          required
+          className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+        />
+
+        <input
+          type="password"
+          name="password"
+          placeholder="Введите ваш пароль"
+          value={formData.password}
+          onChange={handleInputChange}
+          required
+          className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+        />
+
+        <div className="flex items-center justify-center my-4">
           <input
+            id="isAuthor"
             type="checkbox"
             checked={isAuthor}
             onChange={handleCheckboxChange}
-            className="mr-2"
+            className="h-5 w-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
           />
-          Я автор
-        </label>
+          <label
+            htmlFor="isAuthor"
+            className="ml-2 block text-base font-medium text-gray-700"
+          >
+            Я автор
+          </label>
+        </div>
+
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className={`w-full p-3 rounded-md text-white font-medium ${
+            isSubmitting ? 'bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-700'
+          } transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2`}
+        >
+          {isSubmitting ? 'Вход...' : 'Войти'}
+        </button>
+      </form>
+
+      <div className="mt-6 text-center">
+        <p className="text-sm text-gray-600">
+          Еще нет аккаунта?{' '}
+          <Link
+            to="/register"
+            className="font-medium text-indigo-600 hover:text-indigo-800"
+          >
+            Зарегистрироваться
+          </Link>
+        </p>
       </div>
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className={`w-full ${
-          isSubmitting ? 'bg-blue-300' : 'bg-blue-500 hover:bg-blue-600'
-        } text-white p-2 rounded transition-colors`}
-      >
-        {isSubmitting ? 'Вход...' : 'Войти'}
-      </button>
-    </form>
+    </div>
   );
 }
 

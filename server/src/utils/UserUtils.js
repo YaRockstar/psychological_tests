@@ -15,7 +15,7 @@ export function isEmail(email) {
  * @returns {boolean} - Результат проверки.
  */
 export function isPassword(password) {
-  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(
+  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_\-#^])[A-Za-z\d@$!%*?&_\-#^]{8,}$/.test(
     password
   );
 }
@@ -50,7 +50,7 @@ export function validateUser(user, requiresPassword = false) {
     }
     if (!isPassword(user.password)) {
       throw new NotValidError(
-        'Пароль должен содержать минимум 8 символов, включая заглавные и строчные буквы, цифры и специальные символы'
+        'Пароль должен содержать минимум 8 символов, включая заглавные и строчные буквы, цифры и специальные символы (@, $, !, %, *, ?, &, _, -, #, ^)'
       );
     }
   }

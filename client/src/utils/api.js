@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Настройка базового URL для API запросов
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3333';
 
 // Создаем экземпляр axios с базовым URL
 const api = axios.create({
