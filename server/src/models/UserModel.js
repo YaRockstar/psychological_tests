@@ -12,7 +12,7 @@ const UserSchema = new mongoose.Schema(
     password: { type: String, required: true },
     birthDate: { type: Date },
     description: { type: String },
-    role: { type: mongoose.Schema.Types.ObjectId, ref: 'Role', required: true },
+    role: { type: String, required: true, default: 'user' },
   },
   { timestamps: true }
 );
