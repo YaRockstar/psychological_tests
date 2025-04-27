@@ -16,11 +16,6 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use((req, res, next) => {
-  logger.info(`${req.method} ${req.url}`);
-  next();
-});
-
 app.use('/api', userRouter);
 
 /**
@@ -35,7 +30,6 @@ async function startServer() {
       logger.info(`Server is running on port ${config.port}`);
     });
   } catch (error) {
-    logger.error('Error starting server:', error);
     process.exit(1);
   }
 }

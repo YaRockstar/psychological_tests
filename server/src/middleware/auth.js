@@ -1,7 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { HttpStatusCode } from '../utils/HttpStatusCode.js';
 import config from '../config/config.js';
-import logger from '../utils/Logger.js';
 
 /**
  * Middleware для аутентификации пользователя.
@@ -15,7 +14,6 @@ export function authenticate(req, res, next) {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      logger.warn('Authentication failed: No token provided');
       return res
         .status(HttpStatusCode.UNAUTHORIZED)
         .json({ message: 'Требуется авторизация' });
@@ -31,7 +29,6 @@ export function authenticate(req, res, next) {
 
     next();
   } catch (error) {
-    logger.error('Authentication error:', error);
     res.status(HttpStatusCode.UNAUTHORIZED).json({ message: 'Недействительный токен' });
   }
 }
@@ -44,16 +41,12 @@ export function authenticate(req, res, next) {
 export function authorize(roles = []) {
   return (req, res, next) => {
     if (!req.user) {
-      logger.warn('Authorization failed: User not authenticated');
       return res
         .status(HttpStatusCode.UNAUTHORIZED)
         .json({ message: 'Требуется авторизация' });
     }
 
     if (roles.length && !roles.includes(req.user.role)) {
-      logger.warn(
-        `Authorization failed: User role ${req.user.role} not in ${roles.join(', ')}`
-      );
       return res.status(HttpStatusCode.FORBIDDEN).json({ message: 'Доступ запрещен' });
     }
 
