@@ -6,7 +6,6 @@ import {
   updatePassword,
 } from '../controllers/UserController.js';
 import { authenticate } from '../middleware/auth.js';
-import { validateCsrfToken } from '../middleware/csrf.js';
 
 /**
  * Маршрутизатор для работы с пользователями.
@@ -15,8 +14,8 @@ const router = Router();
 
 // Маршруты для текущего аутентифицированного пользователя
 router.get('/current', authenticate, getCurrentUser);
-router.patch('/current', authenticate, validateCsrfToken, updateCurrentUser);
-router.patch('/current/password', authenticate, validateCsrfToken, updatePassword);
+router.patch('/current', authenticate, updateCurrentUser);
+router.patch('/current/password', authenticate, updatePassword);
 
 // Маршруты для конкретных пользователей по ID
 router.get('/:id', getUserById);
