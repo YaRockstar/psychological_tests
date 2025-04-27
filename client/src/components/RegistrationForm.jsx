@@ -21,7 +21,6 @@ function RegistrationForm() {
   const handleInputChange = e => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-    // Сбрасываем ошибку при изменении поля
     if (errors[name]) {
       setErrors({ ...errors, [name]: '' });
     }
@@ -34,7 +33,6 @@ function RegistrationForm() {
   const validateForm = () => {
     const newErrors = {};
 
-    // Валидация почты
     if (!formData.email) {
       newErrors.email = 'Почта обязательна';
     } else {
@@ -44,12 +42,10 @@ function RegistrationForm() {
       }
     }
 
-    // Валидация имени
     if (!formData.firstName) {
       newErrors.firstName = 'Имя обязательно';
     }
 
-    // Валидация паролей
     if (!formData.password) {
       newErrors.password = 'Пароль обязателен';
     } else if (formData.password.length < 8) {
@@ -90,21 +86,17 @@ function RegistrationForm() {
       if (response.data && response.data.token) {
         localStorage.setItem('token', response.data.token);
 
-        // Сохраняем данные пользователя
         if (response.data.user) {
           localStorage.setItem('userData', JSON.stringify(response.data.user));
         }
 
         console.log('Регистрация успешна!');
-
-        // Перенаправляем пользователя на главную страницу с перезагрузкой
         window.location.href = '/';
       }
     } catch (error) {
       console.error('Ошибка регистрации:', error);
 
       if (error.response && error.response.data) {
-        // Обрабатываем ошибки с сервера
         if (error.response.data.field) {
           setErrors({
             ...errors,
@@ -235,17 +227,12 @@ function RegistrationForm() {
 
         <div>
           <input
-            type="text"
-            onFocus={e => (e.target.type = 'date')}
-            onBlur={e => {
-              if (!e.target.value) {
-                e.target.type = 'text';
-              }
-            }}
+            type="date"
             name="birthDate"
             placeholder="Дата рождения"
             value={formData.birthDate}
             onChange={handleInputChange}
+            max={new Date().toISOString().split('T')[0]}
             className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
           />
         </div>
