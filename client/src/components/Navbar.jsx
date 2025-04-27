@@ -23,7 +23,7 @@ function Navbar() {
 
   return (
     <nav className="bg-white shadow-md py-4">
-      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-24 flex justify-between items-center">
+      <div className="w-full px-4 sm:px-6 lg:px-8 mx-auto flex justify-between items-center">
         <Link to="/" className="text-2xl font-bold text-indigo-600">
           PsyTests
         </Link>
