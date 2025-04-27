@@ -25,8 +25,8 @@ function App() {
           element={
             <Layout>
               <div
-                className="w-full px-4 sm:px-6 py-6 flex justify-center items-center"
-                style={{ minHeight: 'calc(100vh - 200px)' }}
+                className="w-full px-4 sm:px-6 flex justify-center items-center"
+                style={{ minHeight: 'calc(100vh - 350px)' }}
               >
                 <LoginForm />
               </div>
@@ -38,8 +38,8 @@ function App() {
           element={
             <Layout>
               <div
-                className="w-full px-4 sm:px-6 py-6 flex justify-center items-center"
-                style={{ minHeight: 'calc(100vh - 200px)' }}
+                className="w-full px-4 sm:px-6 flex justify-center items-center"
+                style={{ minHeight: 'calc(100vh - 350px)' }}
               >
                 <RegistrationForm />
               </div>
