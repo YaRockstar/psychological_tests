@@ -14,20 +14,13 @@ import * as userRepository from '../repositories/UserRepository.js';
 export async function createUser(userData) {
   logger.info(`Creating user with email: ${userData.email}`);
   try {
-    logger.info('Validating user data');
     validateUser(userData, true);
-
-    logger.info('Normalizing user data');
     const normalizedData = normalizeUserData(userData);
-
-    logger.info('Calling repository to create user in database');
     const createdUser = await userRepository.createUser(normalizedData);
-
     logger.info(`User created with id: ${createdUser._id}`);
     return formatUserResponse(createdUser);
   } catch (error) {
     logger.error('Error creating user:', error);
-    logger.error('Stack trace:', error.stack);
     throw error;
   }
 }

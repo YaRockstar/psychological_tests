@@ -19,7 +19,6 @@ export async function register(req, res) {
 
     try {
       validateUser(userData, true);
-      logger.info('User validation passed');
     } catch (error) {
       logger.warn(`Registration validation failed: ${error.message}`);
       return res.status(HttpStatusCode.BAD_REQUEST).json({
@@ -36,12 +35,9 @@ export async function register(req, res) {
       });
     }
 
-    logger.info('Creating salt for password hashing');
     const salt = await bcrypt.genSalt(10);
     userData.password = await bcrypt.hash(userData.password, salt);
-    logger.info('Password hashed successfully');
 
-    logger.info('Attempting to create user in database');
     const createdUser = await UserService.createUser(userData);
     logger.info(`User registered with id: ${createdUser.id}`);
 
@@ -61,7 +57,6 @@ export async function register(req, res) {
     });
   } catch (error) {
     logger.error('Error during registration:', error);
-    logger.error('Stack trace:', error.stack);
 
     if (error.name === 'NotValidError') {
       return res.status(HttpStatusCode.BAD_REQUEST).json({
