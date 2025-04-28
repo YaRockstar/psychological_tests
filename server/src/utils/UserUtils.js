@@ -36,7 +36,6 @@ export function isNotEmptyField(field) {
  * @throws {NotValidError} - Если данные невалидны.
  */
 export function validateUser(user, requiresPassword = false) {
-  // Проверяем email только при создании пользователя или если email есть в запросе
   if (requiresPassword || (user.email && user.email.trim() !== '')) {
     if (!isEmail(user.email)) {
       throw new NotValidError('Некорректный формат email');
@@ -73,7 +72,7 @@ export function normalizeUserData(userData) {
   return {
     firstName: userData.firstName,
     email: userData.email,
-    password: userData.password || '',
+    password: userData.password,
     lastName: userData.lastName || '',
     middleName: userData.middleName || '',
     role: userData.role || 'user',

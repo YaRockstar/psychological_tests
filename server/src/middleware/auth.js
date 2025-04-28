@@ -10,7 +10,6 @@ import config from '../config/config.js';
  */
 export function authenticate(req, res, next) {
   try {
-    // Получаем токен из заголовка Authorization
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -20,11 +19,7 @@ export function authenticate(req, res, next) {
     }
 
     const token = authHeader.split(' ')[1];
-
-    // Верифицируем токен
     const decoded = jwt.verify(token, config.jwtSecret);
-
-    // Добавляем данные пользователя в запрос
     req.user = decoded;
 
     next();

@@ -8,7 +8,6 @@ import { normalizeUserData, validateUser } from '../utils/UserUtils.js';
  * @returns {Promise<Object>} - Созданный пользователь.
  */
 export async function createUser(userData) {
-  validateUser(userData, true);
   const normalizedUserData = normalizeUserData(userData);
   const createdUser = await UserRepository.createUser(normalizedUserData);
   return createdUser;
@@ -69,6 +68,30 @@ export async function updateUser(id, userData) {
   const normalizedUserData = normalizeUserData(userData);
 
   const updatedUser = await UserRepository.updateUser(id, normalizedUserData);
+
+  if (updatedUser) {
+    delete updatedUser.password;
+  }
+
+  return updatedUser;
+}
+
+/**
+ * Обновление пароля пользователя.
+ * @param {string} id - ID пользователя.
+ * @param {string} hashedPassword - Хешированный пароль для сохранения.
+ * @returns {Promise<Object|null>} - Обновленный пользователь или null.
+ */
+export async function updatePassword(id, hashedPassword) {
+  if (!id) {
+    throw new NotValidError('ID не указан');
+  }
+
+  if (!hashedPassword) {
+    throw new NotValidError('Пароль не указан');
+  }
+
+  const updatedUser = await UserRepository.updateUser(id, { password: hashedPassword });
 
   if (updatedUser) {
     delete updatedUser.password;

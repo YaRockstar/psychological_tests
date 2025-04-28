@@ -27,9 +27,10 @@ export const authAPI = {
 
 export const userAPI = {
   getCurrentUser: () => api.get('/api/users/current'),
-  getUserById: id => api.get(`/api/users/${id}`),
+  getUserById: _id => api.get(`/api/users/${_id}`),
   updateProfile: userData => api.patch('/api/users/current', userData),
   updatePassword: passwordData => api.patch('/api/users/current/password', passwordData),
+  deleteAccount: () => api.delete('/api/users/current'),
 };
 
 export default api;

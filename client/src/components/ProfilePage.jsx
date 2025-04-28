@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import ProfileEdit from './ProfileEdit';
 import PasswordChange from './PasswordChange';
+import DeleteAccount from './DeleteAccount';
 
 function ProfilePage() {
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [activeTab, setActiveTab] = useState('profile');
 
-  // Проверка аутентификации при монтировании компонента
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -15,21 +15,18 @@ function ProfilePage() {
     }
   }, []);
 
-  // Если пользователь не аутентифицирован, перенаправляем на страницу входа
   if (!isAuthenticated) {
     return <Navigate to="/login" />;
   }
 
   return (
     <div className="w-full max-w-4xl mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">Мой профиль</h1>
-
       <div className="flex justify-center mb-8">
-        <div className="inline-flex rounded-md shadow-sm" role="group">
+        <div className="flex space-x-2" role="group">
           <button
             type="button"
             onClick={() => setActiveTab('profile')}
-            className={`px-6 py-2 text-sm font-medium rounded-l-lg ${
+            className={`px-6 py-2 text-sm font-medium rounded-lg ${
               activeTab === 'profile'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-100'
@@ -40,13 +37,24 @@ function ProfilePage() {
           <button
             type="button"
             onClick={() => setActiveTab('password')}
-            className={`px-6 py-2 text-sm font-medium rounded-r-lg ${
+            className={`px-6 py-2 text-sm font-medium rounded-lg ${
               activeTab === 'password'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-100'
             } border border-gray-200 transition-colors`}
           >
             Изменить пароль
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('delete')}
+            className={`px-6 py-2 text-sm font-medium rounded-lg ${
+              activeTab === 'delete'
+                ? 'bg-red-600 text-white'
+                : 'bg-white text-gray-700 hover:bg-gray-100'
+            } border border-gray-200 transition-colors`}
+          >
+            Удалить аккаунт
           </button>
         </div>
       </div>
@@ -55,7 +63,13 @@ function ProfilePage() {
         className="flex justify-center items-center"
         style={{ minHeight: 'calc(100vh - 350px)' }}
       >
-        {activeTab === 'profile' ? <ProfileEdit /> : <PasswordChange />}
+        {activeTab === 'profile' ? (
+          <ProfileEdit />
+        ) : activeTab === 'password' ? (
+          <PasswordChange />
+        ) : (
+          <DeleteAccount />
+        )}
       </div>
     </div>
   );
