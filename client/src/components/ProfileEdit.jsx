@@ -36,7 +36,7 @@ function ProfileEdit() {
             }
             // eslint-disable-next-line no-unused-vars
           } catch (parseError) {
-            // Ничего не делаем, продолжаем попытку загрузки с сервера
+            console.error('Ошибка при парсинге данных пользователя из localStorage');
           }
         }
 
