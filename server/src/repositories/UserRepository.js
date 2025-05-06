@@ -1,4 +1,6 @@
 import UserModel from '../models/UserModel.js';
+import bcrypt from 'bcrypt';
+import logger from '../utils/logger.js';
 
 /**
  * Преобразование MongoDB документа в объект с обычными полями.

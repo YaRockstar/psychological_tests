@@ -1,6 +1,8 @@
 import * as UserRepository from '../repositories/UserRepository.js';
 import { NotValidError } from '../errors/NotValidError.js';
 import { normalizeUserData, validateUser } from '../utils/UserUtils.js';
+import bcrypt from 'bcrypt';
+import { NotFoundError } from '../errors/NotFoundError.js';
 
 /**
  * Создание нового пользователя.
@@ -77,24 +79,38 @@ export async function updateUser(id, userData) {
 }
 
 /**
- * Обновление пароля пользователя.
- * @param {string} id - ID пользователя.
- * @param {string} hashedPassword - Хешированный пароль для сохранения.
- * @returns {Promise<Object|null>} - Обновленный пользователь или null.
+ * Обновление пароля пользователя
+ * @param {string} id - ID пользователя
+ * @param {string} newPassword - Новый пароль
+ * @returns {Promise<Object>} - Обновленный объект пользователя
+ * @throws {NotValidError} - Если не указан ID или пароль
+ * @throws {NotFoundError} - Если пользователь не найден
  */
-export async function updatePassword(id, hashedPassword) {
+export async function updatePassword(id, newPassword) {
   if (!id) {
     throw new NotValidError('ID не указан');
   }
 
-  if (!hashedPassword) {
-    throw new NotValidError('Пароль не указан');
+  if (!newPassword) {
+    throw new NotValidError('Новый пароль не указан');
   }
 
-  const updatedUser = await UserRepository.updateUser(id, { password: hashedPassword });
+  // Валидация нового пароля
+  if (newPassword.length < 8) {
+    throw new NotValidError('Пароль должен содержать не менее 8 символов');
+  }
 
-  if (updatedUser) {
-    delete updatedUser.password;
+  // Хеширование нового пароля
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+  // Обновление пароля
+  const updatedUser = await UserRepository.updateUser(id, {
+    password: hashedPassword,
+  });
+
+  if (!updatedUser) {
+    throw new NotFoundError('Пользователь не найден');
   }
 
   return updatedUser;

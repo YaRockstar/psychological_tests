@@ -4,7 +4,6 @@ import * as UserService from '../services/UserService.js';
 import { HttpStatusCode } from '../utils/HttpStatusCode.js';
 import config from '../config/config.js';
 import { validateUser } from '../utils/UserUtils.js';
-import * as UserRepository from '../repositories/UserRepository.js';
 import logger from '../utils/logger.js';
 
 /**
