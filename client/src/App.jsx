@@ -1,11 +1,11 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Layout from './components/Layout';
-import HomePage from './components/HomePage';
-import LoginForm from './components/LoginForm';
-import RegistrationForm from './components/RegistrationForm';
-import ProfilePage from './components/ProfilePage';
 import './App.css';
+import HomePage from './components/HomePage';
+import Layout from './components/Layout';
+import LoginForm from './components/LoginForm';
+import ProfilePage from './components/ProfilePage';
+import RegistrationForm from './components/RegistrationForm';
 
 function App() {
   return (

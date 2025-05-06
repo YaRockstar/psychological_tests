@@ -1,8 +1,8 @@
-import * as UserRepository from '../repositories/UserRepository.js';
-import { NotValidError } from '../errors/NotValidError.js';
-import { normalizeUserData, validateUser } from '../utils/UserUtils.js';
 import bcrypt from 'bcrypt';
 import { NotFoundError } from '../errors/NotFoundError.js';
+import { NotValidError } from '../errors/NotValidError.js';
+import * as UserRepository from '../repositories/UserRepository.js';
+import { normalizeUserData, validateUser } from '../utils/UserUtils.js';
 
 /**
  * Создание нового пользователя.

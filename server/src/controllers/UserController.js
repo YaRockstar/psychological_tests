@@ -1,10 +1,10 @@
-import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import * as UserService from '../services/UserService.js';
-import { HttpStatusCode } from '../utils/HttpStatusCode.js';
+import jwt from 'jsonwebtoken';
 import config from '../config/config.js';
-import { validateUser } from '../utils/UserUtils.js';
+import { HttpStatusCode } from '../utils/HttpStatusCode.js';
 import logger from '../utils/logger.js';
+import { validateUser } from '../utils/UserUtils.js';
+import * as UserService from '../services/UserService.js';
 
 /**
  * Регистрация нового пользователя.

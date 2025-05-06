@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import ProfileEdit from './ProfileEdit';
-import PasswordChange from './PasswordChange';
 import DeleteAccount from './DeleteAccount';
+import PasswordChange from './PasswordChange';
+import ProfileEdit from './ProfileEdit';
 
 function ProfilePage() {
   const [isAuthenticated, setIsAuthenticated] = useState(true);

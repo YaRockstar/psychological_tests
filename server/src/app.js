@@ -1,10 +1,10 @@
-import express from 'express';
 import cors from 'cors';
+import express from 'express';
 import mongoose from 'mongoose';
 import config from './config/config.js';
-import logger from './utils/logger.js';
-import userRouter from './routes/UserRouter.js';
 import authRouter from './routes/AuthRouter.js';
+import userRouter from './routes/UserRouter.js';
+import logger from './utils/logger.js';
 
 const app = express();
 
