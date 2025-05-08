@@ -33,4 +33,16 @@ export const userAPI = {
   deleteAccount: () => api.delete('/api/users/current'),
 };
 
+export const testAPI = {
+  createTest: testData => api.post('/api/tests', testData),
+  getTests: (params = {}) => api.get('/api/tests', { params }),
+  getTestById: id => api.get(`/api/tests/${id}`),
+  updateTest: (id, testData) => api.put(`/api/tests/${id}`, testData),
+  deleteTest: id => api.delete(`/api/tests/${id}`),
+  getAuthorTests: () => api.get('/api/tests/author'),
+  publishTest: id => api.post(`/api/tests/${id}/publish`),
+  unpublishTest: id => api.post(`/api/tests/${id}/unpublish`),
+  getTestQuestions: id => api.get(`/api/tests/${id}/questions`),
+};
+
 export default api;
