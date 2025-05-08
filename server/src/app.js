@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import config from './config/config.js';
 import authRouter from './routes/AuthRouter.js';
 import userRouter from './routes/UserRouter.js';
+import testRouter from './routes/TestRouter.js';
 import logger from './utils/logger.js';
 
 const app = express();
@@ -19,6 +20,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/api/auth', authRouter);
 app.use('/api/users', userRouter);
+app.use('/api/tests', testRouter);
 
 /**
  * Запуск сервера и подключение к базе данных.

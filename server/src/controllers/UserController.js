@@ -287,9 +287,6 @@ export async function updatePassword(req, res) {
     logger.debug(`Обновление пароля: для пользователя id=${userId}`);
 
     if (!currentPassword || !newPassword) {
-      logger.warn(
-        `Попытка обновления пароля без указания текущего или нового пароля. UserId: ${userId}`
-      );
       logger.debug('Обновление пароля: отсутствуют обязательные поля');
       return res.status(HttpStatusCode.BAD_REQUEST).json({
         message: 'Текущий и новый пароль обязательны',
@@ -299,71 +296,40 @@ export async function updatePassword(req, res) {
     const user = await UserService.getUserById(userId, true);
 
     if (!user) {
-      logger.warn(
-        `Попытка обновления пароля для несуществующего пользователя. UserId: ${userId}`
-      );
       logger.debug(`Обновление пароля: пользователь с id=${userId} не найден`);
       return res.status(HttpStatusCode.NOT_FOUND).json({
         message: 'Пользователь не найден',
       });
     }
-    logger.debug('Обновление пароля: пользователь найден');
 
     const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
     if (!isPasswordValid) {
-      logger.warn(`Неверный текущий пароль при попытке обновления. UserId: ${userId}`);
       logger.debug('Обновление пароля: неверный текущий пароль');
       return res.status(HttpStatusCode.BAD_REQUEST).json({
         message: 'Текущий пароль неверный',
       });
     }
-    logger.debug('Обновление пароля: текущий пароль верный');
 
     const isSamePassword = await bcrypt.compare(newPassword, user.password);
     if (isSamePassword) {
-      logger.warn(`Попытка установить тот же пароль. UserId: ${userId}`);
       logger.debug('Обновление пароля: новый пароль совпадает с текущим');
       return res.status(HttpStatusCode.BAD_REQUEST).json({
         message: 'Новый пароль должен отличаться от текущего',
       });
     }
-    logger.debug('Обновление пароля: новый пароль отличается от текущего');
 
-    if (newPassword.length < 8) {
-      logger.warn(`Новый пароль недостаточной длины. UserId: ${userId}`);
-      logger.debug('Обновление пароля: недостаточная длина пароля');
-      return res.status(HttpStatusCode.BAD_REQUEST).json({
-        message: 'Пароль должен содержать не менее 8 символов',
-      });
-    }
+    await UserService.updatePassword(userId, newPassword);
+    logger.debug('Обновление пароля: пароль успешно обновлен');
 
-    const passwordRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_\-#^])[A-Za-z\d@$!%*?&_\-#^]{8,}$/;
-    if (!passwordRegex.test(newPassword)) {
-      logger.warn(
-        `Новый пароль не соответствует требованиям безопасности. UserId: ${userId}`
-      );
-      logger.debug('Обновление пароля: пароль не соответствует требованиям безопасности');
-      return res.status(HttpStatusCode.BAD_REQUEST).json({
-        message:
-          'Пароль должен содержать заглавные и строчные буквы, цифры и специальные символы',
-      });
-    }
-    logger.debug('Обновление пароля: новый пароль прошел валидацию');
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-    logger.debug('Обновление пароля: новый пароль хэширован');
-
-    await UserService.updatePassword(userId, hashedPassword);
-    logger.debug('Обновление пароля: пароль успешно обновлен в базе данных');
-
-    logger.info(`Пароль успешно обновлен для пользователя. UserId: ${userId}`);
     res.status(HttpStatusCode.OK).json({ message: 'Пароль успешно обновлен' });
-    logger.debug('Обновление пароля: успешный ответ отправлен клиенту');
   } catch (error) {
-    logger.error(`Ошибка при обновлении пароля: ${error.message}`);
-    logger.debug(`Обновление пароля: необработанная ошибка - ${error.message}`);
+    logger.debug(`Обновление пароля: ошибка - ${error.message}`);
+    if (error.name === 'NotValidError') {
+      return res.status(HttpStatusCode.BAD_REQUEST).json({
+        message: error.message,
+      });
+    }
+
     res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
       message: 'Ошибка при обновлении пароля',
     });
