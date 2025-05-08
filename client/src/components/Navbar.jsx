@@ -3,50 +3,26 @@ import { Link, useLocation } from 'react-router-dom';
 import { userAPI } from '../utils/api';
 
 function Navbar() {
-  const [userName, setUserName] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState('');
   const [userRole, setUserRole] = useState('');
   const location = useLocation();
 
-  // Функция для загрузки актуальных данных пользователя с сервера
-  const loadUserData = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        const response = await userAPI.getCurrentUser();
-        if (response.data) {
-          const userData = response.data;
-          setUserName(userData.firstName || '');
-          setUserRole(userData.role || '');
-
-          // Обновляем данные в localStorage
-          localStorage.setItem('userData', JSON.stringify(userData));
-
-          setIsLoggedIn(true);
-        }
-      }
-    } catch (error) {
-      console.error('Ошибка при получении данных пользователя:', error);
-      // Если токен недействительный или сессия истекла - выходим
-      if (error.response && error.response.status === 401) {
-        handleLogout();
-      }
-    }
-  };
-
   // Проверяем авторизацию пользователя при загрузке страницы и смене роута
   useEffect(() => {
+    // Проверяем наличие токена
     const token = localStorage.getItem('token');
 
     if (token) {
-      // Сначала устанавливаем данные из localStorage для быстрого отображения
+      setIsLoggedIn(true);
+
+      // Сначала пробуем загрузить данные из localStorage
       const userData = localStorage.getItem('userData');
       if (userData) {
         try {
-          const user = JSON.parse(userData);
-          setUserName(user.firstName || '');
-          setUserRole(user.role || '');
-          setIsLoggedIn(true);
+          const parsedData = JSON.parse(userData);
+          setUserName(parsedData.name);
+          setUserRole(parsedData.role);
         } catch (error) {
           console.error(
             'Ошибка при парсинге данных пользователя из localStorage:',
@@ -54,6 +30,36 @@ function Navbar() {
           );
         }
       }
+
+      // Функция для загрузки данных пользователя с сервера
+      const loadUserData = async () => {
+        try {
+          const response = await userAPI.getCurrentUser();
+          const user = response.data;
+
+          setUserName(user.firstName || '');
+          setUserRole(user.role || '');
+
+          // Сохраняем данные в localStorage для ускорения загрузки в будущем
+          localStorage.setItem(
+            'userData',
+            JSON.stringify({
+              name: user.firstName,
+              role: user.role,
+            })
+          );
+        } catch (error) {
+          console.error('Ошибка при получении данных пользователя:', error);
+          if (error.response && error.response.status === 401) {
+            // Если токен недействителен, удаляем его
+            localStorage.removeItem('token');
+            localStorage.removeItem('userData');
+            setIsLoggedIn(false);
+            setUserName('');
+            setUserRole('');
+          }
+        }
+      };
 
       // Затем загружаем актуальные данные с сервера
       loadUserData();

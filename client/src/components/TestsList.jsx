@@ -14,53 +14,53 @@ function TestsList() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
+    const fetchTests = async () => {
+      try {
+        console.log(
+          'Загрузка тестов с фильтрами:',
+          filters,
+          'и поисковым запросом:',
+          searchTerm
+        );
+        setLoading(true);
+
+        // Формируем параметры запроса
+        const params = { ...filters, search: searchTerm };
+        // Удаляем пустые параметры
+        Object.keys(params).forEach(key => !params[key] && delete params[key]);
+
+        console.log('Итоговые параметры запроса:', params);
+
+        const response = await testAPI.getTests(params);
+        console.log('Получено тестов:', response.data.length);
+        setTests(response.data);
+        setError('');
+      } catch (error) {
+        console.error('Ошибка при загрузке тестов:', error);
+
+        if (error.response) {
+          console.error('Статус ошибки:', error.response.status);
+          console.error('Данные ошибки:', error.response.data);
+          setError(
+            error.response.data.message ||
+              `Ошибка загрузки тестов. Код: ${error.response.status}`
+          );
+        } else if (error.request) {
+          console.error('Нет ответа от сервера', error.request);
+          setError('Нет ответа от сервера. Проверьте подключение к интернету.');
+        } else {
+          console.error('Ошибка запроса:', error.message);
+          setError(`Ошибка загрузки: ${error.message}`);
+        }
+
+        setTests([]); // Сбрасываем предыдущие результаты при ошибке
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchTests();
   }, [filters, searchTerm]);
-
-  const fetchTests = async () => {
-    try {
-      console.log(
-        'Загрузка тестов с фильтрами:',
-        filters,
-        'и поисковым запросом:',
-        searchTerm
-      );
-      setLoading(true);
-
-      // Формируем параметры запроса
-      const params = { ...filters, search: searchTerm };
-      // Удаляем пустые параметры
-      Object.keys(params).forEach(key => !params[key] && delete params[key]);
-
-      console.log('Итоговые параметры запроса:', params);
-
-      const response = await testAPI.getTests(params);
-      console.log('Получено тестов:', response.data.length);
-      setTests(response.data);
-      setError('');
-    } catch (error) {
-      console.error('Ошибка при загрузке тестов:', error);
-
-      if (error.response) {
-        console.error('Статус ошибки:', error.response.status);
-        console.error('Данные ошибки:', error.response.data);
-        setError(
-          error.response.data.message ||
-            `Ошибка загрузки тестов. Код: ${error.response.status}`
-        );
-      } else if (error.request) {
-        console.error('Нет ответа от сервера', error.request);
-        setError('Нет ответа от сервера. Проверьте подключение к интернету.');
-      } else {
-        console.error('Ошибка запроса:', error.message);
-        setError(`Ошибка загрузки: ${error.message}`);
-      }
-
-      setTests([]); // Сбрасываем предыдущие результаты при ошибке
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleFilterChange = e => {
     const { name, value } = e.target;

@@ -27,14 +27,16 @@ function TestEdit() {
   const [questions, setQuestions] = useState([]);
   const [results, setResults] = useState([]);
 
-  // Проверяем авторизацию и роль пользователя
+  // Проверка доступа и загрузка данных
   useEffect(() => {
+    // Проверяем авторизацию
     const token = localStorage.getItem('token');
     if (!token) {
       setIsAuthenticated(false);
       return;
     }
 
+    // Проверяем роль пользователя
     const userData = localStorage.getItem('userData');
     if (userData) {
       try {
@@ -44,6 +46,39 @@ function TestEdit() {
           setError('Доступ разрешен только авторам тестов');
         } else {
           setIsAuthor(true);
+
+          // Загрузка данных теста
+          const loadTestData = async () => {
+            setIsLoading(true);
+            try {
+              // Получаем данные теста
+              const testResponse = await testAPI.getTestById(testId);
+              const testWithQuestions = await testAPI.getTestWithQuestions(testId);
+
+              // Устанавливаем данные теста
+              setTestData(testResponse.data);
+
+              // Устанавливаем вопросы и результаты
+              if (testWithQuestions.data.questions) {
+                setQuestions(testWithQuestions.data.questions);
+              }
+
+              // Получаем результаты теста
+              const resultsResponse = await resultAPI.getResultsByTestId(testId);
+              if (resultsResponse.data) {
+                setResults(resultsResponse.data);
+              }
+            } catch (error) {
+              if (error.response && error.response.data) {
+                setError(error.response.data.message || 'Ошибка загрузки данных теста');
+              } else {
+                setError('Не удалось загрузить данные теста. Попробуйте позже.');
+              }
+            } finally {
+              setIsLoading(false);
+            }
+          };
+
           loadTestData();
         }
       } catch {
@@ -52,38 +87,6 @@ function TestEdit() {
       }
     }
   }, [testId]);
-
-  // Загрузка данных теста
-  const loadTestData = async () => {
-    setIsLoading(true);
-    try {
-      // Получаем данные теста
-      const testResponse = await testAPI.getTestById(testId);
-      const testWithQuestions = await testAPI.getTestWithQuestions(testId);
-
-      // Устанавливаем данные теста
-      setTestData(testResponse.data);
-
-      // Устанавливаем вопросы и результаты
-      if (testWithQuestions.data.questions) {
-        setQuestions(testWithQuestions.data.questions);
-      }
-
-      // Получаем результаты теста
-      const resultsResponse = await resultAPI.getResultsByTestId(testId);
-      if (resultsResponse.data) {
-        setResults(resultsResponse.data);
-      }
-    } catch (error) {
-      if (error.response && error.response.data) {
-        setError(error.response.data.message || 'Ошибка загрузки данных теста');
-      } else {
-        setError('Не удалось загрузить данные теста. Попробуйте позже.');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Обработчики изменения данных теста
   const handleInputChange = e => {
