@@ -6,6 +6,9 @@ import Layout from './components/Layout';
 import LoginForm from './components/LoginForm';
 import ProfilePage from './components/ProfilePage';
 import RegistrationForm from './components/RegistrationForm';
+import TestCreate from './components/TestCreate';
+import AuthorTests from './components/AuthorTests';
+import TestEditor from './components/TestEditor';
 
 function App() {
   return (
@@ -52,6 +55,30 @@ function App() {
           element={
             <Layout>
               <ProfilePage />
+            </Layout>
+          }
+        />
+        <Route
+          path="/tests/create"
+          element={
+            <Layout>
+              <TestCreate />
+            </Layout>
+          }
+        />
+        <Route
+          path="/tests/my"
+          element={
+            <Layout>
+              <AuthorTests />
+            </Layout>
+          }
+        />
+        <Route
+          path="/test/:id/edit"
+          element={
+            <Layout>
+              <TestEditor />
             </Layout>
           }
         />
