@@ -308,6 +308,19 @@ export async function searchTests(keyword, options = {}) {
 }
 
 /**
+ * Увеличение счетчика прохождений теста.
+ * @param {string} id - ID теста.
+ * @returns {Promise<Object>} - Обновленный тест.
+ */
+export async function incrementTestAttempts(id) {
+  if (!id) {
+    throw new NotValidError('ID теста не указан');
+  }
+
+  return await TestRepository.incrementTestAttempts(id);
+}
+
+/**
  * Увеличение счетчика популярности теста.
  * @param {string} id - ID теста.
  * @returns {Promise<Object>} - Обновленный тест.

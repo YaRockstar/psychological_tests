@@ -16,6 +16,7 @@ function TestCreate() {
     category: '',
     testType: 'personality',
     difficulty: 'medium',
+    imageUrl: '',
     timeLimit: 0,
     passingScore: 0,
     isPublic: false,
@@ -231,6 +232,28 @@ function TestCreate() {
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="Например: Психология, Образование"
             />
+          </div>
+
+          {/* URL изображения */}
+          <div className="md:col-span-2">
+            <label
+              className="block text-gray-700 text-sm font-bold mb-2"
+              htmlFor="imageUrl"
+            >
+              URL изображения для теста
+            </label>
+            <input
+              id="imageUrl"
+              type="url"
+              name="imageUrl"
+              value={testData.imageUrl}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="https://example.com/image.jpg"
+            />
+            <p className="mt-1 text-sm text-gray-500">
+              Укажите URL-адрес изображения для отображения на карточке теста
+            </p>
           </div>
 
           {/* Тип теста */}

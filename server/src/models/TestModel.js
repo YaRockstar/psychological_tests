@@ -20,8 +20,9 @@ const TestSchema = new mongoose.Schema(
       enum: ['easy', 'medium', 'hard'],
       default: 'medium',
     },
-    timeLimit: { type: Number, default: 0 }, // 0 означает без ограничения
-    passingScore: { type: Number, default: 0 }, // 0 означает без проходного балла
+    imageUrl: { type: String, default: '' },
+    timeLimit: { type: Number, default: 0 },
+    passingScore: { type: Number, default: 0 },
     isPublic: { type: Boolean, default: false },
     tags: [{ type: String }],
     authorId: {

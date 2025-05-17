@@ -2,6 +2,33 @@ import { HttpStatusCode } from '../utils/HttpStatusCode.js';
 import logger from '../utils/logger.js';
 import * as TestService from '../services/TestService.js';
 import * as QuestionService from '../services/QuestionService.js';
+import * as TestAttemptService from '../services/TestAttemptService.js';
+import { NotFoundError, NotValidError, ForbiddenError } from '../utils/errors.js';
+
+/**
+ * Обработчик ошибок сервиса.
+ * @param {Error} error - Объект ошибки.
+ * @param {Object} res - Объект ответа Express.
+ */
+const handleServiceError = (error, res) => {
+  logger.debug(`Ошибка сервиса: ${error.message}`);
+
+  if (error instanceof NotValidError) {
+    return res.status(HttpStatusCode.BAD_REQUEST).json({ message: error.message });
+  }
+
+  if (error instanceof NotFoundError) {
+    return res.status(HttpStatusCode.NOT_FOUND).json({ message: error.message });
+  }
+
+  if (error instanceof ForbiddenError) {
+    return res.status(HttpStatusCode.FORBIDDEN).json({ message: error.message });
+  }
+
+  res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
+    message: 'Внутренняя ошибка сервера',
+  });
+};
 
 /**
  * Создание нового теста.
@@ -347,3 +374,74 @@ export async function getTestQuestions(req, res) {
     });
   }
 }
+
+/**
+ * Получает тест с его вопросами и вариантами ответов.
+ * @param {Object} req - Объект запроса Express.
+ * @param {Object} res - Объект ответа Express.
+ */
+export const getTestWithQuestions = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const test = await TestService.getTestById(id);
+    const questions = await QuestionService.getQuestionsByTestId(id);
+
+    // Формируем объект ответа с тестом и вопросами
+    const testWithQuestions = {
+      ...(test && typeof test.toObject === 'function' ? test.toObject() : test),
+      questions: questions,
+    };
+
+    res.status(200).json(testWithQuestions);
+  } catch (error) {
+    handleServiceError(error, res);
+  }
+};
+
+/**
+ * Начинает попытку прохождения теста.
+ * @param {Object} req - Объект запроса Express.
+ * @param {Object} res - Объект ответа Express.
+ */
+export const startTestAttempt = async (req, res) => {
+  try {
+    const { id: testId } = req.params;
+    const userId = req.user._id;
+
+    // Проверяем, есть ли уже активная попытка прохождения этого теста
+    const userAttempts = await TestAttemptService.getUserTestAttempts(userId);
+    const activeAttempt = userAttempts.find(
+      attempt =>
+        attempt.test._id.toString() === testId.toString() && attempt.status === 'started'
+    );
+
+    let testAttempt;
+    if (activeAttempt) {
+      // Если уже есть активная попытка, используем ее
+      testAttempt = activeAttempt;
+      logger.debug(
+        `Найдена существующая попытка (id=${activeAttempt._id}) для теста ${testId} и пользователя ${userId}`
+      );
+    } else {
+      // Если нет активной попытки, создаем новую
+      const attemptData = {
+        test: testId,
+        user: userId,
+        startedAt: new Date(),
+      };
+
+      testAttempt = await TestAttemptService.createTestAttempt(attemptData);
+
+      // Увеличиваем счетчик прохождений теста
+      await TestService.incrementTestAttempts(testId);
+
+      logger.debug(
+        `Создана новая попытка (id=${testAttempt._id}) для теста ${testId} и пользователя ${userId}`
+      );
+    }
+
+    res.status(201).json(testAttempt);
+  } catch (error) {
+    handleServiceError(error, res);
+  }
+};

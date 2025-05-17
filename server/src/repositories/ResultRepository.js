@@ -27,16 +27,6 @@ export async function createResult(resultData) {
 }
 
 /**
- * Создание нескольких результатов.
- * @param {Array<Object>} resultsData - Массив данных результатов.
- * @returns {Promise<Array<Object>>} - Массив созданных результатов.
- */
-export async function createMultipleResults(resultsData) {
-  const created = await ResultModel.insertMany(resultsData);
-  return created.map(transformDocument);
-}
-
-/**
  * Получение результата по ID.
  * @param {string} id - ID результата.
  * @returns {Promise<Object|null>} - Найденный результат или null.
@@ -57,7 +47,7 @@ export async function getResultsByTestId(testId) {
 }
 
 /**
- * Получение результата по ID теста и диапазону баллов.
+ * Получение результата по баллам.
  * @param {string} testId - ID теста.
  * @param {number} score - Балл, полученный за тест.
  * @returns {Promise<Object|null>} - Найденный результат или null.

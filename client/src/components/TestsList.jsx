@@ -31,7 +31,8 @@ function TestsList() {
 
         console.log('Итоговые параметры запроса:', params);
 
-        const response = await testAPI.getTests(params);
+        // Используем метод getPublicTests вместо getTests, так как getTests требует роли админа
+        const response = await testAPI.getPublicTests(params);
         console.log('Получено тестов:', response.data.length);
         setTests(response.data);
         setError('');
@@ -106,6 +107,29 @@ function TestsList() {
       hard: 'Сложный',
     };
     return difficulties[difficulty] || difficulty;
+  };
+
+  const getTestImage = test => {
+    // Если у теста есть собственная ссылка на изображение, используем её
+    if (test.imageUrl && test.imageUrl.trim() !== '') {
+      return test.imageUrl;
+    }
+
+    const defaultImages = {
+      personality:
+        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?ixlib=rb-4.0.3',
+      iq: 'https://images.unsplash.com/photo-1456406644174-8ddd4cd52a06?ixlib=rb-4.0.3',
+      emotional:
+        'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?ixlib=rb-4.0.3',
+      aptitude:
+        'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3',
+      career: 'https://images.unsplash.com/photo-1553272725-086100aecf5e?ixlib=rb-4.0.3',
+    };
+
+    return (
+      defaultImages[test.testType] ||
+      'https://images.unsplash.com/photo-1580894742597-87bc8789db3d?ixlib=rb-4.0.3'
+    );
   };
 
   return (
@@ -228,6 +252,13 @@ function TestsList() {
               key={test._id}
               className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
             >
+              <div className="h-40 bg-gray-200 overflow-hidden">
+                <img
+                  src={getTestImage(test)}
+                  alt={test.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
               <div className="p-5">
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">{test.title}</h3>
                 <p className="text-gray-600 mb-4 line-clamp-3">{test.description}</p>

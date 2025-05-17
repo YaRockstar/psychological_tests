@@ -8,7 +8,10 @@ import ProfilePage from './components/ProfilePage';
 import RegistrationForm from './components/RegistrationForm';
 import TestCreate from './components/TestCreate';
 import AuthorTests from './components/AuthorTests';
-import TestEditor from './components/TestEditor';
+import TestEdit from './components/TestEdit';
+import TestsList from './components/TestsList';
+import TestTaking from './components/TestTaking';
+import TestResults from './components/TestResults';
 
 function App() {
   return (
@@ -75,10 +78,34 @@ function App() {
           }
         />
         <Route
-          path="/test/:id/edit"
+          path="/test/:testId/edit"
           element={
             <Layout>
-              <TestEditor />
+              <TestEdit />
+            </Layout>
+          }
+        />
+        <Route
+          path="/tests"
+          element={
+            <Layout>
+              <TestsList />
+            </Layout>
+          }
+        />
+        <Route
+          path="/test/:testId"
+          element={
+            <Layout>
+              <TestTaking />
+            </Layout>
+          }
+        />
+        <Route
+          path="/test-results/:attemptId"
+          element={
+            <Layout>
+              <TestResults />
             </Layout>
           }
         />

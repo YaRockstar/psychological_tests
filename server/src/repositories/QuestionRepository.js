@@ -57,19 +57,17 @@ export async function getQuestionWithOptions(id) {
  * @returns {Promise<Array<Object>>} - Список вопросов.
  */
 export async function getQuestionsByTestId(testId) {
-  const questions = await QuestionModel.find({ testId: testId })
-    .sort({ order: 1 })
-    .exec();
+  const questions = await QuestionModel.find({ test: testId }).sort({ order: 1 }).exec();
   return questions.map(transformDocument);
 }
 
 /**
- * Получение вопросов с вариантами ответов по ID теста.
+ * Получение вопросов с вариантами ответов для теста.
  * @param {string} testId - ID теста.
  * @returns {Promise<Array<Object>>} - Список вопросов с вариантами ответов.
  */
 export async function getQuestionsWithOptionsByTestId(testId) {
-  const questions = await QuestionModel.find({ testId: testId })
+  const questions = await QuestionModel.find({ test: testId })
     .sort({ order: 1 })
     .populate({
       path: 'options',
@@ -155,6 +153,6 @@ export async function deleteQuestion(id) {
  * @returns {Promise<number>} - Количество удаленных вопросов.
  */
 export async function deleteQuestionsByTestId(testId) {
-  const result = await QuestionModel.deleteMany({ testId: testId }).exec();
+  const result = await QuestionModel.deleteMany({ test: testId }).exec();
   return result.deletedCount || 0;
 }

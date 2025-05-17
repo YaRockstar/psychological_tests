@@ -5,43 +5,78 @@ import TestAttemptModel from '../models/TestAttemptModel.js';
  * @param {Object} document - MongoDB документ.
  * @returns {Object} - Объект с данными попытки прохождения теста.
  */
-function transformDocument(document) {
+const transformDocument = document => {
   if (!document) return null;
 
   const attemptObject = document.toObject ? document.toObject() : document;
   const { _id, ...rest } = attemptObject;
-  return {
+
+  console.log(`[TestAttemptRepository] transformDocument: исходные данные:`, {
+    id: _id.toString(),
+    status: rest.status,
+    completedAt: rest.completedAt,
+    timeSpent: rest.timeSpent,
+  });
+
+  const result = {
     ...rest,
     _id: _id.toString(),
   };
-}
+
+  const MAX_TEST_TIME = 7200;
+
+  if (result.timeSpent === undefined && result.completedAt && result.startedAt) {
+    const completedTime = new Date(result.completedAt);
+    const startedTime = new Date(result.startedAt);
+    let calculatedTime = Math.floor((completedTime - startedTime) / 1000);
+
+    if (calculatedTime > MAX_TEST_TIME) {
+      console.log(
+        `[TestAttemptRepository] Вычисленное время слишком большое: ${calculatedTime} сек. Ограничено до ${MAX_TEST_TIME} сек.`
+      );
+      calculatedTime = MAX_TEST_TIME;
+    }
+
+    result.timeSpent = calculatedTime;
+    console.log(`[TestAttemptRepository] Вычислили timeSpent: ${result.timeSpent}`);
+  } else if (result.timeSpent !== undefined) {
+    if (result.timeSpent > MAX_TEST_TIME) {
+      console.log(
+        `[TestAttemptRepository] Существующее timeSpent слишком большое: ${result.timeSpent} сек. Ограничено до ${MAX_TEST_TIME} сек.`
+      );
+      result.timeSpent = MAX_TEST_TIME;
+    }
+  }
+
+  return result;
+};
 
 /**
  * Создание новой попытки прохождения теста.
  * @param {Object} attemptData - Данные попытки.
  * @returns {Promise<Object>} - Созданная попытка.
  */
-export async function createTestAttempt(attemptData) {
+export const createTestAttempt = async attemptData => {
   const created = await TestAttemptModel.create(attemptData);
   return transformDocument(created);
-}
+};
 
 /**
  * Получение попытки прохождения теста по ID.
  * @param {string} id - ID попытки.
  * @returns {Promise<Object|null>} - Найденная попытка или null.
  */
-export async function getTestAttemptById(id) {
+export const getTestAttemptById = async id => {
   const attempt = await TestAttemptModel.findById(id).exec();
   return transformDocument(attempt);
-}
+};
 
 /**
  * Получение попытки прохождения теста с детальной информацией.
  * @param {string} id - ID попытки.
  * @returns {Promise<Object|null>} - Найденная попытка с деталями или null.
  */
-export async function getTestAttemptWithDetails(id) {
+export const getTestAttemptWithDetails = async id => {
   const attempt = await TestAttemptModel.findById(id)
     .populate('test')
     .populate('user')
@@ -55,7 +90,7 @@ export async function getTestAttemptWithDetails(id) {
     .populate('answers.selectedOptions')
     .exec();
   return transformDocument(attempt);
-}
+};
 
 /**
  * Получение попыток прохождения тестов пользователя.
@@ -66,7 +101,7 @@ export async function getTestAttemptWithDetails(id) {
  * @param {Object} [options.sort] - Параметры сортировки.
  * @returns {Promise<Array<Object>>} - Список попыток.
  */
-export async function getUserTestAttempts(userId, options = {}) {
+export const getUserTestAttempts = async (userId, options = {}) => {
   const { limit, skip, sort = { createdAt: -1 } } = options;
 
   const query = TestAttemptModel.find({ user: userId })
@@ -79,7 +114,7 @@ export async function getUserTestAttempts(userId, options = {}) {
 
   const attempts = await query.exec();
   return attempts.map(transformDocument);
-}
+};
 
 /**
  * Получение попыток прохождения конкретного теста.
@@ -90,7 +125,7 @@ export async function getUserTestAttempts(userId, options = {}) {
  * @param {Object} [options.sort] - Параметры сортировки.
  * @returns {Promise<Array<Object>>} - Список попыток.
  */
-export async function getTestAttemptsByTestId(testId, options = {}) {
+export const getTestAttemptsByTestId = async (testId, options = {}) => {
   const { limit, skip, sort = { createdAt: -1 } } = options;
 
   const query = TestAttemptModel.find({ test: testId, status: 'completed' }).populate(
@@ -104,7 +139,7 @@ export async function getTestAttemptsByTestId(testId, options = {}) {
 
   const attempts = await query.exec();
   return attempts.map(transformDocument);
-}
+};
 
 /**
  * Получение попыток прохождения тестов автора.
@@ -115,7 +150,7 @@ export async function getTestAttemptsByTestId(testId, options = {}) {
  * @param {number} [options.skip] - Количество пропускаемых результатов.
  * @returns {Promise<Array<Object>>} - Список попыток.
  */
-export async function getAuthorTestsAttempts(authorId, testIds, options = {}) {
+export const getAuthorTestsAttempts = async (authorId, testIds, options = {}) => {
   const { limit, skip } = options;
 
   if (!testIds || testIds.length === 0) {
@@ -135,7 +170,7 @@ export async function getAuthorTestsAttempts(authorId, testIds, options = {}) {
 
   const attempts = await query.exec();
   return attempts.map(transformDocument);
-}
+};
 
 /**
  * Обновление попытки прохождения теста.
@@ -143,12 +178,12 @@ export async function getAuthorTestsAttempts(authorId, testIds, options = {}) {
  * @param {Object} attemptData - Данные для обновления.
  * @returns {Promise<Object|null>} - Обновленная попытка или null.
  */
-export async function updateTestAttempt(id, attemptData) {
+export const updateTestAttempt = async (id, attemptData) => {
   const attempt = await TestAttemptModel.findByIdAndUpdate(id, attemptData, {
     new: true,
   }).exec();
   return transformDocument(attempt);
-}
+};
 
 /**
  * Добавление ответа на вопрос к попытке прохождения теста.
@@ -156,14 +191,14 @@ export async function updateTestAttempt(id, attemptData) {
  * @param {Object} answer - Ответ на вопрос.
  * @returns {Promise<Object|null>} - Обновленная попытка или null.
  */
-export async function addAnswerToAttempt(attemptId, answer) {
+export const addAnswerToAttempt = async (attemptId, answer) => {
   const attempt = await TestAttemptModel.findByIdAndUpdate(
     attemptId,
     { $push: { answers: answer } },
     { new: true }
   ).exec();
   return transformDocument(attempt);
-}
+};
 
 /**
  * Обновление статуса попытки прохождения теста на "завершен".
@@ -171,33 +206,59 @@ export async function addAnswerToAttempt(attemptId, answer) {
  * @param {Object} completionData - Данные о завершении теста.
  * @returns {Promise<Object|null>} - Обновленная попытка или null.
  */
-export async function completeTestAttempt(id, completionData) {
-  const { score, result, resultDetails, timeSpent, rating, feedback } = completionData;
+export const completeTestAttempt = async (id, completionData) => {
+  const {
+    score,
+    result,
+    resultDetails,
+    timeSpent,
+    rating,
+    feedback,
+    status,
+    completedAt,
+  } = completionData;
+
+  console.log(`[TestAttemptRepository] Завершение попытки ID=${id}`);
 
   const updateData = {
-    status: 'completed',
-    completedAt: new Date(),
-    timeSpent,
+    status: status || 'completed',
+    completedAt: completedAt || new Date(),
   };
 
+  if (timeSpent !== undefined) updateData.timeSpent = timeSpent;
   if (score !== undefined) updateData.score = score;
   if (result) updateData.result = result;
   if (resultDetails) updateData.resultDetails = resultDetails;
   if (rating) updateData.rating = rating;
   if (feedback) updateData.feedback = feedback;
 
+  console.log(`[TestAttemptRepository] Данные для обновления:`, updateData);
+
   const attempt = await TestAttemptModel.findByIdAndUpdate(id, updateData, {
     new: true,
   }).exec();
+
+  console.log(
+    `[TestAttemptRepository] Обновлена попытка:`,
+    attempt
+      ? {
+          id: attempt._id,
+          status: attempt.status,
+          completedAt: attempt.completedAt,
+          timeSpent: attempt.timeSpent,
+        }
+      : 'Не найдена'
+  );
+
   return transformDocument(attempt);
-}
+};
 
 /**
  * Обновление статуса попытки прохождения теста на "заброшен".
  * @param {string} id - ID попытки.
  * @returns {Promise<Object|null>} - Обновленная попытка или null.
  */
-export async function abandonTestAttempt(id) {
+export const abandonTestAttempt = async id => {
   const attempt = await TestAttemptModel.findByIdAndUpdate(
     id,
     {
@@ -207,24 +268,24 @@ export async function abandonTestAttempt(id) {
     { new: true }
   ).exec();
   return transformDocument(attempt);
-}
+};
 
 /**
  * Удаление попытки прохождения теста.
  * @param {string} id - ID попытки.
  * @returns {Promise<boolean>} - Результат удаления.
  */
-export async function deleteTestAttempt(id) {
+export const deleteTestAttempt = async id => {
   const result = await TestAttemptModel.findByIdAndDelete(id).exec();
   return Boolean(result);
-}
+};
 
 /**
  * Удаление всех попыток прохождения теста.
  * @param {string} testId - ID теста.
  * @returns {Promise<number>} - Количество удаленных попыток.
  */
-export async function deleteTestAttemptsByTestId(testId) {
+export const deleteTestAttemptsByTestId = async testId => {
   const result = await TestAttemptModel.deleteMany({ test: testId }).exec();
   return result.deletedCount || 0;
-}
+};
