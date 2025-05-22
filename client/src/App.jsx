@@ -12,13 +12,15 @@ import TestEdit from './components/TestEdit';
 import TestsList from './components/TestsList';
 import TestTaking from './components/TestTaking';
 import TestResults from './components/TestResults';
+import AuthRedirect from './components/AuthRedirect';
 
 function App() {
   return (
     <Router>
       <Routes>
+        <Route path="/" element={<AuthRedirect />} />
         <Route
-          path="/"
+          path="/home"
           element={
             <Layout>
               <div className="w-full px-4 sm:px-6 lg:px-8">

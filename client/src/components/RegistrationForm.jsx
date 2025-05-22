@@ -97,7 +97,7 @@ function RegistrationForm() {
           localStorage.setItem('userData', JSON.stringify(response.data.user));
         }
 
-        window.location.href = '/';
+        window.location.href = '/home';
       }
     } catch (error) {
       if (error.response && error.response.data) {
