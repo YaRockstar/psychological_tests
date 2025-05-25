@@ -338,16 +338,6 @@ function TestResults() {
           </div>
         )}
 
-        <div className="p-6 border-t border-gray-200">
-          <h3 className="text-xl font-semibold mb-4">Рекомендации</h3>
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <p className="text-gray-700">
-              {result?.recommendations ||
-                'На основе вашего результата мы рекомендуем ознакомиться с дополнительными материалами по теме теста.'}
-            </p>
-          </div>
-        </div>
-
         <div className="p-6 bg-gray-50 border-t border-gray-200">
           <div className="flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-4">
             {test && test._id && (

@@ -11,7 +11,7 @@ import * as UserService from '../services/UserService.js';
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function register(req, res) {
+export const register = async (req, res) => {
   logger.debug('Запрос на регистрацию нового пользователя');
   try {
     const userData = req.body;
@@ -74,14 +74,14 @@ export async function register(req, res) {
       message: 'Ошибка при регистрации пользователя',
     });
   }
-}
+};
 
 /**
  * Аутентификация пользователя.
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function login(req, res) {
+export const login = async (req, res) => {
   try {
     const { email, password, role } = req.body;
     logger.debug(`Вход: попытка входа, email=${email}, role=${role || 'не указана'}`);
@@ -138,14 +138,14 @@ export async function login(req, res) {
       message: 'Ошибка при входе в систему',
     });
   }
-}
+};
 
 /**
  * Получение данных текущего пользователя.
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function getCurrentUser(req, res) {
+export const getCurrentUser = async (req, res) => {
   logger.debug('Запрос на получение данных текущего пользователя');
   try {
     const userId = req.user._id;
@@ -171,14 +171,14 @@ export async function getCurrentUser(req, res) {
       message: 'Ошибка при получении данных пользователя',
     });
   }
-}
+};
 
 /**
  * Получение пользователя по ID.
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function getUserById(req, res) {
+export const getUserById = async (req, res) => {
   const userId = req.params._id;
   logger.debug(`Запрос на получение пользователя по ID: ${userId}`);
 
@@ -199,14 +199,14 @@ export async function getUserById(req, res) {
       message: 'Ошибка при получении данных пользователя',
     });
   }
-}
+};
 
 /**
  * Обновление данных текущего пользователя.
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function updateCurrentUser(req, res) {
+export const updateCurrentUser = async (req, res) => {
   try {
     const userEmail = req.user.email;
     const userData = req.body;
@@ -272,14 +272,14 @@ export async function updateCurrentUser(req, res) {
       message: 'Ошибка при обновлении данных пользователя',
     });
   }
-}
+};
 
 /**
  * Обновление пароля текущего пользователя.
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function updatePassword(req, res) {
+export const updatePassword = async (req, res) => {
   logger.debug('Запрос на обновление пароля пользователя');
   try {
     const userId = req.user._id;
@@ -334,14 +334,14 @@ export async function updatePassword(req, res) {
       message: 'Ошибка при обновлении пароля',
     });
   }
-}
+};
 
 /**
  * Удаление текущего пользователя.
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function deleteCurrentUser(req, res) {
+export const deleteCurrentUser = async (req, res) => {
   try {
     const userId = req.user._id;
     const result = await UserService.deleteUser(userId);
@@ -353,4 +353,4 @@ export async function deleteCurrentUser(req, res) {
   } catch (error) {
     res.status(500).json({ message: 'Ошибка при удалении аккаунта' });
   }
-}
+};

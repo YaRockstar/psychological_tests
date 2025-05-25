@@ -139,6 +139,7 @@ export const completeTestAttempt = async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user._id;
+    const { timeSpent: clientTimeSpent } = req.body;
 
     // Получаем данные попытки для проверки доступа
     const attempt = await TestAttemptService.getTestAttemptById(id);
@@ -160,17 +161,27 @@ export const completeTestAttempt = async (req, res) => {
     }
 
     console.log(`[TestAttemptController] Завершение попытки теста ID=${id}`);
-    console.log(`[TestAttemptController] Время начала: ${attempt.startedAt}`);
 
-    // Завершаем попытку и рассчитываем время прохождения
+    // Получаем время прохождения теста
+    let timeSpent;
+
+    // Если клиент передал время прохождения, используем его
+    if (clientTimeSpent !== undefined) {
+      timeSpent = clientTimeSpent;
+      console.log(
+        `[TestAttemptController] Используем время прохождения от клиента: ${timeSpent} секунд`
+      );
+    } else {
+      // Иначе рассчитываем время по стандартной схеме
+      const now = new Date();
+      const startTime = new Date(attempt.startedAt);
+      timeSpent = Math.floor((now - startTime) / 1000); // в секундах
+      console.log(
+        `[TestAttemptController] Рассчитанное на сервере время прохождения: ${timeSpent} секунд`
+      );
+    }
+
     const now = new Date();
-    const startTime = new Date(attempt.startedAt);
-    const timeSpent = Math.floor((now - startTime) / 1000); // в секундах
-
-    console.log(`[TestAttemptController] Текущее время: ${now}`);
-    console.log(
-      `[TestAttemptController] Вычисленное время прохождения: ${timeSpent} секунд`
-    );
 
     // Завершаем попытку, передавая время прохождения
     const completedAttempt = await TestAttemptService.completeTestAttempt(id, {

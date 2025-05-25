@@ -15,6 +15,9 @@ function TestTaking() {
   const [timeLeft, setTimeLeft] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [answerStatus, setAnswerStatus] = useState('');
+  const [testStarted, setTestStarted] = useState(false);
+  const [startTime, setStartTime] = useState(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
 
   // Проверка авторизации и загрузка теста
   useEffect(() => {
@@ -104,9 +107,25 @@ function TestTaking() {
     loadTest();
   }, [testId]);
 
+  // Запуск таймера отслеживания времени прохождения
+  useEffect(() => {
+    let timer;
+    if (testStarted && startTime) {
+      timer = setInterval(() => {
+        const now = new Date();
+        const elapsed = Math.floor((now - startTime) / 1000);
+        setElapsedTime(elapsed);
+      }, 1000);
+    }
+
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [testStarted, startTime]);
+
   // Таймер для теста с ограничением времени
   useEffect(() => {
-    if (timeLeft === null || loading || !testAttempt) return;
+    if (timeLeft === null || loading || !testAttempt || !testStarted) return;
 
     if (timeLeft <= 0) {
       handleSubmitTest();
@@ -118,7 +137,13 @@ function TestTaking() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, loading, testAttempt]);
+  }, [timeLeft, loading, testAttempt, testStarted]);
+
+  // Функция запуска теста
+  const handleStartTest = () => {
+    setStartTime(new Date());
+    setTestStarted(true);
+  };
 
   // Форматирование оставшегося времени
   const formatTime = seconds => {
@@ -231,8 +256,12 @@ function TestTaking() {
         localStorage.setItem('lastTestType', test.testType || '');
       }
 
-      // Завершаем попытку теста
-      await testAPI.completeTestAttempt(testAttempt._id);
+      // Вычисляем точное время прохождения
+      const actualTimeSpent = Math.floor((new Date() - startTime) / 1000);
+      console.log('Фактическое время прохождения (секунд):', actualTimeSpent);
+
+      // Завершаем попытку теста с передачей реального времени
+      await testAPI.completeTestAttempt(testAttempt._id, { timeSpent: actualTimeSpent });
 
       // Перенаправляем пользователя на страницу результатов
       navigate(`/test-results/${testAttempt._id}`);
@@ -272,9 +301,13 @@ function TestTaking() {
     if (currentQuestion && currentQuestion.userAnswer) {
       // Сохраняем ответ
       handleAnswer(currentQuestion._id, currentQuestion.userAnswer);
+      // Переходим к следующему вопросу
+      goToNextQuestion();
+    } else {
+      // Показываем уведомление, что нужно выбрать ответ
+      setAnswerStatus('Пожалуйста, выберите ответ перед тем, как продолжить');
+      setTimeout(() => setAnswerStatus(''), 3000);
     }
-    // Переходим к следующему вопросу
-    goToNextQuestion();
   };
 
   // Отображение текущего вопроса
@@ -419,6 +452,63 @@ function TestTaking() {
     );
   }
 
+  // Отображение экрана с информацией о тесте перед началом
+  if (!testStarted) {
+    return (
+      <div className="w-full max-w-4xl mx-auto py-8 px-4">
+        <div className="bg-white p-6 rounded-lg shadow-md">
+          <h1 className="text-3xl font-bold text-gray-800 mb-6">{test.title}</h1>
+
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-3">Описание теста</h2>
+            <p className="text-gray-700">{test.description}</p>
+          </div>
+
+          {test.timeLimit > 0 && (
+            <div className="mb-6 p-4 bg-blue-50 rounded-md">
+              <p className="text-blue-800">
+                <span className="font-medium">Ограничение по времени:</span>{' '}
+                {test.timeLimit} минут
+              </p>
+            </div>
+          )}
+
+          <div className="mb-6">
+            <p className="text-gray-600">Количество вопросов: {questions.length}</p>
+            {test.passingScore > 0 && (
+              <p className="text-gray-600">Проходной балл: {test.passingScore}</p>
+            )}
+            <p className="text-gray-600">Категория: {test.category}</p>
+            <p className="text-gray-600">
+              Сложность:{' '}
+              {test.difficulty === 'easy'
+                ? 'Легкий'
+                : test.difficulty === 'medium'
+                ? 'Средний'
+                : 'Сложный'}
+            </p>
+          </div>
+
+          <div className="flex justify-between mt-8">
+            <button
+              onClick={() => navigate('/tests')}
+              className="px-5 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+            >
+              Выйти из теста
+            </button>
+
+            <button
+              onClick={handleStartTest}
+              className="px-5 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+            >
+              Начать прохождение
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-4xl mx-auto py-8 px-4">
       <div className="mb-6">
@@ -431,11 +521,16 @@ function TestTaking() {
         <div className="text-sm text-gray-600">
           Вопрос {currentQuestionIndex + 1} из {questions.length}
         </div>
-        {timeLeft !== null && (
+        <div className="flex gap-4">
           <div className="text-sm font-medium">
-            Осталось времени: {formatTime(timeLeft)}
+            Время прохождения: {formatTime(elapsedTime)}
           </div>
-        )}
+          {timeLeft !== null && (
+            <div className="text-sm font-medium">
+              Осталось времени: {formatTime(timeLeft)}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Индикатор прогресса */}
@@ -471,16 +566,21 @@ function TestTaking() {
         {currentQuestionIndex < questions.length - 1 ? (
           <button
             onClick={handleNextWithSave}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+            disabled={!questions[currentQuestionIndex]?.userAnswer}
+            className={`px-4 py-2 rounded-md text-white ${
+              questions[currentQuestionIndex]?.userAnswer
+                ? 'bg-indigo-600 hover:bg-indigo-700'
+                : 'bg-indigo-400 cursor-not-allowed'
+            }`}
           >
             Далее
           </button>
         ) : (
           <button
             onClick={handleSubmitTest}
-            disabled={isSubmitting}
+            disabled={isSubmitting || !questions[currentQuestionIndex]?.userAnswer}
             className={`px-6 py-2 rounded-md text-white ${
-              isSubmitting
+              isSubmitting || !questions[currentQuestionIndex]?.userAnswer
                 ? 'bg-indigo-400 cursor-not-allowed'
                 : 'bg-indigo-600 hover:bg-indigo-700'
             }`}
