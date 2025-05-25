@@ -12,6 +12,7 @@ import TestEdit from './components/TestEdit';
 import TestsList from './components/TestsList';
 import TestTaking from './components/TestTaking';
 import TestResults from './components/TestResults';
+import TestHistory from './components/TestHistory';
 import AuthRedirect from './components/AuthRedirect';
 
 function App() {
@@ -76,6 +77,14 @@ function App() {
           element={
             <Layout>
               <AuthorTests />
+            </Layout>
+          }
+        />
+        <Route
+          path="/tests/history"
+          element={
+            <Layout>
+              <TestHistory />
             </Layout>
           }
         />

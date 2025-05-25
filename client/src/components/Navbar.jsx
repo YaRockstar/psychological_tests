@@ -100,6 +100,12 @@ function Navbar() {
               >
                 Мой профиль
               </Link>
+              <Link
+                to="/tests/history"
+                className="text-indigo-600 hover:text-indigo-800 font-medium"
+              >
+                Пройденные тесты
+              </Link>
               {userRole === 'author' && (
                 <>
                   <Link

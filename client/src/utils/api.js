@@ -79,6 +79,7 @@ export const testAPI = {
 
   // Методы для получения результатов
   getTestAttempts: () => api.get('/api/test-attempts'),
+  getUserTestAttempts: () => api.get('/api/test-attempts'),
   getTestAttemptDetails: attemptId => api.get(`/api/test-attempts/${attemptId}`),
   getTestResultById: resultId => api.get(`/api/results/${resultId}`),
   getUserTestResults: params => api.get('/api/results/user', { params }),

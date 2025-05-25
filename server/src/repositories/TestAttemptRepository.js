@@ -105,7 +105,7 @@ export const getUserTestAttempts = async (userId, options = {}) => {
   const { limit, skip, sort = { createdAt: -1 } } = options;
 
   const query = TestAttemptModel.find({ user: userId })
-    .populate('test', 'title category testType')
+    .populate('test', 'title description category testType difficulty imageUrl')
     .populate('result', 'title');
 
   if (limit) query.limit(limit);
@@ -113,7 +113,18 @@ export const getUserTestAttempts = async (userId, options = {}) => {
   if (sort) query.sort(sort);
 
   const attempts = await query.exec();
-  return attempts.map(transformDocument);
+
+  // Трансформируем документы и добавляем название теста
+  return attempts.map(attempt => {
+    const transformedAttempt = transformDocument(attempt);
+
+    // Добавляем название теста напрямую в объект попытки для удобства использования на клиенте
+    if (attempt.test && attempt.test.title) {
+      transformedAttempt.testTitle = attempt.test.title;
+    }
+
+    return transformedAttempt;
+  });
 };
 
 /**
