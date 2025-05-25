@@ -7,9 +7,13 @@ function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isAuthor, setIsAuthor] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    const checkUserRole = () => {
+    const checkUserStatus = () => {
+      const token = localStorage.getItem('token');
+      setIsLoggedIn(!!token); // Устанавливаем состояние авторизации
+
       const userData = localStorage.getItem('userData');
       if (userData) {
         try {
@@ -21,7 +25,7 @@ function HomePage() {
       }
     };
 
-    checkUserRole();
+    checkUserStatus();
   }, []);
 
   useEffect(() => {
@@ -150,6 +154,26 @@ function HomePage() {
     </>
   );
 
+  // Блок призыва к регистрации
+  const renderCallToAction = () => {
+    if (isLoggedIn) return null; // Не показываем блок авторизованным пользователям
+
+    return (
+      <div className="text-center bg-indigo-600 text-white rounded-lg p-8">
+        <h2 className="text-3xl font-bold mb-4">Готовы начать своё путешествие?</h2>
+        <p className="text-xl mb-8 max-w-2xl mx-auto">
+          Зарегистрируйтесь сейчас и получите доступ ко всем нашим тестам и материалам
+        </p>
+        <Link
+          to="/register"
+          className="inline-block px-6 py-3 bg-white text-indigo-600 rounded-lg font-bold hover:bg-gray-100 transition"
+        >
+          Создать аккаунт
+        </Link>
+      </div>
+    );
+  };
+
   return (
     <>
       {/* Основной контент */}
@@ -198,19 +222,8 @@ function HomePage() {
           </div>
         </div>
 
-        {/* Блок призыва к действию */}
-        <div className="text-center bg-indigo-600 text-white rounded-lg p-8">
-          <h2 className="text-3xl font-bold mb-4">Готовы начать своё путешествие?</h2>
-          <p className="text-xl mb-8 max-w-2xl mx-auto">
-            Зарегистрируйтесь сейчас и получите доступ ко всем нашим тестам и материалам
-          </p>
-          <Link
-            to="/register"
-            className="inline-block px-6 py-3 bg-white text-indigo-600 rounded-lg font-bold hover:bg-gray-100 transition"
-          >
-            Создать аккаунт
-          </Link>
-        </div>
+        {/* Блок призыва к действию - только для неавторизованных пользователей */}
+        {renderCallToAction()}
       </div>
     </>
   );
