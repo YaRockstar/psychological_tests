@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, Navigate } from 'react-router-dom';
-import { testAPI } from '../utils/api';
+import { testAPI, userAPI } from '../utils/api';
 
 function TestResults() {
   const { attemptId } = useParams();
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [userRole, setUserRole] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [testAttempt, setTestAttempt] = useState(null);
@@ -18,6 +19,45 @@ function TestResults() {
       setIsAuthenticated(false);
       return;
     }
+
+    // Проверяем роль пользователя
+    const checkUserRole = async () => {
+      try {
+        // Сначала пытаемся получить роль из localStorage
+        const userData = localStorage.getItem('userData');
+        if (userData) {
+          try {
+            const parsedData = JSON.parse(userData);
+            if (parsedData.role === 'author') {
+              setUserRole('author');
+              setLoading(false);
+              return; // Выходим из функции, если пользователь - автор
+            }
+          } catch (error) {
+            console.error('Ошибка при парсинге данных пользователя:', error);
+          }
+        }
+
+        // Затем проверяем на сервере
+        const response = await userAPI.getCurrentUser();
+        setUserRole(response.data.role || '');
+
+        // Если пользователь не автор, загружаем результаты
+        if (response.data.role !== 'author') {
+          await loadResults();
+        } else {
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Ошибка при получении данных пользователя:', err);
+        if (err.response && err.response.status === 401) {
+          setIsAuthenticated(false);
+        } else {
+          setError('Ошибка при проверке прав доступа. Пожалуйста, попробуйте позже.');
+          setLoading(false);
+        }
+      }
+    };
 
     const loadResults = async () => {
       try {
@@ -188,7 +228,7 @@ function TestResults() {
       }
     };
 
-    loadResults();
+    checkUserRole();
   }, [attemptId]);
 
   // Форматирование даты
@@ -218,8 +258,14 @@ function TestResults() {
     }
   };
 
+  // Если пользователь не авторизован, перенаправляем на страницу входа
   if (!isAuthenticated) {
     return <Navigate to="/login" />;
+  }
+
+  // Если пользователь - автор, перенаправляем на главную страницу
+  if (userRole === 'author') {
+    return <Navigate to="/home" />;
   }
 
   if (loading) {

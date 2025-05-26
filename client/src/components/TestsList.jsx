@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { testAPI } from '../utils/api';
+import { Link, Navigate } from 'react-router-dom';
+import { testAPI, userAPI } from '../utils/api';
 
 function TestsList() {
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
+  const [userRole, setUserRole] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
   const [filters, setFilters] = useState({
     category: '',
     testType: '',
@@ -14,6 +16,41 @@ function TestsList() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
+    // Проверяем, авторизован ли пользователь
+    const token = localStorage.getItem('token');
+    if (token) {
+      setIsLoggedIn(true);
+
+      // Получаем роль пользователя
+      const fetchUserRole = async () => {
+        try {
+          const userData = localStorage.getItem('userData');
+          if (userData) {
+            try {
+              const parsedData = JSON.parse(userData);
+              setUserRole(parsedData.role || '');
+            } catch (error) {
+              console.error('Ошибка при парсинге данных пользователя:', error);
+            }
+          }
+
+          // Дополнительно проверяем на сервере
+          const response = await userAPI.getCurrentUser();
+          setUserRole(response.data.role || '');
+        } catch (err) {
+          console.error('Ошибка при получении данных пользователя:', err);
+          if (err.response && err.response.status === 401) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('userData');
+            setIsLoggedIn(false);
+          }
+        }
+      };
+
+      fetchUserRole();
+    }
+
+    // Загружаем список тестов
     const fetchTests = async () => {
       try {
         console.log(
@@ -35,7 +72,7 @@ function TestsList() {
         const response = await testAPI.getPublicTests(params);
         console.log('Получено тестов:', response.data.length);
         setTests(response.data);
-        setError('');
+        setError(null);
       } catch (error) {
         console.error('Ошибка при загрузке тестов:', error);
 
@@ -62,6 +99,11 @@ function TestsList() {
 
     fetchTests();
   }, [filters, searchTerm]);
+
+  // Если пользователь - автор, перенаправляем на главную страницу
+  if (isLoggedIn && userRole === 'author') {
+    return <Navigate to="/home" />;
+  }
 
   const handleFilterChange = e => {
     const { name, value } = e.target;

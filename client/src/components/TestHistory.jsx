@@ -1,19 +1,55 @@
 import React, { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { testAPI } from '../utils/api';
+import { testAPI, userAPI } from '../utils/api';
 
 function TestHistory() {
   const [testAttempts, setTestAttempts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
+  const [userRole, setUserRole] = useState('');
 
   useEffect(() => {
     // Проверяем авторизацию
-    if (!localStorage.getItem('token')) {
+    const token = localStorage.getItem('token');
+    if (!token) {
       setIsLoggedIn(false);
       return;
     }
+
+    setIsLoggedIn(true);
+
+    // Получаем роль пользователя
+    const fetchUserData = async () => {
+      try {
+        // Сначала пробуем загрузить из localStorage
+        const userData = localStorage.getItem('userData');
+        if (userData) {
+          try {
+            const parsedData = JSON.parse(userData);
+            setUserRole(parsedData.role || '');
+          } catch (error) {
+            console.error('Ошибка при парсинге данных пользователя:', error);
+          }
+        }
+
+        // Затем проверяем на сервере
+        const response = await userAPI.getCurrentUser();
+        setUserRole(response.data.role || '');
+
+        // Если пользователь не автор, загружаем историю тестов
+        if (response.data.role !== 'author') {
+          await fetchTestHistory();
+        }
+      } catch (err) {
+        console.error('Ошибка при получении данных пользователя:', err);
+        if (err.response && err.response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('userData');
+          setIsLoggedIn(false);
+        }
+      }
+    };
 
     // Загружаем историю прохождения тестов
     const fetchTestHistory = async () => {
@@ -46,6 +82,7 @@ function TestHistory() {
         // Если ошибка авторизации, перенаправляем на страницу входа
         if (err.response && err.response.status === 401) {
           localStorage.removeItem('token');
+          localStorage.removeItem('userData');
           setIsLoggedIn(false);
         }
       } finally {
@@ -53,12 +90,17 @@ function TestHistory() {
       }
     };
 
-    fetchTestHistory();
+    fetchUserData();
   }, []);
 
   // Если пользователь не авторизован, перенаправляем на страницу входа
   if (!isLoggedIn) {
     return <Navigate to="/login" />;
+  }
+
+  // Если пользователь - автор, перенаправляем на главную страницу
+  if (userRole === 'author') {
+    return <Navigate to="/home" />;
   }
 
   // Функция для форматирования даты

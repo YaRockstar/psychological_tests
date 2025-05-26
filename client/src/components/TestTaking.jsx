@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
-import { testAPI } from '../utils/api';
+import { testAPI, userAPI } from '../utils/api';
 
 function TestTaking() {
   const { testId } = useParams();
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(true);
+  const [userRole, setUserRole] = useState('');
   const [test, setTest] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -26,6 +27,45 @@ function TestTaking() {
       setIsAuthenticated(false);
       return;
     }
+
+    // Проверяем роль пользователя
+    const checkUserRole = async () => {
+      try {
+        // Сначала пытаемся получить роль из localStorage
+        const userData = localStorage.getItem('userData');
+        if (userData) {
+          try {
+            const parsedData = JSON.parse(userData);
+            if (parsedData.role === 'author') {
+              setUserRole('author');
+              setLoading(false);
+              return; // Выходим из функции, если пользователь - автор
+            }
+          } catch (error) {
+            console.error('Ошибка при парсинге данных пользователя:', error);
+          }
+        }
+
+        // Затем проверяем на сервере
+        const response = await userAPI.getCurrentUser();
+        setUserRole(response.data.role || '');
+
+        // Если пользователь не автор, загружаем тест
+        if (response.data.role !== 'author') {
+          await loadTest();
+        } else {
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Ошибка при получении данных пользователя:', err);
+        if (err.response && err.response.status === 401) {
+          setIsAuthenticated(false);
+        } else {
+          setError('Ошибка при проверке прав доступа. Пожалуйста, попробуйте позже.');
+          setLoading(false);
+        }
+      }
+    };
 
     const loadTest = async () => {
       try {
@@ -104,7 +144,7 @@ function TestTaking() {
       }
     };
 
-    loadTest();
+    checkUserRole();
   }, [testId]);
 
   // Запуск таймера отслеживания времени прохождения
@@ -407,7 +447,11 @@ function TestTaking() {
   };
 
   if (!isAuthenticated) {
-    return <Navigate to="/login?redirect=tests" />;
+    return <Navigate to="/login" />;
+  }
+
+  if (userRole === 'author') {
+    return <Navigate to="/home" />;
   }
 
   if (loading) {
