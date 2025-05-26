@@ -261,7 +261,11 @@ function TestHistory() {
                     ) : attempt.status === 'started' ||
                       attempt.status === 'in-progress' ? (
                       <Link
-                        to={`/test/${attempt.test}`}
+                        to={`/test/${
+                          typeof attempt.test === 'object'
+                            ? attempt.test._id
+                            : attempt.test
+                        }`}
                         className="text-indigo-600 hover:text-indigo-900"
                       >
                         Продолжить

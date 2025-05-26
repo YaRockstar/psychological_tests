@@ -19,8 +19,8 @@ function TestTaking() {
   const [testStarted, setTestStarted] = useState(false);
   const [startTime, setStartTime] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [isContinuing, setIsContinuing] = useState(false);
 
-  // Проверка авторизации и загрузка теста
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -70,12 +70,16 @@ function TestTaking() {
     const loadTest = async () => {
       try {
         setLoading(true);
+        // Проверяем и преобразуем ID теста
+        const processedTestId = typeof testId === 'object' ? testId._id : testId;
+        console.log('Обработанный ID теста:', processedTestId);
+
         // Загружаем данные теста
-        const testResponse = await testAPI.getTestById(testId);
+        const testResponse = await testAPI.getTestById(processedTestId);
         setTest(testResponse.data);
 
         // Загружаем вопросы
-        const questionsResponse = await testAPI.getTestQuestions(testId);
+        const questionsResponse = await testAPI.getTestQuestions(processedTestId);
         setQuestions(questionsResponse.data || []);
 
         try {
@@ -85,15 +89,21 @@ function TestTaking() {
           // Проверяем, есть ли незавершенная попытка для этого теста
           const existingAttempt = attemptsResponse.data.find(
             attempt =>
-              attempt.test === testId && !attempt.completedAt && !attempt.abandonedAt
+              (attempt.test === processedTestId ||
+                (typeof attempt.test === 'object' &&
+                  attempt.test._id === processedTestId)) &&
+              !attempt.completedAt &&
+              !attempt.abandonedAt
           );
 
           if (existingAttempt) {
             console.log('Найдена существующая попытка теста:', existingAttempt._id);
             setTestAttempt(existingAttempt);
+            // Если есть незавершенная попытка, считаем что мы продолжаем тест
+            setIsContinuing(true);
           } else {
             // Создаем новую попытку прохождения теста
-            const attemptResponse = await testAPI.startTestAttempt(testId);
+            const attemptResponse = await testAPI.startTestAttempt(processedTestId);
             console.log('Создана новая попытка теста:', attemptResponse.data._id);
             setTestAttempt(attemptResponse.data);
           }
@@ -108,7 +118,7 @@ function TestTaking() {
 
             try {
               // Создаем новую попытку прохождения теста
-              const newAttemptResponse = await testAPI.startTestAttempt(testId);
+              const newAttemptResponse = await testAPI.startTestAttempt(processedTestId);
               setTestAttempt(newAttemptResponse.data);
             } catch (newAttemptError) {
               console.error('Ошибка при создании новой попытки:', newAttemptError);
@@ -146,6 +156,15 @@ function TestTaking() {
 
     checkUserRole();
   }, [testId]);
+
+  // Эффект для автоматического запуска теста при продолжении
+  useEffect(() => {
+    // Если мы продолжаем тест и все готово для его запуска
+    if (isContinuing && !loading && test && !testStarted && !error) {
+      // Автоматически запускаем тест
+      handleStartTest();
+    }
+  }, [isContinuing, loading, test, testStarted, error]);
 
   // Запуск таймера отслеживания времени прохождения
   useEffect(() => {
