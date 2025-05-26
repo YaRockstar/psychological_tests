@@ -1,10 +1,13 @@
 # Dependencies
 node_modules/
 **/node_modules/
+**/package-lock.json
 
 # Build
 **/dist/
 **/build/
+**/dist-ssr/
+**/*.local
 
 # Environment variables
 .env

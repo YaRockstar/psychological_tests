@@ -73,11 +73,13 @@ export const testAPI = {
   startTestAttempt: testId => api.post(`/api/tests/${testId}/attempt`),
   saveTestAnswer: (attemptId, answerData) =>
     api.post(`/api/test-attempts/${attemptId}/answer`, answerData),
-  completeTestAttempt: attemptId => api.post(`/api/test-attempts/${attemptId}/complete`),
+  completeTestAttempt: (attemptId, data = {}) =>
+    api.post(`/api/test-attempts/${attemptId}/complete`, data),
   abandonTestAttempt: attemptId => api.post(`/api/test-attempts/${attemptId}/abandon`),
 
   // Методы для получения результатов
   getTestAttempts: () => api.get('/api/test-attempts'),
+  getUserTestAttempts: () => api.get('/api/test-attempts'),
   getTestAttemptDetails: attemptId => api.get(`/api/test-attempts/${attemptId}`),
   getTestResultById: resultId => api.get(`/api/results/${resultId}`),
   getUserTestResults: params => api.get('/api/results/user', { params }),

@@ -86,9 +86,12 @@ function Navbar() {
           <Link to="/home" className="text-2xl font-bold text-indigo-600">
             PsyTests
           </Link>
-          <Link to="/tests" className="text-gray-700 hover:text-indigo-600 font-medium">
-            Все тесты
-          </Link>
+          {/* Ссылка на все тесты доступна только не-авторам */}
+          {(!isLoggedIn || userRole !== 'author') && (
+            <Link to="/tests" className="text-gray-700 hover:text-indigo-600 font-medium">
+              Все тесты
+            </Link>
+          )}
         </div>
         <div className="flex items-center space-x-6">
           {isLoggedIn ? (
@@ -100,6 +103,15 @@ function Navbar() {
               >
                 Мой профиль
               </Link>
+              {/* История тестов доступна только не-авторам */}
+              {userRole !== 'author' && (
+                <Link
+                  to="/tests/history"
+                  className="text-indigo-600 hover:text-indigo-800 font-medium"
+                >
+                  Пройденные тесты
+                </Link>
+              )}
               {userRole === 'author' && (
                 <>
                   <Link
