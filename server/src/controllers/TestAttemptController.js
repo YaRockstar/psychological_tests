@@ -121,8 +121,22 @@ export const saveTestAnswer = async (req, res) => {
       });
     }
 
+    // Преобразуем формат данных с клиента в формат для базы данных
+    // Клиент отправляет answer, а модель ожидает selectedOptions
+    const formattedAnswerData = {
+      question: answerData.question,
+      selectedOptions: answerData.answer,
+    };
+
+    console.log(
+      `[TestAttemptController] Сохранение ответа: ${JSON.stringify(formattedAnswerData)}`
+    );
+
     // Сохраняем ответ
-    const updatedAttempt = await TestAttemptService.addAnswerToAttempt(id, answerData);
+    const updatedAttempt = await TestAttemptService.addAnswerToAttempt(
+      id,
+      formattedAnswerData
+    );
 
     res.status(200).json(updatedAttempt);
   } catch (error) {
@@ -289,6 +303,34 @@ export const deleteTestAttempt = async (req, res) => {
 
     res.status(204).send();
   } catch (error) {
+    handleServiceError(error, res);
+  }
+};
+
+/**
+ * Очищает историю прохождения тестов пользователя.
+ * @param {Object} req - Объект запроса Express.
+ * @param {Object} res - Объект ответа Express.
+ */
+export const clearUserTestHistory = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    console.log(
+      `[TestAttemptController] Запрос на очистку истории тестов пользователя ${userId}`
+    );
+
+    const result = await TestAttemptService.clearUserTestAttempts(userId);
+
+    console.log(`[TestAttemptController] История тестов пользователя ${userId} очищена`);
+    console.log(`[TestAttemptController] Удалено ${result.deletedCount} записей`);
+
+    res.status(200).json({
+      success: true,
+      message: `История тестов успешно очищена. Удалено ${result.deletedCount} записей.`,
+    });
+  } catch (error) {
+    console.error('Ошибка при очистке истории тестов:', error);
     handleServiceError(error, res);
   }
 };

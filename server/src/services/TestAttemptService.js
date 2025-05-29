@@ -5,6 +5,7 @@ import { NotValidError } from '../errors/NotValidError.js';
 import { NotFoundError } from '../errors/NotFoundError.js';
 import TestAttemptModel from '../models/TestAttemptModel.js';
 import { validateId } from '../utils/validators.js';
+import mongoose from 'mongoose';
 
 /**
  * Валидация данных попытки прохождения теста.
@@ -124,7 +125,8 @@ export const getTestAttemptWithDetails = async attemptId => {
     })
     .populate({
       path: 'answers.question',
-      select: 'text type options correctAnswer',
+      select:
+        'text type options correctAnswer minScale maxScale minScaleLabel maxScaleLabel',
     })
     .populate('result')
     .exec();
@@ -148,18 +150,125 @@ export const getTestAttemptWithDetails = async attemptId => {
   // Рассчитываем дополнительные метрики для ответа
   const attemptObj = attempt.toObject();
 
+  // Получаем список ID вопросов, на которые ответил пользователь
+  const answeredQuestionIds = [];
+  if (attemptObj.answers && attemptObj.answers.length > 0) {
+    attemptObj.answers.forEach(answer => {
+      if (answer.question && answer.question._id) {
+        answeredQuestionIds.push(answer.question._id.toString());
+      }
+    });
+  }
+
+  // Загрузим только те вопросы теста, на которые ответил пользователь
+  try {
+    const QuestionModel = mongoose.model('Question');
+
+    // Получаем вопросы с их вариантами ответов
+    let questions = [];
+
+    if (answeredQuestionIds.length > 0) {
+      questions = await QuestionModel.find({
+        _id: { $in: answeredQuestionIds },
+      })
+        .populate('options')
+        .exec();
+
+      console.log(
+        `[TestAttemptService] Загружено ${questions.length} вопросов для попытки`
+      );
+    }
+
+    // Добавляем вопросы к ответу
+    attemptObj.questions = questions;
+
+    // Форматируем ответы пользователя для клиента
+    if (attemptObj.answers && attemptObj.answers.length > 0) {
+      attemptObj.answers = attemptObj.answers
+        .map(answer => {
+          // Находим связанный вопрос
+          const question = answer.question;
+
+          if (!question) {
+            console.log(`[TestAttemptService] Не найден вопрос для ответа ${answer._id}`);
+            return null;
+          }
+
+          // Преобразуем ответ в зависимости от типа вопроса
+          const formattedAnswer = {
+            _id: answer._id,
+            questionId: question._id,
+          };
+
+          switch (question.type) {
+            case 'single-choice':
+              // Выбранный вариант для вопроса с одним вариантом ответа
+              if (answer.selectedOptions && answer.selectedOptions.length > 0) {
+                formattedAnswer.selectedOptionId = answer.selectedOptions[0].toString();
+              }
+              break;
+
+            case 'multiple-choice':
+              // Выбранные варианты для вопроса с множественным выбором
+              if (answer.selectedOptions && answer.selectedOptions.length > 0) {
+                formattedAnswer.selectedOptionIds = answer.selectedOptions.map(opt =>
+                  typeof opt === 'object' ? opt._id.toString() : opt.toString()
+                );
+              } else {
+                formattedAnswer.selectedOptionIds = [];
+              }
+              break;
+
+            case 'text':
+              // Текстовый ответ
+              formattedAnswer.text = answer.textAnswer || '';
+              break;
+
+            case 'scale':
+              // Ответ со шкалой
+              formattedAnswer.scaleValue = answer.scaleValue || 0;
+              break;
+          }
+
+          return formattedAnswer;
+        })
+        .filter(answer => answer !== null); // Удаляем null-ответы
+    }
+  } catch (error) {
+    console.error('[TestAttemptService] Ошибка при загрузке вопросов:', error);
+  }
+
   // Подсчитываем общее число вопросов и правильных ответов
   const totalQuestions = attemptObj.answers ? attemptObj.answers.length : 0;
   let correctAnswers = 0;
 
-  if (attemptObj.answers && attemptObj.answers.length > 0) {
+  if (attemptObj.answers && attemptObj.answers.length > 0 && attemptObj.questions) {
     // Подсчитываем правильные ответы для тестов с правильными ответами
     correctAnswers = attemptObj.answers.filter(answer => {
-      const question = answer.question;
+      const question = attemptObj.questions.find(
+        q => q._id.toString() === answer.questionId.toString()
+      );
+
       if (!question || !question.correctAnswer) return false;
 
-      // Упрощенная проверка для демонстрации
-      return true;
+      // Проверка для вопросов с одним вариантом ответа
+      if (question.type === 'single-choice' && question.correctAnswer.optionId) {
+        return answer.selectedOptionId === question.correctAnswer.optionId.toString();
+      }
+
+      // Проверка для вопросов с несколькими вариантами ответа
+      if (question.type === 'multiple-choice' && question.correctAnswer.optionIds) {
+        const correctIds = question.correctAnswer.optionIds.map(id => id.toString());
+        const selectedIds = answer.selectedOptionIds || [];
+
+        // Проверяем совпадение выбранных и правильных вариантов
+        return (
+          correctIds.length === selectedIds.length &&
+          correctIds.every(id => selectedIds.includes(id))
+        );
+      }
+
+      return false;
     }).length;
   }
 
@@ -263,7 +372,54 @@ export async function calculateTestResult(attemptId) {
 
   // Проверяем, есть ли ответы
   if (!attempt.answers || attempt.answers.length === 0) {
-    throw new NotValidError('Нет ответов для вычисления результата');
+    console.log(
+      `[TestAttemptService] Нет ответов для расчета результата. Используем систему приоритетов.`
+    );
+
+    // Получаем все возможные результаты для этого теста
+    const testResults = await ResultRepository.getResultsByTestId(attempt.test);
+
+    // Проверяем, является ли тест MBTI
+    const mbtiTest = await TestRepository.getTestById(attempt.test);
+    const isMBTI = mbtiTest && mbtiTest.title.match(/MBTI|Майерс-Бриггс/i);
+
+    if (isMBTI) {
+      // Для MBTI при отсутствии ответов выбираем "Амбиверт"
+      const ambivertResult = testResults.find(r => r.title === 'Амбиверт');
+      if (ambivertResult) {
+        console.log(`[TestAttemptService] Тест MBTI без ответов - выбираем "Амбиверт"`);
+        return {
+          score: 0,
+          result: ambivertResult._id,
+          resultDetails: testResults.reduce((acc, r) => {
+            acc[r._id.toString()] = 0;
+            return acc;
+          }, {}),
+        };
+      }
+    }
+
+    // Для других тестов берем результат из середины диапазона
+    if (testResults.length > 0) {
+      const middleResultIndex = Math.floor(testResults.length / 2);
+      const middleResult = testResults[middleResultIndex];
+      console.log(
+        `[TestAttemptService] Тест без ответов - выбираем средний результат: ${middleResult.title}`
+      );
+
+      return {
+        score: 0,
+        result: middleResult._id,
+        resultDetails: testResults.reduce((acc, r) => {
+          acc[r._id.toString()] = 0;
+          return acc;
+        }, {}),
+      };
+    }
+
+    throw new NotValidError(
+      'Нет ответов для вычисления результата и невозможно определить результат по умолчанию'
+    );
   }
 
   let totalScore = 0;
@@ -297,14 +453,159 @@ export async function calculateTestResult(attemptId) {
     // Для текстовых вопросов нет числового значения
   }
 
+  // Если нет деталей результатов по весам, инициализируем их нулями
+  if (Object.keys(resultDetails).length === 0) {
+    const testResults = await ResultRepository.getResultsByTestId(attempt.test);
+    for (const result of testResults) {
+      resultDetails[result._id.toString()] = 0;
+    }
+    console.log(
+      `[TestAttemptService] Нет весов для результатов, инициализировали нулями`
+    );
+  }
+
   // Находим подходящий результат теста
   let resultId = null;
+
   try {
-    const testResult = await ResultRepository.getResultByScore(attempt.test, totalScore);
-    if (testResult) {
-      resultId = testResult._id;
+    // Сначала пробуем найти результат по весам в resultDetails, если они есть
+    if (Object.keys(resultDetails).length > 0) {
+      // Выводим все веса для отладки
+      console.log(`[TestAttemptService] Детали результатов (веса):`);
+      for (const [id, weight] of Object.entries(resultDetails)) {
+        const resultObj = await ResultRepository.getResultById(id);
+        const resultTitle = resultObj ? resultObj.title : 'Неизвестно';
+        console.log(`[TestAttemptService] - ${resultTitle}: ${weight}`);
+      }
+
+      // Находим результат с максимальным суммарным весом
+      let maxWeight = -1;
+      let maxWeightResultIds = [];
+
+      // Сначала находим максимальный вес
+      for (const [id, weight] of Object.entries(resultDetails)) {
+        if (weight > maxWeight) {
+          maxWeight = weight;
+          maxWeightResultIds = [id];
+        } else if (weight === maxWeight) {
+          maxWeightResultIds.push(id);
+        }
+      }
+
+      console.log(`[TestAttemptService] Максимальный вес: ${maxWeight}`);
+      console.log(
+        `[TestAttemptService] Количество результатов с максимальным весом: ${maxWeightResultIds.length}`
+      );
+
+      // Если есть несколько результатов с одинаковым весом (включая случай, когда все веса равны нулю)
+      if (maxWeightResultIds.length > 1 || maxWeight === 0) {
+        // Если максимальный вес равен нулю, значит все веса равны нулю, добавляем все результаты
+        if (maxWeight === 0) {
+          console.log(
+            `[TestAttemptService] Все веса равны нулю, включаем все результаты`
+          );
+          maxWeightResultIds = Object.keys(resultDetails);
+        }
+
+        // Запрашиваем все результаты из базы данных
+        const results = await ResultRepository.getResultsByIds(maxWeightResultIds);
+        console.log(
+          `[TestAttemptService] Результаты с равным весом: ${results
+            .map(r => r.title)
+            .join(', ')}`
+        );
+
+        // Если это тест MBTI и есть результаты с весами для "Амбиверт", "Интроверт" и "Экстраверт"
+        const mbtiTest = await TestRepository.getTestById(attempt.test);
+        if (mbtiTest && mbtiTest.title.match(/MBTI|Майерс-Бриггс/i)) {
+          console.log(`[TestAttemptService] Обнаружен тест MBTI, применяем приоритеты`);
+          // Приоритеты: 1. Амбиверт, 2. Умеренный тип, 3. Экстраверт/Интроверт
+          const priorityOrder = {
+            Амбиверт: 1,
+            'Умеренный экстраверт': 2,
+            'Умеренный интроверт': 2,
+            Экстраверт: 3,
+            Интроверт: 3,
+          };
+
+          // Сортируем результаты по приоритету
+          results.sort((a, b) => {
+            const priorityA = priorityOrder[a.title] || 10;
+            const priorityB = priorityOrder[b.title] || 10;
+            console.log(
+              `[TestAttemptService] Сравниваем: ${a.title} (${priorityA}) и ${b.title} (${priorityB})`
+            );
+            return priorityA - priorityB;
+          });
+
+          console.log(`[TestAttemptService] Результаты после сортировки по приоритету:`);
+          for (const result of results) {
+            console.log(
+              `[TestAttemptService] - ${result.title} (приоритет: ${
+                priorityOrder[result.title] || 'не определен'
+              })`
+            );
+          }
+
+          // Берем результат с наивысшим приоритетом
+          if (results.length > 0) {
+            resultId = results[0]._id;
+            console.log(
+              `[TestAttemptService] При равных весах выбран результат по приоритету: ${results[0].title}`
+            );
+          }
+        } else {
+          // Для других тестов просто берем первый результат
+          resultId = maxWeightResultIds[0];
+          const resultObj = await ResultRepository.getResultById(resultId);
+          console.log(
+            `[TestAttemptService] Выбран первый из нескольких результатов с одинаковым весом: ${
+              resultObj ? resultObj.title : resultId
+            }`
+          );
+        }
+      } else if (maxWeightResultIds.length === 1) {
+        // Если только один результат с максимальным весом
+        resultId = maxWeightResultIds[0];
+        const resultObj = await ResultRepository.getResultById(resultId);
+        console.log(
+          `[TestAttemptService] Результат определен по максимальному весу: ${
+            resultObj ? resultObj.title : resultId
+          } (вес: ${maxWeight})`
+        );
+      }
+    }
+
+    // Если не нашли по весам, используем классический метод по диапазону баллов
+    if (!resultId) {
+      const testResult = await ResultRepository.getResultByScore(
+        attempt.test,
+        totalScore
+      );
+      if (testResult) {
+        resultId = testResult._id;
+        console.log(
+          `[TestAttemptService] Результат определен по диапазону баллов: ${testResult.title}`
+        );
+      } else {
+        // Если не смогли найти по диапазону баллов, пытаемся выбрать результат "Амбиверт" для MBTI теста
+        const mbtiTest = await TestRepository.getTestById(attempt.test);
+        if (mbtiTest && mbtiTest.title.match(/MBTI|Майерс-Бриггс/i)) {
+          const results = await ResultRepository.getResultsByTestId(attempt.test);
+          const ambivertResult = results.find(r => r.title === 'Амбиверт');
+          if (ambivertResult) {
+            resultId = ambivertResult._id;
+            console.log(
+              `[TestAttemptService] Не найден результат по весу или баллам, выбран "Амбиверт" для теста MBTI`
+            );
+          }
+        }
+      }
     }
   } catch (error) {
+    console.error(
+      `[TestAttemptService] Ошибка при определении результата: ${error.message}`
+    );
     // Если результат не найден, оставляем resultId = null
   }
 
@@ -463,4 +764,32 @@ export async function deleteTestAttempt(id) {
   }
 
   return await TestAttemptRepository.deleteTestAttempt(id);
+}
+
+/**
+ * Удаление всех попыток прохождения тестов пользователя.
+ * @param {string} userId - ID пользователя.
+ * @returns {Promise<Object>} - Результат операции.
+ */
+export async function clearUserTestAttempts(userId) {
+  if (!userId) {
+    throw new NotValidError('ID пользователя не указан');
+  }
+
+  try {
+    // Удаляем все попытки прохождения тестов пользователя
+    const result = await TestAttemptModel.deleteMany({ user: userId });
+
+    console.log(`[TestAttemptService] Очищена история тестов пользователя ${userId}`);
+    console.log(`[TestAttemptService] Удалено ${result.deletedCount} записей`);
+
+    return {
+      success: true,
+      deletedCount: result.deletedCount,
+      message: `Удалено ${result.deletedCount} записей из истории тестов`,
+    };
+  } catch (error) {
+    console.error(`[TestAttemptService] Ошибка при очистке истории: ${error.message}`);
+    throw error;
+  }
 }
