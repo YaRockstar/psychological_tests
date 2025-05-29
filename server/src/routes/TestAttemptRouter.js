@@ -16,4 +16,7 @@ router.post('/:id/answer', authenticate, TestAttemptController.saveTestAnswer);
 router.post('/:id/complete', authenticate, TestAttemptController.completeTestAttempt);
 router.post('/:id/abandon', authenticate, TestAttemptController.abandonTestAttempt);
 
+// Маршрут для очистки истории тестов пользователя
+router.delete('/user/history', authenticate, TestAttemptController.clearUserTestHistory);
+
 export default router;

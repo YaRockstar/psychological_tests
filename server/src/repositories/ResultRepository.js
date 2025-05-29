@@ -110,3 +110,12 @@ export async function deleteResultsByTestId(testId) {
   const result = await ResultModel.deleteMany({ test: testId }).exec();
   return result.deletedCount || 0;
 }
+
+/**
+ * Получает результаты по массиву ID.
+ * @param {Array<string>} ids - Массив ID результатов.
+ * @returns {Promise<Array>} - Найденные результаты.
+ */
+export async function getResultsByIds(ids) {
+  return await ResultModel.find({ _id: { $in: ids } }).exec();
+}

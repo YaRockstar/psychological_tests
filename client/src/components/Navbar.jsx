@@ -112,7 +112,7 @@ function Navbar() {
                   Пройденные тесты
                 </Link>
               )}
-              {userRole === 'author' && (
+              {userRole === 'author' ? (
                 <>
                   <Link
                     to="/tests/my"
@@ -120,7 +120,20 @@ function Navbar() {
                   >
                     Мои тесты
                   </Link>
+                  <Link
+                    to="/groups"
+                    className="text-indigo-600 hover:text-indigo-800 font-medium"
+                  >
+                    Мои группы
+                  </Link>
                 </>
+              ) : (
+                <Link
+                  to="/my-groups"
+                  className="text-indigo-600 hover:text-indigo-800 font-medium"
+                >
+                  Мои группы
+                </Link>
               )}
               <button
                 onClick={handleLogout}
