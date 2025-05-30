@@ -206,19 +206,19 @@ function AuthorTests() {
               <tr>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/2"
                 >
                   Название
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6"
                 >
                   Статус
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3"
                 >
                   Действия
                 </th>
@@ -234,7 +234,7 @@ function AuthorTests() {
                       {test.description.length > 50 ? '...' : ''}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
                     <span
                       className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         test.isPublic
@@ -245,8 +245,8 @@ function AuthorTests() {
                       {test.isPublic ? 'Опубликован' : 'Черновик'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-4">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
+                    <div className="flex items-center justify-center space-x-4">
                       <Link
                         to={`/test/${test._id}/edit`}
                         className="px-3 py-1 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded font-medium"
