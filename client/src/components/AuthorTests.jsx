@@ -246,26 +246,26 @@ function AuthorTests() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-4">
+                    <div className="flex items-center space-x-4">
                       <Link
                         to={`/test/${test._id}/edit`}
-                        className="text-indigo-600 hover:text-indigo-900 font-bold"
+                        className="px-3 py-1 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded font-medium"
                       >
                         Редактировать
                       </Link>
                       <button
                         onClick={() => handlePublishToggle(test._id, test.isPublic)}
-                        className={`${
+                        className={`px-3 py-1 rounded font-medium ${
                           test.isPublic
-                            ? 'text-yellow-600 hover:text-yellow-900'
-                            : 'text-green-600 hover:text-green-900'
-                        } font-medium`}
+                            ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                            : 'bg-green-100 text-green-700 hover:bg-green-200'
+                        }`}
                       >
                         {test.isPublic ? 'Снять с публикации' : 'Опубликовать'}
                       </button>
                       <button
                         onClick={() => handleDeleteTest(test._id)}
-                        className="text-red-600 hover:text-red-900 font-bold"
+                        className="px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded font-medium"
                       >
                         Удалить
                       </button>
