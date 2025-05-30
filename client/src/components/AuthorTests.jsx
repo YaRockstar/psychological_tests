@@ -214,12 +214,6 @@ function AuthorTests() {
                   scope="col"
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
-                  Категория
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
                   Статус
                 </th>
                 <th
@@ -241,9 +235,6 @@ function AuthorTests() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{test.category}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                         test.isPublic
@@ -255,10 +246,10 @@ function AuthorTests() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex space-x-2">
+                    <div className="flex flex-col space-y-2">
                       <Link
                         to={`/test/${test._id}/edit`}
-                        className="text-indigo-600 hover:text-indigo-900"
+                        className="text-indigo-600 hover:text-indigo-900 font-medium"
                       >
                         Редактировать
                       </Link>
@@ -268,13 +259,13 @@ function AuthorTests() {
                           test.isPublic
                             ? 'text-yellow-600 hover:text-yellow-900'
                             : 'text-green-600 hover:text-green-900'
-                        }`}
+                        } font-medium`}
                       >
                         {test.isPublic ? 'Снять с публикации' : 'Опубликовать'}
                       </button>
                       <button
                         onClick={() => handleDeleteTest(test._id)}
-                        className="text-red-600 hover:text-red-900"
+                        className="text-red-600 hover:text-red-900 font-bold"
                       >
                         Удалить
                       </button>
