@@ -23,8 +23,8 @@ const TestAttemptSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['started', 'completed', 'abandoned'],
-      default: 'started',
+      default: 'completed',
+      enum: ['completed'],
     },
     timeSpent: {
       type: Number,
@@ -76,8 +76,16 @@ const TestAttemptSchema = new mongoose.Schema(
       type: String,
     }, // Отзыв пользователя о тесте
   },
-  { timestamps: true }
+  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+
+// Виртуальное поле для получения названия теста
+TestAttemptSchema.virtual('testTitle').get(function () {
+  if (this.test && typeof this.test === 'object' && this.test.title) {
+    return this.test.title;
+  }
+  return 'Тест без названия';
+});
 
 /**
  * Модель попытки прохождения психологического теста MongoDB.

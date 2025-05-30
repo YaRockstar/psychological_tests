@@ -86,42 +86,71 @@ function Navbar() {
           <Link to="/home" className="text-2xl font-bold text-indigo-600">
             PsyTests
           </Link>
+          {/* Ссылки для авторов */}
+          {isLoggedIn && userRole === 'author' && (
+            <>
+              <Link
+                to="/tests/my"
+                className="text-indigo-600 hover:text-indigo-800 font-medium"
+              >
+                Мои тесты
+              </Link>
+              <Link
+                to="/groups"
+                className="text-indigo-600 hover:text-indigo-800 font-medium"
+              >
+                Мои группы
+              </Link>
+            </>
+          )}
           {/* Ссылка на все тесты доступна только не-авторам */}
           {(!isLoggedIn || userRole !== 'author') && (
-            <Link to="/tests" className="text-gray-700 hover:text-indigo-600 font-medium">
+            <Link
+              to="/tests"
+              className="text-indigo-600 hover:text-indigo-800 font-medium"
+            >
               Все тесты
+            </Link>
+          )}
+          {/* История тестов доступна только авторизованным не-авторам */}
+          {isLoggedIn && userRole !== 'author' && (
+            <Link
+              to="/tests/history"
+              className="text-indigo-600 hover:text-indigo-800 font-medium"
+            >
+              Пройденные тесты
             </Link>
           )}
         </div>
         <div className="flex items-center space-x-6">
           {isLoggedIn ? (
             <>
-              <span className="text-gray-700">Привет, {userName || 'пользователь'}!</span>
-              <Link
-                to="/profile"
-                className="text-indigo-600 hover:text-indigo-800 font-medium"
-              >
-                Мой профиль
-              </Link>
-              {/* История тестов доступна только не-авторам */}
-              {userRole !== 'author' && (
-                <Link
-                  to="/tests/history"
-                  className="text-indigo-600 hover:text-indigo-800 font-medium"
-                >
-                  Пройденные тесты
-                </Link>
-              )}
-              {userRole === 'author' && (
+              {userRole === 'author' ? (
                 <>
                   <Link
-                    to="/tests/my"
+                    to="/profile"
                     className="text-indigo-600 hover:text-indigo-800 font-medium"
                   >
-                    Мои тесты
+                    Мой профиль
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/my-groups"
+                    className="text-indigo-600 hover:text-indigo-800 font-medium"
+                  >
+                    Мои группы
+                  </Link>
+                  <Link
+                    to="/profile"
+                    className="text-indigo-600 hover:text-indigo-800 font-medium"
+                  >
+                    Мой профиль
                   </Link>
                 </>
               )}
+              <span className="text-gray-700">Привет, {userName || 'пользователь'}!</span>
               <button
                 onClick={handleLogout}
                 className="text-sm px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600 transition"

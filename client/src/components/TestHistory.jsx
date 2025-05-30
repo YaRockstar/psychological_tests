@@ -8,6 +8,10 @@ function TestHistory() {
   const [error, setError] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
   const [userRole, setUserRole] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [clearLoading, setClearLoading] = useState(false);
+  const [clearError, setClearError] = useState(null);
+  const [clearSuccess, setClearSuccess] = useState(null);
 
   useEffect(() => {
     // Проверяем авторизацию
@@ -91,7 +95,34 @@ function TestHistory() {
     };
 
     fetchUserData();
-  }, []);
+  }, [clearSuccess]); // Перезагружаем данные после успешной очистки
+
+  // Функция очистки истории
+  const clearHistory = async () => {
+    setClearLoading(true);
+    setClearError(null);
+    setClearSuccess(null);
+
+    try {
+      const response = await testAPI.clearUserTestHistory();
+      setClearSuccess(response.data.message || 'История тестов успешно очищена');
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error('Ошибка при очистке истории тестов:', err);
+      setClearError(
+        err.response?.data?.message ||
+          'Не удалось очистить историю. Пожалуйста, попробуйте позже.'
+      );
+    } finally {
+      setClearLoading(false);
+    }
+  };
+
+  // Закрытие модального окна
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setClearError(null);
+  };
 
   // Если пользователь не авторизован, перенаправляем на страницу входа
   if (!isLoggedIn) {
@@ -117,14 +148,8 @@ function TestHistory() {
   };
 
   // Функция для получения статуса попытки на русском
-  const getStatusText = status => {
-    const statusMap = {
-      started: 'Начат',
-      'in-progress': 'В процессе',
-      completed: 'Завершен',
-      abandoned: 'Прекращен',
-    };
-    return statusMap[status] || status;
+  const getStatusText = () => {
+    return 'Завершен';
   };
 
   // Функция для форматирования времени прохождения
@@ -145,7 +170,43 @@ function TestHistory() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">История пройденных тестов</h1>
+
+        {/* Кнопка очистки истории */}
+        {testAttempts.length > 0 && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+            disabled={clearLoading}
+          >
+            {clearLoading ? 'Очистка...' : 'Очистить историю'}
+          </button>
+        )}
       </div>
+
+      {/* Сообщение об успешной очистке */}
+      {clearSuccess && (
+        <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg
+                className="h-5 w-5 text-green-400"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-green-700">{clearSuccess}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center items-center py-10">
@@ -235,49 +296,95 @@ function TestHistory() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                      ${
-                        attempt.status === 'completed'
-                          ? 'bg-green-100 text-green-800'
-                          : attempt.status === 'abandoned'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}
+                      className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                      bg-green-100 text-green-800"
                     >
-                      {getStatusText(attempt.status)}
+                      {getStatusText()}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatTimeSpent(attempt.timeSpent)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    {attempt.status === 'completed' ? (
-                      <Link
-                        to={`/test-results/${attempt._id}`}
-                        className="text-indigo-600 hover:text-indigo-900"
-                      >
-                        Просмотреть результаты
-                      </Link>
-                    ) : attempt.status === 'started' ||
-                      attempt.status === 'in-progress' ? (
-                      <Link
-                        to={`/test/${
-                          typeof attempt.test === 'object'
-                            ? attempt.test._id
-                            : attempt.test
-                        }`}
-                        className="text-indigo-600 hover:text-indigo-900"
-                      >
-                        Продолжить
-                      </Link>
-                    ) : (
-                      <span className="text-gray-400">Недоступно</span>
-                    )}
+                    <Link
+                      to={`/test-results/${attempt._id}`}
+                      className="text-indigo-600 hover:text-indigo-900 mr-4"
+                    >
+                      Просмотреть результаты
+                    </Link>
+                    <Link
+                      to={`/test-attempt/${attempt._id}`}
+                      className="text-indigo-600 hover:text-indigo-900"
+                    >
+                      Детали прохождения
+                    </Link>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Модальное окно подтверждения очистки */}
+      {isModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
+            <h2 className="text-xl font-bold mb-4">Очистить историю тестов?</h2>
+            <p className="mb-6 text-gray-700">
+              Вы собираетесь удалить всю историю прохождения тестов. Это действие
+              необратимо. Вы уверены, что хотите продолжить?
+            </p>
+
+            {clearError && (
+              <div className="bg-red-50 border-l-4 border-red-400 p-3 mb-4">
+                <p className="text-sm text-red-700">{clearError}</p>
+              </div>
+            )}
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={closeModal}
+                className="px-4 py-2 border border-gray-300 rounded shadow-sm text-gray-700 hover:bg-gray-50"
+                disabled={clearLoading}
+              >
+                Отмена
+              </button>
+              <button
+                onClick={clearHistory}
+                className="px-4 py-2 bg-red-600 text-white rounded shadow-sm hover:bg-red-700"
+                disabled={clearLoading}
+              >
+                {clearLoading ? (
+                  <span className="flex items-center">
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Очистка...
+                  </span>
+                ) : (
+                  'Очистить'
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -7,6 +7,7 @@ import userRouter from './routes/UserRouter.js';
 import testRouter from './routes/TestRouter.js';
 import testAttemptRouter from './routes/TestAttemptRouter.js';
 import resultRouter from './routes/ResultRouter.js';
+import groupRouter from './routes/GroupRouter.js';
 import logger from './utils/logger.js';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
@@ -29,6 +30,7 @@ app.use('/api/users', userRouter);
 app.use('/api/tests', testRouter);
 app.use('/api/test-attempts', testAttemptRouter);
 app.use('/api/results', resultRouter);
+app.use('/api/groups', groupRouter);
 
 /**
  * Запуск сервера и подключение к базе данных.

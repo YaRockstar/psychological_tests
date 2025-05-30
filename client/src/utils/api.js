@@ -27,7 +27,7 @@ export const authAPI = {
 
 export const userAPI = {
   getCurrentUser: () => api.get('/api/users/current'),
-  getUserById: _id => api.get(`/api/users/${_id}`),
+  getUserById: id => api.get(`/api/users/${id}`),
   updateProfile: userData => api.patch('/api/users/current', userData),
   updatePassword: passwordData => api.patch('/api/users/current/password', passwordData),
   deleteAccount: () => api.delete('/api/users/current'),
@@ -84,6 +84,27 @@ export const testAPI = {
   getTestResultById: resultId => api.get(`/api/results/${resultId}`),
   getUserTestResults: params => api.get('/api/results/user', { params }),
   getTestResultsByTestId: testId => api.get(`/api/results/test/${testId}`),
+
+  // Очистка истории тестов
+  clearUserTestHistory: () => api.delete('/api/test-attempts/user/history'),
+};
+
+export const groupAPI = {
+  // Методы для авторов тестов
+  createGroup: groupData => api.post('/api/groups', groupData),
+  getAuthorGroups: () => api.get('/api/groups/my'),
+  updateGroup: (groupId, groupData) => api.put(`/api/groups/${groupId}`, groupData),
+  regenerateInviteCode: groupId => api.post(`/api/groups/${groupId}/invite`),
+  deleteGroup: groupId => api.delete(`/api/groups/${groupId}`),
+  removeUserFromGroup: (groupId, userId) =>
+    api.delete(`/api/groups/${groupId}/users/${userId}`),
+
+  // Методы для пользователей
+  getUserGroups: () => api.get('/api/groups/joined'),
+  getGroupById: groupId => api.get(`/api/groups/${groupId}`),
+  getGroupByInviteCode: inviteCode => api.get(`/api/groups/invite/${inviteCode}`),
+  joinGroup: inviteCode => api.post(`/api/groups/join/${inviteCode}`),
+  leaveGroup: groupId => api.post(`/api/groups/${groupId}/leave`),
 };
 
 export default api;

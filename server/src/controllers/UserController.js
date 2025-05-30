@@ -179,7 +179,7 @@ export const getCurrentUser = async (req, res) => {
  * @param {Object} res - HTTP ответ.
  */
 export const getUserById = async (req, res) => {
-  const userId = req.params._id;
+  const userId = req.params.id;
   logger.debug(`Запрос на получение пользователя по ID: ${userId}`);
 
   try {
