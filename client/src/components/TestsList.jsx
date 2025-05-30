@@ -116,14 +116,6 @@ function TestsList() {
     setSearchTerm(e.target.value);
   };
 
-  const handleSearchKeyDown = e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      console.log('Нажата клавиша Enter в поле поиска');
-      // Поиск уже осуществляется автоматически через useEffect, привязанный к searchTerm
-    }
-  };
-
   const handleClearFilters = () => {
     console.log('Сброс всех фильтров');
     setFilters({
@@ -199,7 +191,6 @@ function TestsList() {
               type="text"
               value={searchTerm}
               onChange={handleSearchChange}
-              onKeyDown={handleSearchKeyDown}
               placeholder="Введите название теста"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
