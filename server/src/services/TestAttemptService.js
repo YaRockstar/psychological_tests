@@ -18,9 +18,9 @@ function validateTestAttempt(attemptData, isCreation = true) {
     throw new NotValidError('ID теста обязателен');
   }
 
-  const validStatuses = ['started', 'completed', 'abandoned'];
-  if (attemptData.status && !validStatuses.includes(attemptData.status)) {
-    throw new NotValidError(`Статус должен быть одним из: ${validStatuses.join(', ')}`);
+  // Всегда используется статус 'completed'
+  if (attemptData.status && attemptData.status !== 'completed') {
+    throw new NotValidError('Статус должен быть "completed"');
   }
 
   if (
@@ -76,7 +76,7 @@ export async function createTestAttempt(attemptData) {
   const newAttemptData = {
     ...attemptData,
     startedAt: new Date(),
-    status: 'started',
+    status: 'completed',
     answers: [],
   };
 
@@ -352,7 +352,7 @@ export async function addAnswerToAttempt(attemptId, answer) {
     throw new NotFoundError('Попытка прохождения теста не найдена');
   }
 
-  if (attempt.status !== 'started') {
+  if (attempt.status !== 'completed') {
     throw new NotValidError('Невозможно добавить ответ к завершенной попытке');
   }
 
@@ -632,7 +632,7 @@ export async function completeTestAttempt(id, completionData = {}) {
     throw new NotFoundError('Попытка прохождения теста не найдена');
   }
 
-  if (attempt.status === 'completed') {
+  if (attempt.status !== 'completed') {
     throw new NotValidError('Попытка уже завершена');
   }
 
@@ -741,7 +741,7 @@ export async function abandonTestAttempt(id) {
     throw new NotFoundError('Попытка прохождения теста не найдена');
   }
 
-  if (attempt.status !== 'started') {
+  if (attempt.status !== 'completed') {
     throw new NotValidError('Невозможно прервать уже завершенную попытку');
   }
 

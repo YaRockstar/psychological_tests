@@ -148,14 +148,8 @@ function TestHistory() {
   };
 
   // Функция для получения статуса попытки на русском
-  const getStatusText = status => {
-    const statusMap = {
-      started: 'Начат',
-      'in-progress': 'В процессе',
-      completed: 'Завершен',
-      abandoned: 'Прекращен',
-    };
-    return statusMap[status] || status;
+  const getStatusText = () => {
+    return 'Завершен';
   };
 
   // Функция для форматирования времени прохождения
@@ -302,52 +296,28 @@ function TestHistory() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                      ${
-                        attempt.status === 'completed'
-                          ? 'bg-green-100 text-green-800'
-                          : attempt.status === 'abandoned'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}
+                      className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                      bg-green-100 text-green-800"
                     >
-                      {getStatusText(attempt.status)}
+                      {getStatusText()}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatTimeSpent(attempt.timeSpent)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    {attempt.status === 'completed' ? (
-                      <>
-                        <Link
-                          to={`/test-results/${attempt._id}`}
-                          className="text-indigo-600 hover:text-indigo-900 mr-4"
-                        >
-                          Просмотреть результаты
-                        </Link>
-                        <Link
-                          to={`/test-attempt/${attempt._id}`}
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          Детали прохождения
-                        </Link>
-                      </>
-                    ) : attempt.status === 'started' ||
-                      attempt.status === 'in-progress' ? (
-                      <Link
-                        to={`/test/${
-                          typeof attempt.test === 'object'
-                            ? attempt.test._id
-                            : attempt.test
-                        }`}
-                        className="text-indigo-600 hover:text-indigo-900"
-                      >
-                        Продолжить
-                      </Link>
-                    ) : (
-                      <span className="text-gray-400">Недоступно</span>
-                    )}
+                    <Link
+                      to={`/test-results/${attempt._id}`}
+                      className="text-indigo-600 hover:text-indigo-900 mr-4"
+                    >
+                      Просмотреть результаты
+                    </Link>
+                    <Link
+                      to={`/test-attempt/${attempt._id}`}
+                      className="text-indigo-600 hover:text-indigo-900"
+                    >
+                      Детали прохождения
+                    </Link>
                   </td>
                 </tr>
               ))}

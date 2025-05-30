@@ -109,13 +109,11 @@ export const saveTestAnswer = async (req, res) => {
       throw new ForbiddenError('У вас нет доступа к этой попытке прохождения теста');
     }
 
-    // Проверяем статус попытки
-    if (attempt.status !== 'in-progress' && attempt.status !== 'started') {
-      // Вместо ошибки возвращаем специальный статус-код 410 Gone
-      // который клиент может обработать, создав новую попытку
+    // Проверяем статус попытки - теперь всегда 'completed'
+    if (attempt.status !== 'completed') {
       return res.status(410).json({
-        message: 'Попытка уже завершена или прекращена. Требуется создать новую попытку.',
-        status: attempt.status,
+        message: 'Попытка уже завершена. Требуется создать новую попытку.',
+        status: 'completed',
         attemptId: id,
         needNewAttempt: true,
       });
@@ -167,11 +165,14 @@ export const completeTestAttempt = async (req, res) => {
       throw new ForbiddenError('У вас нет доступа к этой попытке прохождения теста');
     }
 
-    // Проверяем статус попытки - принимаем и 'started' и 'in-progress'
-    if (attempt.status !== 'in-progress' && attempt.status !== 'started') {
-      throw new NotValidError(
-        'Уже завершенная или прекращенная попытка не может быть завершена'
-      );
+    // Проверяем статус попытки - теперь всегда 'completed'
+    if (attempt.status !== 'completed') {
+      return res.status(410).json({
+        message: 'Попытка уже завершена. Требуется создать новую попытку.',
+        status: 'completed',
+        attemptId: id,
+        needNewAttempt: true,
+      });
     }
 
     console.log(`[TestAttemptController] Завершение попытки теста ID=${id}`);
@@ -200,7 +201,7 @@ export const completeTestAttempt = async (req, res) => {
     // Завершаем попытку, передавая время прохождения
     const completedAttempt = await TestAttemptService.completeTestAttempt(id, {
       timeSpent,
-      status: 'completed', // Явно указываем статус
+      status: 'completed', // Статус всегда 'completed'
       completedAt: now, // Явно указываем дату завершения
     });
 
@@ -264,17 +265,23 @@ export const abandonTestAttempt = async (req, res) => {
       throw new ForbiddenError('У вас нет доступа к этой попытке прохождения теста');
     }
 
-    // Проверяем статус попытки
-    if (attempt.status !== 'in-progress') {
-      throw new NotValidError(
-        'Уже завершенная или прекращенная попытка не может быть прекращена'
-      );
+    // Проверяем статус попытки - теперь всегда 'completed'
+    if (attempt.status !== 'completed') {
+      return res.status(410).json({
+        message: 'Попытка уже завершена. Требуется создать новую попытку.',
+        status: 'completed',
+        attemptId: id,
+        needNewAttempt: true,
+      });
     }
 
-    // Прекращаем попытку
-    const abandonedAttempt = await TestAttemptService.abandonTestAttempt(id);
+    // Завершаем попытку (не прекращаем, так как статус всегда 'completed')
+    const completedAttempt = await TestAttemptService.completeTestAttempt(id, {
+      status: 'completed',
+      completedAt: new Date(),
+    });
 
-    res.status(200).json(abandonedAttempt);
+    res.status(200).json(completedAttempt);
   } catch (error) {
     handleServiceError(error, res);
   }

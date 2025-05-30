@@ -23,8 +23,8 @@ const TestAttemptSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['started', 'completed', 'abandoned'],
-      default: 'started',
+      default: 'completed',
+      enum: ['completed'],
     },
     timeSpent: {
       type: Number,
