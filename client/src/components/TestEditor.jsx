@@ -247,10 +247,6 @@ function TestEditor() {
               <p className="text-gray-900">{test.title}</p>
             </div>
             <div>
-              <p className="text-gray-700 font-medium">Категория:</p>
-              <p className="text-gray-900">{test.category}</p>
-            </div>
-            <div>
               <p className="text-gray-700 font-medium">Тип теста:</p>
               <p className="text-gray-900">
                 {test.testType === 'personality' && 'Личность'}
@@ -258,14 +254,6 @@ function TestEditor() {
                 {test.testType === 'emotional' && 'Эмоциональный интеллект'}
                 {test.testType === 'aptitude' && 'Способности'}
                 {test.testType === 'career' && 'Карьера'}
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-700 font-medium">Сложность:</p>
-              <p className="text-gray-900">
-                {test.difficulty === 'easy' && 'Легкий'}
-                {test.difficulty === 'medium' && 'Средний'}
-                {test.difficulty === 'hard' && 'Сложный'}
               </p>
             </div>
             <div className="md:col-span-2">
