@@ -34,7 +34,7 @@ function Footer() {
           <div>
             <h3 className="text-lg font-bold mb-4">Контакты</h3>
             <p className="text-gray-400 mb-2">Email: info@psytests.ru</p>
-            <p className="text-gray-400">Телефон: +7 (123) 456-78-90</p>
+            <p className="text-gray-400">Телефон: +7 960 033-50-50</p>
           </div>
         </div>
         <div className="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400">
