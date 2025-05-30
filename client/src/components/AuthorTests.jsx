@@ -246,10 +246,10 @@ function AuthorTests() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex flex-col space-y-2">
+                    <div className="flex space-x-4">
                       <Link
                         to={`/test/${test._id}/edit`}
-                        className="text-indigo-600 hover:text-indigo-900 font-medium"
+                        className="text-indigo-600 hover:text-indigo-900 font-bold"
                       >
                         Редактировать
                       </Link>
