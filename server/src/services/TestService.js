@@ -20,18 +20,9 @@ export function validateTest(testData) {
     throw new NotValidError('Описание теста обязательно');
   }
 
-  if (!testData.category || testData.category.trim() === '') {
-    throw new NotValidError('Категория теста обязательна');
-  }
-
   const validTestTypes = ['personality', 'iq', 'emotional', 'aptitude', 'career'];
   if (testData.testType && !validTestTypes.includes(testData.testType)) {
     throw new NotValidError('Некорректный тип теста');
-  }
-
-  const validDifficulties = ['easy', 'medium', 'hard'];
-  if (testData.difficulty && !validDifficulties.includes(testData.difficulty)) {
-    throw new NotValidError('Некорректная сложность теста');
   }
 
   if (testData.timeLimit && typeof testData.timeLimit !== 'number') {
@@ -60,9 +51,7 @@ export function normalizeTestData(testData) {
   return {
     title: testData.title,
     description: testData.description,
-    category: testData.category,
     testType: testData.testType || 'personality',
-    difficulty: testData.difficulty || 'medium',
     timeLimit: testData.timeLimit || 0,
     passingScore: testData.passingScore || 0,
     isPublic: testData.isPublic || false,

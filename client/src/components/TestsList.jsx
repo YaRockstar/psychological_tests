@@ -9,9 +9,7 @@ function TestsList() {
   const [userRole, setUserRole] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
   const [filters, setFilters] = useState({
-    category: '',
     testType: '',
-    difficulty: '',
   });
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -119,15 +117,10 @@ function TestsList() {
   const handleClearFilters = () => {
     console.log('Сброс всех фильтров');
     setFilters({
-      category: '',
       testType: '',
-      difficulty: '',
     });
     setSearchTerm('');
   };
-
-  // Определяем категории для фильтрации на основе имеющихся тестов
-  const categories = [...new Set(tests.map(test => test.category))];
 
   // Преобразование типа теста в читаемый формат
   const getTestTypeName = type => {
@@ -139,16 +132,6 @@ function TestsList() {
       career: 'Карьера',
     };
     return types[type] || type;
-  };
-
-  // Преобразование сложности в читаемый формат
-  const getDifficultyName = difficulty => {
-    const difficulties = {
-      easy: 'Легкий',
-      medium: 'Средний',
-      hard: 'Сложный',
-    };
-    return difficulties[difficulty] || difficulty;
   };
 
   const getTestImage = test => {
@@ -182,7 +165,7 @@ function TestsList() {
 
       {/* Фильтры и поиск */}
       <div className="mb-8 bg-white p-4 rounded-lg shadow-md">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Поиск по названию:
@@ -194,25 +177,6 @@ function TestsList() {
               placeholder="Введите название теста"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Категория:
-            </label>
-            <select
-              name="category"
-              value={filters.category}
-              onChange={handleFilterChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="">Все категории</option>
-              {categories.map(category => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
           </div>
 
           <div>
@@ -231,23 +195,6 @@ function TestsList() {
               <option value="emotional">Эмоциональный интеллект</option>
               <option value="aptitude">Способности</option>
               <option value="career">Карьера</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Сложность:
-            </label>
-            <select
-              name="difficulty"
-              value={filters.difficulty}
-              onChange={handleFilterChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="">Любая сложность</option>
-              <option value="easy">Легкий</option>
-              <option value="medium">Средний</option>
-              <option value="hard">Сложный</option>
             </select>
           </div>
         </div>
@@ -305,14 +252,8 @@ function TestsList() {
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">{test.title}</h3>
                 <p className="text-gray-600 mb-4 line-clamp-3">{test.description}</p>
                 <div className="flex flex-wrap gap-2 mb-4">
-                  <span className="px-2 py-1 bg-indigo-100 text-indigo-800 text-sm rounded-md">
-                    {test.category}
-                  </span>
                   <span className="px-2 py-1 bg-purple-100 text-purple-800 text-sm rounded-md">
                     {getTestTypeName(test.testType)}
-                  </span>
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-md">
-                    {getDifficultyName(test.difficulty)}
                   </span>
                 </div>
                 {test.tags && test.tags.length > 0 && (

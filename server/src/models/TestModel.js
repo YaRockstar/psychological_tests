@@ -7,18 +7,11 @@ const TestSchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
     description: { type: String, required: true },
-    category: { type: String, required: true },
     testType: {
       type: String,
       required: true,
       enum: ['personality', 'iq', 'emotional', 'aptitude', 'career'],
       default: 'personality',
-    },
-    difficulty: {
-      type: String,
-      required: true,
-      enum: ['easy', 'medium', 'hard'],
-      default: 'medium',
     },
     imageUrl: { type: String, default: '' },
     timeLimit: { type: Number, default: 0 },

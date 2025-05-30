@@ -95,8 +95,8 @@ export async function getPublicTests(req, res) {
   logger.debug('Запрос на получение публичных тестов');
 
   try {
-    const { category, testType, query, limit } = req.query;
-    const options = { category, testType, query, limit: parseInt(limit) || 50 };
+    const { testType, query, limit } = req.query;
+    const options = { testType, query, limit: parseInt(limit) || 50 };
 
     const tests = await TestService.getPublicTests(options);
     logger.debug(`Получено ${tests.length} публичных тестов`);

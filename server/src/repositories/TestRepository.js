@@ -108,13 +108,9 @@ export async function incrementTestAttempts(id) {
  * @returns {Promise<Array>} - Массив тестов.
  */
 export async function getPublicTests(options = {}) {
-  const { sort = { createdAt: -1 }, limit = 50, category, testType, query } = options;
+  const { sort = { createdAt: -1 }, limit = 50, testType, query } = options;
 
   const filter = { isPublic: true };
-
-  if (category) {
-    filter.category = category;
-  }
 
   if (testType) {
     filter.testType = testType;
@@ -166,16 +162,14 @@ export async function getAuthorTests(authorId, options = {}) {
  * @param {number} [options.limit] - Ограничение количества результатов.
  * @param {number} [options.skip] - Количество пропускаемых результатов.
  * @param {Object} [options.sort] - Параметры сортировки.
- * @param {string} [options.category] - Фильтр по категории.
  * @param {string} [options.testType] - Фильтр по типу теста.
  * @returns {Promise<Array<Object>>} - Список опубликованных тестов.
  */
 export async function getPublishedTests(options = {}) {
-  const { limit, skip, sort = { popularity: -1 }, category, testType } = options;
+  const { limit, skip, sort = { popularity: -1 }, testType } = options;
 
   const query = TestModel.find({ isPublished: true });
 
-  if (category) query.where({ category });
   if (testType) query.where({ testType });
 
   if (limit) query.limit(limit);
