@@ -300,3 +300,134 @@ export const deleteTestAttemptsByTestId = async testId => {
   const result = await TestAttemptModel.deleteMany({ test: testId }).exec();
   return result.deletedCount || 0;
 };
+
+/**
+ * Получение завершенных попыток прохождения теста для указанных пользователей.
+ * @param {string} testId - ID теста.
+ * @param {Array<string>} userIds - Массив ID пользователей.
+ * @returns {Promise<Array<Object>>} - Список попыток.
+ */
+export const getCompletedAttemptsByTestAndUsers = async (testId, userIds) => {
+  if (!userIds || userIds.length === 0) {
+    return [];
+  }
+
+  // Ищем только полностью завершенные попытки с установленным результатом
+  const attempts = await TestAttemptModel.find({
+    test: testId,
+    user: { $in: userIds },
+    status: 'completed',
+    result: { $exists: true }, // Должен быть установлен результат
+    completedAt: { $exists: true }, // Должно быть установлено время завершения
+  })
+    .populate('user', 'firstName lastName email')
+    .populate('result', 'title description')
+    .populate({
+      path: 'answers.question',
+      select: 'text type options',
+      populate: {
+        path: 'options',
+        select: 'text value isCorrect',
+      },
+    })
+    .populate('answers.selectedOptions', 'text value')
+    .sort({ completedAt: -1 })
+    .exec();
+
+  console.log(
+    `[TestAttemptRepository] Получено ${attempts.length} результатов теста для пользователей`
+  );
+  if (attempts.length > 0) {
+    attempts.forEach((attempt, index) => {
+      console.log(`[TestAttemptRepository] Попытка ${index + 1}:`, {
+        id: attempt._id,
+        user: attempt.user
+          ? {
+              id: attempt.user._id,
+              firstName: attempt.user.firstName,
+              lastName: attempt.user.lastName,
+            }
+          : 'не задан',
+        result: attempt.result
+          ? {
+              id: attempt.result._id,
+              title: attempt.result.title,
+            }
+          : 'не задан',
+        completedAt: attempt.completedAt,
+        answers: attempt.answers ? attempt.answers.length : 0,
+      });
+    });
+  }
+
+  return attempts.map(transformDocument);
+};
+
+/**
+ * Получение ответов для конкретной попытки прохождения теста.
+ * @param {string} attemptId - ID попытки.
+ * @returns {Promise<Array<Object>>} - Список ответов с детальной информацией.
+ */
+export const getAttemptAnswers = async attemptId => {
+  const attempt = await TestAttemptModel.findById(attemptId)
+    .populate({
+      path: 'answers.question',
+      select: 'text type options',
+      populate: {
+        path: 'options',
+        select: 'text value isCorrect',
+      },
+    })
+    .populate('answers.selectedOptions', 'text value')
+    .populate('result', 'title description')
+    .select('answers result')
+    .exec();
+
+  if (!attempt || !attempt.answers) {
+    return [];
+  }
+
+  // Используем Map для отслеживания уникальных вопросов
+  const uniqueQuestions = new Map();
+
+  const processedAnswers = attempt.answers
+    .map(answer => {
+      // Получаем тексты выбранных вариантов
+      const selectedOptionsTexts = Array.isArray(answer.selectedOptions)
+        ? answer.selectedOptions.map(opt => ({
+            id: opt._id.toString(),
+            text: opt.text || 'Неизвестный вариант',
+            value: opt.value,
+          }))
+        : [];
+
+      const questionText = answer.question?.text || 'Неизвестный вопрос';
+
+      return {
+        questionId: answer.question?._id || answer.question,
+        questionText: questionText,
+        questionType: answer.question?.type || 'unknown',
+        selectedOptions:
+          selectedOptionsTexts.length > 0 ? selectedOptionsTexts : answer.selectedOptions, // Если не удалось получить тексты, оставляем ID
+        textAnswer: answer.textAnswer,
+        scaleValue: answer.scaleValue,
+        // Добавляем оригинальный текст вопроса для проверки дубликатов
+        _originalQuestionText: questionText,
+      };
+    })
+    // Фильтруем только уникальные вопросы
+    .filter(answer => {
+      if (uniqueQuestions.has(answer._originalQuestionText)) {
+        return false;
+      }
+      uniqueQuestions.set(answer._originalQuestionText, true);
+      return true;
+    })
+    // Удаляем временное поле
+    .map(answer => {
+      const { _originalQuestionText, ...rest } = answer;
+      return rest;
+    });
+
+  return processedAnswers;
+};

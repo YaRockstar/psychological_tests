@@ -17,6 +17,10 @@ export async function createGroup(groupData, authorId) {
     throw new NotValidError('ID автора обязателен');
   }
 
+  if (!groupData.testId) {
+    throw new NotValidError('ID теста обязателен');
+  }
+
   // Создаем объект с данными группы
   const newGroupData = {
     ...groupData,

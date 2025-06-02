@@ -14,6 +14,10 @@ const TestAttemptSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     }, // Может быть null, если тест пройден анонимно
+    groupId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Group',
+    }, // ID группы, если тест проходится в рамках группы
     startedAt: {
       type: Date,
       default: Date.now,

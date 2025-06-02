@@ -18,6 +18,7 @@ import AuthRedirect from './components/AuthRedirect';
 import AuthorGroups from './components/AuthorGroups';
 import UserGroups from './components/UserGroups';
 import JoinGroup from './components/JoinGroup';
+import GroupResults from './components/GroupResults';
 
 function App() {
   return (
@@ -149,10 +150,18 @@ function App() {
           }
         />
         <Route
-          path="/join-group/:inviteCode"
+          path="/join/:inviteCode"
           element={
             <Layout>
               <JoinGroup />
+            </Layout>
+          }
+        />
+        <Route
+          path="/group/:groupId/results"
+          element={
+            <Layout>
+              <GroupResults />
             </Layout>
           }
         />

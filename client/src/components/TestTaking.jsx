@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Navigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { testAPI, userAPI } from '../utils/api';
 
 function TestTaking() {
   const { testId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const groupId = queryParams.get('groupId');
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [userRole, setUserRole] = useState('');
   const [test, setTest] = useState(null);
@@ -103,7 +106,10 @@ function TestTaking() {
             setIsContinuing(true);
           } else {
             // Создаем новую попытку прохождения теста
-            const attemptResponse = await testAPI.startTestAttempt(processedTestId);
+            const attemptResponse = await testAPI.startTestAttempt(
+              processedTestId,
+              groupId
+            );
             console.log('Создана новая попытка теста:', attemptResponse.data._id);
             setTestAttempt(attemptResponse.data);
           }
@@ -118,7 +124,10 @@ function TestTaking() {
 
             try {
               // Создаем новую попытку прохождения теста
-              const newAttemptResponse = await testAPI.startTestAttempt(processedTestId);
+              const newAttemptResponse = await testAPI.startTestAttempt(
+                processedTestId,
+                groupId
+              );
               setTestAttempt(newAttemptResponse.data);
             } catch (newAttemptError) {
               console.error('Ошибка при создании новой попытки:', newAttemptError);
@@ -155,7 +164,7 @@ function TestTaking() {
     };
 
     checkUserRole();
-  }, [testId]);
+  }, [testId, groupId]);
 
   // Эффект для автоматического запуска теста при продолжении
   useEffect(() => {
@@ -255,7 +264,7 @@ function TestTaking() {
       if (error.response && error.response.status === 410) {
         try {
           // Создаем новую попытку теста
-          const newAttemptResponse = await testAPI.startTestAttempt(testId);
+          const newAttemptResponse = await testAPI.startTestAttempt(testId, groupId);
           const newAttemptId = newAttemptResponse.data._id;
 
           // Сохраняем новый ID попытки

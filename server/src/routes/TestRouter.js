@@ -12,6 +12,7 @@ import {
   getTestQuestions,
   getTestWithQuestions,
   startTestAttempt,
+  getGroupTestResults,
 } from '../controllers/TestController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 
@@ -32,6 +33,12 @@ router.put('/:id', authenticate, authorize(['author']), updateTest);
 router.post('/:id/publish', authenticate, authorize(['author']), publishTest);
 router.post('/:id/unpublish', authenticate, authorize(['author']), unpublishTest);
 router.delete('/:id', authenticate, authorize(['author']), deleteTest);
+router.get(
+  '/group/:groupId/results',
+  authenticate,
+  authorize(['author']),
+  getGroupTestResults
+);
 
 // Маршрут для администраторов
 router.get('/', authenticate, authorize(['admin']), getAllTests);

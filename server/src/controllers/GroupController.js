@@ -182,7 +182,7 @@ export async function updateGroup(req, res) {
  * @param {Object} res - HTTP ответ
  */
 export async function joinGroup(req, res) {
-  const { inviteCode } = req.params;
+  const { inviteCode } = req.body;
   logger.debug(`Запрос на присоединение к группе по коду: ${inviteCode}`);
 
   try {
@@ -377,6 +377,49 @@ export async function getUserGroups(req, res) {
 
     res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
       message: 'Ошибка при получении групп пользователя',
+    });
+  }
+}
+
+/**
+ * Выход пользователя из группы
+ * @param {Object} req - HTTP запрос
+ * @param {Object} res - HTTP ответ
+ */
+export async function leaveGroup(req, res) {
+  const groupId = req.params.id;
+  logger.debug(`Запрос на выход из группы ${groupId}`);
+
+  try {
+    const userId = req.user._id;
+    logger.debug(
+      `Выход из группы: данные получены, группа=${groupId}, пользователь=${userId}`
+    );
+
+    // Удаляем пользователя из группы
+    await GroupService.removeUserFromGroup(groupId, userId, userId);
+    logger.debug(`Пользователь ${userId} вышел из группы ${groupId}`);
+
+    res.status(HttpStatusCode.OK).json({
+      message: 'Вы успешно вышли из группы',
+    });
+  } catch (error) {
+    logger.debug(`Выход из группы: ошибка - ${error.message}`);
+
+    if (error.name === 'NotFoundError') {
+      return res.status(HttpStatusCode.NOT_FOUND).json({
+        message: error.message,
+      });
+    }
+
+    if (error.name === 'NotValidError') {
+      return res.status(HttpStatusCode.BAD_REQUEST).json({
+        message: error.message,
+      });
+    }
+
+    res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
+      message: 'Ошибка при выходе из группы',
     });
   }
 }

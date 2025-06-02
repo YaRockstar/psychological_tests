@@ -10,6 +10,7 @@ import {
   regenerateInviteCode,
   deleteGroup,
   getUserGroups,
+  leaveGroup,
 } from '../controllers/GroupController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 
@@ -22,7 +23,12 @@ const router = express.Router();
 router.post('/', authenticate, authorize(['author']), createGroup);
 router.get('/my', authenticate, authorize(['author']), getAuthorGroups);
 router.put('/:id', authenticate, authorize(['author']), updateGroup);
-router.post('/:id/invite', authenticate, authorize(['author']), regenerateInviteCode);
+router.post(
+  '/:id/invite-code',
+  authenticate,
+  authorize(['author']),
+  regenerateInviteCode
+);
 router.delete('/:id', authenticate, authorize(['author']), deleteGroup);
 router.delete(
   '/:groupId/users/:userId',
@@ -34,7 +40,8 @@ router.delete(
 // Маршруты для пользователей
 router.get('/joined', authenticate, getUserGroups);
 router.get('/:id', authenticate, getGroupById);
-router.get('/invite/:inviteCode', authenticate, getGroupByInviteCode);
-router.post('/join/:inviteCode', authenticate, joinGroup);
+router.get('/by-code/:inviteCode', authenticate, getGroupByInviteCode);
+router.post('/join', authenticate, joinGroup);
+router.post('/:id/leave', authenticate, leaveGroup);
 
 export default router;

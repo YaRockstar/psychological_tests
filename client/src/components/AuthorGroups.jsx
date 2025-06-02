@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { groupAPI, userAPI } from '../utils/api';
+import { groupAPI, userAPI, testAPI } from '../utils/api';
 
 function AuthorGroups() {
   const [groups, setGroups] = useState([]);
@@ -10,11 +10,12 @@ function AuthorGroups() {
   const [userRole, setUserRole] = useState(''); // eslint-disable-line no-unused-vars
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showInviteCode, setShowInviteCode] = useState({});
-  const [newGroup, setNewGroup] = useState({ name: '', description: '' });
+  const [newGroup, setNewGroup] = useState({ name: '', description: '', testId: '' });
   const [editingGroup, setEditingGroup] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [groupMembers, setGroupMembers] = useState({}); // Информация о пользователях по группам
   const [selectedMember, setSelectedMember] = useState(null); // Выбранный пользователь для просмотра деталей
+  const [authorTests, setAuthorTests] = useState([]); // Тесты автора для выбора при создании группы
 
   useEffect(() => {
     // Проверяем авторизацию
@@ -41,6 +42,7 @@ function AuthorGroups() {
             if (parsedData.role === 'author') {
               console.log('Пользователь является автором, загружаем группы');
               await fetchAuthorGroups();
+              await fetchAuthorTests();
             }
           } catch (error) {
             console.error('Ошибка при парсинге данных пользователя:', error);
@@ -56,6 +58,7 @@ function AuthorGroups() {
         if (response.data.role === 'author') {
           console.log('Пользователь является автором по данным сервера');
           await fetchAuthorGroups();
+          await fetchAuthorTests();
         } else {
           console.log('Пользователь НЕ является автором:', response.data.role);
           setLoading(false);
@@ -91,6 +94,16 @@ function AuthorGroups() {
         console.error('Ошибка при загрузке групп:', error);
         setError('Не удалось загрузить группы. Пожалуйста, попробуйте позже.');
         setLoading(false);
+      }
+    };
+
+    // Загрузка тестов автора
+    const fetchAuthorTests = async () => {
+      try {
+        const response = await testAPI.getAuthorTests();
+        setAuthorTests(response.data);
+      } catch (error) {
+        console.error('Ошибка при загрузке тестов автора:', error);
       }
     };
 
@@ -164,6 +177,12 @@ function AuthorGroups() {
     setSelectedMember(null);
   };
 
+  // Получение названия теста по ID
+  const getTestName = testId => {
+    const test = authorTests.find(test => test._id === testId);
+    return test ? test.title : 'Тест не найден';
+  };
+
   // Если пользователь не авторизован, перенаправляем на страницу входа
   if (!isLoggedIn) {
     return <Navigate to="/login" />;
@@ -185,6 +204,11 @@ function AuthorGroups() {
       return;
     }
 
+    if (!newGroup.testId) {
+      setError('Выбор теста обязателен');
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await groupAPI.createGroup(newGroup);
@@ -198,7 +222,7 @@ function AuthorGroups() {
         await loadGroupMembersInfo([response.data]);
       }
 
-      setNewGroup({ name: '', description: '' });
+      setNewGroup({ name: '', description: '', testId: '' });
       setShowCreateForm(false);
       setSuccessMessage('Группа успешно создана');
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -348,16 +372,15 @@ function AuthorGroups() {
 
   // Функция копирования кода приглашения
   const copyInviteLink = inviteCode => {
-    const inviteLink = `${window.location.origin}/join/${inviteCode}`;
     navigator.clipboard
-      .writeText(inviteLink)
+      .writeText(inviteCode)
       .then(() => {
-        setSuccessMessage('Ссылка скопирована в буфер обмена');
+        setSuccessMessage('Код скопирован в буфер обмена');
         setTimeout(() => setSuccessMessage(''), 3000);
       })
       .catch(err => {
-        console.error('Ошибка при копировании ссылки:', err);
-        setError('Не удалось скопировать ссылку');
+        console.error('Ошибка при копировании кода:', err);
+        setError('Не удалось скопировать код');
       });
   };
 
@@ -452,6 +475,29 @@ function AuthorGroups() {
               rows="3"
             />
           </div>
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-medium mb-2">
+              Выберите тест для группы*
+            </label>
+            <select
+              value={newGroup.testId}
+              onChange={e => setNewGroup({ ...newGroup, testId: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              required
+            >
+              <option value="">Выберите тест</option>
+              {authorTests.map(test => (
+                <option key={test._id} value={test._id}>
+                  {test.title}
+                </option>
+              ))}
+            </select>
+            {authorTests.length === 0 && (
+              <p className="mt-1 text-sm text-red-500">
+                У вас нет созданных тестов. Сначала создайте тест.
+              </p>
+            )}
+          </div>
           <div className="flex justify-end">
             <button
               onClick={() => setShowCreateForm(false)}
@@ -462,7 +508,7 @@ function AuthorGroups() {
             <button
               onClick={handleCreateGroup}
               className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
-              disabled={loading}
+              disabled={loading || authorTests.length === 0}
             >
               {loading ? 'Создание...' : 'Создать группу'}
             </button>
@@ -605,48 +651,72 @@ function AuthorGroups() {
               key={group._id}
               className="bg-white shadow-md rounded-md overflow-hidden"
             >
-              <div className="p-6">
-                <h2 className="text-xl font-semibold mb-2">{group.name}</h2>
-                <p className="text-gray-600 mb-4">
-                  {group.description || 'Нет описания'}
-                </p>
+              <div className="px-6 py-4 border-b border-gray-200">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-gray-800">{group.name}</h3>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => setEditingGroup(group)}
+                      className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 transition-colors"
+                    >
+                      Редактировать
+                    </button>
+                    <button
+                      onClick={() => handleDeleteGroup(group._id)}
+                      className="px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors"
+                    >
+                      Удалить
+                    </button>
+                  </div>
+                </div>
+                {group.description && (
+                  <p className="mt-2 text-gray-600">{group.description}</p>
+                )}
+                <div className="mt-2">
+                  <span className="text-sm font-medium text-gray-700">
+                    Связанный тест:{' '}
+                  </span>
+                  <span className="text-sm text-indigo-600">
+                    {getTestName(group.testId)}
+                  </span>
+                </div>
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <div className="border-t border-gray-200 pt-4 mt-4">
-                      <p className="text-sm text-gray-500 mb-1">Код приглашения:</p>
-                      {showInviteCode[group._id] ? (
-                        <div className="flex items-center">
-                          <code className="bg-gray-100 px-2 py-1 rounded text-sm">
-                            {group.inviteCode}
-                          </code>
-                          <button
-                            onClick={() => copyInviteLink(group.inviteCode)}
-                            className="ml-2 text-indigo-600 hover:text-indigo-800"
-                            title="Копировать ссылку приглашения"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-5 w-5"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
-                              <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
-                            </svg>
-                          </button>
-                        </div>
-                      ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <div className="border-t border-gray-200 pt-4 mt-4">
+                    <p className="text-sm text-gray-500 mb-2">Код приглашения:</p>
+                    {showInviteCode[group._id] ? (
+                      <div className="flex items-center">
+                        <code className="bg-gray-100 px-2 py-1 rounded text-sm">
+                          {group.inviteCode}
+                        </code>
                         <button
-                          onClick={() =>
-                            setShowInviteCode({ ...showInviteCode, [group._id]: true })
-                          }
-                          className="text-indigo-600 hover:text-indigo-800 text-sm"
+                          onClick={() => copyInviteLink(group.inviteCode)}
+                          className="ml-2 text-indigo-600 hover:text-indigo-800"
+                          title="Копировать код приглашения"
                         >
-                          Показать код
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-5 w-5"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                            <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z" />
+                          </svg>
                         </button>
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() =>
+                          setShowInviteCode({ ...showInviteCode, [group._id]: true })
+                        }
+                        className="text-indigo-600 hover:text-indigo-800 text-sm"
+                      >
+                        Показать код
+                      </button>
+                    )}
                   </div>
 
                   <div>
@@ -656,14 +726,14 @@ function AuthorGroups() {
                       </p>
                       {group.members && group.members.length > 0 && (
                         <div className="max-h-48 overflow-y-auto">
-                          <ul className="text-sm">
+                          <ul className="text-sm divide-y divide-gray-100">
                             {group.members.map(memberId => (
                               <li
                                 key={memberId}
-                                className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0"
+                                className="flex justify-between items-center py-2.5 hover:bg-gray-50 rounded"
                               >
                                 <span
-                                  className="text-gray-700 cursor-pointer hover:text-indigo-600 font-medium"
+                                  className="text-gray-700 cursor-pointer hover:text-indigo-600 font-medium pl-2"
                                   onClick={() => showMemberDetails(group._id, memberId)}
                                 >
                                   {getMemberName(group._id, memberId)}
@@ -698,25 +768,20 @@ function AuthorGroups() {
                   </div>
                 </div>
 
-                <div className="flex mt-6 pt-4 border-t border-gray-200">
-                  <button
-                    onClick={() => setEditingGroup(group)}
-                    className="mr-2 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 transition-colors text-sm"
-                  >
-                    Редактировать
-                  </button>
+                <div className="flex flex-col gap-2 mt-6 pt-4 border-t border-gray-200">
                   <button
                     onClick={() => handleRegenerateInviteCode(group._id)}
-                    className="mr-2 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-md hover:bg-yellow-200 transition-colors text-sm"
+                    className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-md hover:bg-yellow-200 transition-colors text-sm"
                   >
                     Новый код
                   </button>
-                  <button
-                    onClick={() => handleDeleteGroup(group._id)}
-                    className="px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors text-sm"
+
+                  <a
+                    href={`/group/${group._id}/results`}
+                    className="px-3 py-1 bg-green-100 text-green-700 text-center rounded-md hover:bg-green-200 transition-colors text-sm"
                   >
-                    Удалить
-                  </button>
+                    Результаты группы
+                  </a>
                 </div>
               </div>
             </div>
