@@ -245,27 +245,27 @@ function AuthorTests() {
                       {test.isPublic ? 'Опубликован' : 'Черновик'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
-                    <div className="flex items-center justify-center space-x-4">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex flex-wrap items-center justify-center gap-2">
                       <Link
                         to={`/test/${test._id}/edit`}
-                        className="px-3 py-1 bg-indigo-100 text-indigo-700 hover:bg-indigo-200 rounded font-medium"
+                        className="px-3 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded font-medium transition-colors shadow-sm"
                       >
                         Редактировать
                       </Link>
                       <button
                         onClick={() => handlePublishToggle(test._id, test.isPublic)}
-                        className={`px-3 py-1 rounded font-medium ${
+                        className={`px-3 py-2 rounded font-medium transition-colors shadow-sm ${
                           test.isPublic
-                            ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                            : 'bg-green-100 text-green-700 hover:bg-green-200'
+                            ? 'bg-yellow-500 text-white hover:bg-yellow-600'
+                            : 'bg-green-500 text-white hover:bg-green-600'
                         }`}
                       >
                         {test.isPublic ? 'Снять с публикации' : 'Опубликовать'}
                       </button>
                       <button
                         onClick={() => handleDeleteTest(test._id)}
-                        className="px-3 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded font-medium"
+                        className="px-3 py-2 bg-red-600 text-white hover:bg-red-700 rounded font-medium transition-colors shadow-sm"
                       >
                         Удалить
                       </button>

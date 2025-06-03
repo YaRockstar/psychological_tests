@@ -703,6 +703,31 @@ export async function deleteTestAttempt(id) {
 }
 
 /**
+ * Полное удаление попытки прохождения теста вместе с ответами.
+ * @param {string} id - ID попытки.
+ * @returns {Promise<boolean>} - Результат удаления.
+ */
+export async function deleteTestAttemptWithAnswers(id) {
+  if (!id) {
+    throw new NotValidError('ID попытки не указан');
+  }
+
+  const attempt = await TestAttemptRepository.getTestAttemptById(id);
+  if (!attempt) {
+    throw new NotFoundError('Попытка прохождения теста не найдена');
+  }
+
+  console.log(
+    `[TestAttemptService] Удаление попытки ${id} вместе с ${
+      attempt.answers?.length || 0
+    } ответами`
+  );
+
+  // Удаляем попытку полностью (ответы удаляются автоматически, так как они хранятся в массиве answers)
+  return await TestAttemptRepository.deleteTestAttempt(id);
+}
+
+/**
  * Удаление всех попыток прохождения тестов пользователя.
  * @param {string} userId - ID пользователя.
  * @returns {Promise<Object>} - Результат операции.
@@ -759,4 +784,31 @@ export async function getAttemptAnswersWithDetails(attemptId) {
     console.error(`[TestAttemptService] Ошибка при получении ответов: ${error.message}`);
     throw error;
   }
+}
+
+/**
+ * Проверка завершенной попытки пользователя для теста в рамках конкретной группы.
+ * @param {string} userId - ID пользователя.
+ * @param {string} testId - ID теста.
+ * @param {string} groupId - ID группы.
+ * @returns {Promise<Object|null>} - Найденная попытка или null.
+ */
+export async function getUserCompletedAttemptInGroup(userId, testId, groupId) {
+  if (!userId) {
+    throw new NotValidError('ID пользователя не указан');
+  }
+
+  if (!testId) {
+    throw new NotValidError('ID теста не указан');
+  }
+
+  if (!groupId) {
+    throw new NotValidError('ID группы не указан');
+  }
+
+  return await TestAttemptRepository.getUserCompletedAttemptInGroup(
+    userId,
+    testId,
+    groupId
+  );
 }

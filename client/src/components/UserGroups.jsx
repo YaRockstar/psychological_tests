@@ -11,6 +11,7 @@ function UserGroups() {
   const [successMessage, setSuccessMessage] = useState('');
   const [authors, setAuthors] = useState({});
   const [groupTests, setGroupTests] = useState({});
+  const [userAttempts, setUserAttempts] = useState({});
 
   useEffect(() => {
     // Проверяем авторизацию
@@ -42,6 +43,9 @@ function UserGroups() {
       // Загружаем информацию о тестах групп
       const testIds = [...new Set(groupsData.map(group => group.testId).filter(Boolean))];
       await fetchTestsInfo(testIds);
+
+      // Проверяем попытки пользователя для каждой группы
+      await checkUserAttemptsForGroups(groupsData);
 
       setLoading(false);
     } catch (error) {
@@ -97,6 +101,41 @@ function UserGroups() {
     } catch (error) {
       console.error('Ошибка при загрузке данных тестов:', error);
     }
+  };
+
+  // Проверяем попытки пользователя для групп
+  const checkUserAttemptsForGroups = async groupsData => {
+    try {
+      const attemptsData = {};
+
+      for (const group of groupsData) {
+        if (group.testId && group._id) {
+          try {
+            console.log(`Проверка попытки для группы ${group._id}, тест ${group.testId}`);
+            const response = await testAPI.checkUserAttemptInGroup(
+              group.testId,
+              group._id
+            );
+            attemptsData[`${group.testId}_${group._id}`] = response.data;
+            console.log('Результат проверки:', response.data);
+          } catch (err) {
+            console.error(`Ошибка при проверке попытки для группы ${group._id}:`, err);
+            attemptsData[`${group.testId}_${group._id}`] = { hasAttempt: false };
+          }
+        }
+      }
+
+      console.log('Загруженные данные попыток:', attemptsData);
+      setUserAttempts(attemptsData);
+    } catch (error) {
+      console.error('Ошибка при проверке попыток пользователя:', error);
+    }
+  };
+
+  // Получение состояния попытки для группы
+  const getUserAttemptForGroup = (testId, groupId) => {
+    const key = `${testId}_${groupId}`;
+    return userAttempts[key] || { hasAttempt: false };
   };
 
   // Получение имени автора по ID
@@ -307,12 +346,46 @@ function UserGroups() {
                       {getTest(group.testId)?.description?.substring(0, 150) || ''}
                       {getTest(group.testId)?.description?.length > 150 ? '...' : ''}
                     </p>
-                    <Link
-                      to={`/test/${group.testId}`}
-                      className="inline-block px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors"
-                    >
-                      Пройти тест
-                    </Link>
+
+                    {(() => {
+                      const attemptStatus = getUserAttemptForGroup(
+                        group.testId,
+                        group._id
+                      );
+
+                      if (attemptStatus.hasAttempt) {
+                        return (
+                          <div className="space-y-2">
+                            <div className="px-4 py-2 bg-green-100 text-green-800 rounded-md text-center">
+                              ✓ Тест уже пройден
+                              {attemptStatus.completedAt && (
+                                <div className="text-sm mt-1">
+                                  Дата прохождения:{' '}
+                                  {new Date(attemptStatus.completedAt).toLocaleString()}
+                                </div>
+                              )}
+                            </div>
+                            {attemptStatus.attemptId && (
+                              <Link
+                                to={`/test-results/${attemptStatus.attemptId}`}
+                                className="inline-block w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-center rounded-md transition-colors"
+                              >
+                                Посмотреть результаты
+                              </Link>
+                            )}
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <Link
+                            to={`/test/${group.testId}?groupId=${group._id}`}
+                            className="inline-block px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors"
+                          >
+                            Пройти тест
+                          </Link>
+                        );
+                      }
+                    })()}
                   </div>
                 )}
 

@@ -90,6 +90,14 @@ export const testAPI = {
 
   // Очистка истории тестов
   clearUserTestHistory: () => api.delete('/api/test-attempts/user/history'),
+
+  // Проверка, проходил ли пользователь тест в конкретной группе
+  checkUserAttemptInGroup: (testId, groupId) =>
+    api.get(`/api/test-attempts/check-group/${testId}/${groupId}`),
+
+  // Полное удаление попытки с ответами
+  deleteTestAttemptWithAnswers: attemptId =>
+    api.delete(`/api/test-attempts/${attemptId}/with-answers`),
 };
 
 export const groupAPI = {

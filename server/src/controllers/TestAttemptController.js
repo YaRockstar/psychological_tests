@@ -429,6 +429,43 @@ export const deleteTestAttempt = async (req, res) => {
 };
 
 /**
+ * Полностью удаляет попытку прохождения теста вместе с ответами.
+ * @param {Object} req - Объект запроса Express.
+ * @param {Object} res - Объект ответа Express.
+ */
+export const deleteTestAttemptWithAnswers = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    // Получаем данные попытки для проверки доступа
+    const attempt = await TestAttemptService.getTestAttemptById(id);
+
+    // Проверяем, принадлежит ли попытка текущему пользователю
+    const isAttemptOwner =
+      attempt.user &&
+      (typeof attempt.user === 'string'
+        ? attempt.user.toString() === userId.toString()
+        : attempt.user._id && attempt.user._id.toString() === userId.toString());
+
+    if (!isAttemptOwner) {
+      throw new ForbiddenError('У вас нет доступа к этой попытке прохождения теста');
+    }
+
+    console.log(
+      `[TestAttemptController] Полное удаление попытки ${id} с ответами пользователем ${userId}`
+    );
+
+    // Полностью удаляем попытку с ответами
+    await TestAttemptService.deleteTestAttemptWithAnswers(id);
+
+    res.status(204).send();
+  } catch (error) {
+    handleServiceError(error, res);
+  }
+};
+
+/**
  * Очищает историю прохождения тестов пользователя.
  * @param {Object} req - Объект запроса Express.
  * @param {Object} res - Объект ответа Express.
@@ -579,6 +616,48 @@ export const getTestAttemptDetailsForAuthor = async (req, res) => {
   } catch (error) {
     console.error(
       `[TestAttemptController] Ошибка при получении деталей попытки: ${error.message}`
+    );
+    handleServiceError(error, res);
+  }
+};
+
+/**
+ * Проверяет, проходил ли пользователь тест в рамках конкретной группы.
+ * @param {Object} req - Объект запроса Express.
+ * @param {Object} res - Объект ответа Express.
+ */
+export const checkUserAttemptInGroup = async (req, res) => {
+  try {
+    const { testId, groupId } = req.params;
+    const userId = req.user._id;
+
+    console.log(
+      `[TestAttemptController] Проверка попытки пользователя ${userId} для теста ${testId} в группе ${groupId}`
+    );
+
+    // Проверяем, есть ли у пользователя завершенная попытка в данной группе
+    const attempt = await TestAttemptService.getUserCompletedAttemptInGroup(
+      userId,
+      testId,
+      groupId
+    );
+
+    const hasAttempt = !!attempt;
+
+    console.log(
+      `[TestAttemptController] Результат проверки: ${
+        hasAttempt ? 'попытка найдена' : 'попытка не найдена'
+      }`
+    );
+
+    res.status(200).json({
+      hasAttempt,
+      attemptId: attempt ? attempt._id : null,
+      completedAt: attempt ? attempt.completedAt : null,
+    });
+  } catch (error) {
+    console.error(
+      `[TestAttemptController] Ошибка при проверке попытки: ${error.message}`
     );
     handleServiceError(error, res);
   }

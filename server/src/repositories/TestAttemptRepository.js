@@ -336,12 +336,6 @@ export const getCompletedAttemptsByTestAndUsers = async (
     completedAt: { $exists: true }, // Должно быть установлено время завершения
   };
 
-  // Если указан groupId, добавляем его в условия запроса
-  if (groupId) {
-    query.groupId = groupId;
-    console.log(`[TestAttemptRepository] Добавлен фильтр по группе: ${groupId}`);
-  }
-
   console.log(`[TestAttemptRepository] Запрос в MongoDB:`, JSON.stringify(query));
 
   // Ищем только полностью завершенные попытки с установленным результатом
@@ -370,6 +364,31 @@ export const getCompletedAttemptsByTestAndUsers = async (
       completedAt: attempts[0].completedAt,
       groupId: attempts[0].groupId || 'группа не задана',
     });
+  }
+
+  // Фильтруем попытки для групповых результатов:
+  // Берем только последнюю попытку каждого пользователя
+  if (groupId) {
+    const userLatestAttempts = new Map();
+
+    attempts.forEach(attempt => {
+      const userId = attempt.user._id.toString();
+      const existingAttempt = userLatestAttempts.get(userId);
+
+      if (
+        !existingAttempt ||
+        new Date(attempt.completedAt) > new Date(existingAttempt.completedAt)
+      ) {
+        userLatestAttempts.set(userId, attempt);
+      }
+    });
+
+    const filteredAttempts = Array.from(userLatestAttempts.values());
+    console.log(
+      `[TestAttemptRepository] После фильтрации по последним попыткам: ${filteredAttempts.length} попыток`
+    );
+
+    return filteredAttempts.map(transformDocument);
   }
 
   return attempts.map(transformDocument);
@@ -462,4 +481,38 @@ export const getAttemptAnswers = async attemptId => {
   }
 
   return processedAnswers;
+};
+
+/**
+ * Проверка завершенной попытки пользователя для теста в рамках конкретной группы.
+ * @param {string} userId - ID пользователя.
+ * @param {string} testId - ID теста.
+ * @param {string} groupId - ID группы.
+ * @returns {Promise<Object|null>} - Найденная попытка или null.
+ */
+export const getUserCompletedAttemptInGroup = async (userId, testId, groupId) => {
+  console.log(
+    `[TestAttemptRepository] Проверка завершенной попытки пользователя ${userId} для теста ${testId} в группе ${groupId}`
+  );
+
+  const query = {
+    user: userId,
+    test: testId,
+    groupId: groupId,
+    status: 'completed',
+    result: { $exists: true },
+    completedAt: { $exists: true },
+  };
+
+  console.log(`[TestAttemptRepository] Запрос для проверки:`, JSON.stringify(query));
+
+  const attempt = await TestAttemptModel.findOne(query).exec();
+
+  console.log(
+    `[TestAttemptRepository] Результат проверки: ${
+      attempt ? 'найдена попытка ' + attempt._id : 'попытка не найдена'
+    }`
+  );
+
+  return attempt ? transformDocument(attempt) : null;
 };

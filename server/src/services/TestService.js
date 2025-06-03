@@ -361,14 +361,15 @@ export async function getGroupTestAttempts(testId, memberIds, groupId) {
     `[TestService] Получение попыток для группы ${groupId}, теста ${testId} и ${memberIds.length} участников`
   );
 
-  // Получаем все завершенные попытки для данного теста и участников группы
-  // Игнорируем фильтр по groupId, так как старые попытки могут его не содержать
+  // Получаем только те завершенные попытки, которые были выполнены в рамках данной группы
+  // Передаем groupId для фильтрации только по попыткам из этой группы
   const attempts = await TestAttemptRepository.getCompletedAttemptsByTestAndUsers(
     testId,
-    memberIds
+    memberIds,
+    groupId // Передаем groupId для фильтрации
   );
 
-  console.log(`[TestService] Найдено ${attempts.length} попыток`);
+  console.log(`[TestService] Найдено ${attempts.length} попыток для группы ${groupId}`);
 
   // Получаем детальную информацию о каждой попытке, включая ответы на вопросы
   const detailedAttempts = await Promise.all(
@@ -378,6 +379,7 @@ export async function getGroupTestAttempts(testId, memberIds, groupId) {
         resultId: attempt.result?._id || attempt.result || 'не найден',
         hasUser: !!attempt.user,
         hasResult: !!attempt.result,
+        groupId: attempt.groupId || 'не задана',
       });
 
       // Информация о пользователе может быть уже в объекте attempt после populate

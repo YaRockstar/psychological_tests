@@ -410,30 +410,23 @@ export const startTestAttempt = async (req, res) => {
     const userId = req.user._id;
     const { groupId } = req.query; // Получаем ID группы, если пользователь проходит тест в рамках группы
 
-    // Если указан groupId, проверяем, проходил ли уже пользователь этот тест в рамках группы
+    // Если указан groupId, проверяем, проходил ли уже пользователь этот тест в рамках ЭТОЙ конкретной группы
     if (groupId) {
       logger.debug(
         `Проверка попыток для теста ${testId} пользователя ${userId} в группе ${groupId}`
       );
 
-      // Получаем все попытки пользователя
-      const userAttempts = await TestAttemptService.getUserTestAttempts(userId);
+      // Проверяем, есть ли уже завершенная попытка для этого теста в рамках данной группы
+      const completedAttemptInGroup =
+        await TestAttemptService.getUserCompletedAttemptInGroup(userId, testId, groupId);
 
-      // Проверяем, есть ли уже завершенная попытка для этого теста
-      const completedAttempt = userAttempts.find(
-        attempt =>
-          attempt.test._id.toString() === testId.toString() &&
-          attempt.status === 'completed' &&
-          attempt.result // Убедимся, что результат установлен
-      );
-
-      if (completedAttempt) {
+      if (completedAttemptInGroup) {
         logger.debug(
-          `Пользователь ${userId} уже проходил тест ${testId} (попытка ${completedAttempt._id})`
+          `Пользователь ${userId} уже проходил тест ${testId} в группе ${groupId} (попытка ${completedAttemptInGroup._id})`
         );
         return res.status(400).json({
           message:
-            'Вы уже проходили этот тест в рамках группы. Повторное прохождение невозможно.',
+            'Вы уже проходили этот тест в рамках данной группы. Повторное прохождение невозможно.',
         });
       }
     }
