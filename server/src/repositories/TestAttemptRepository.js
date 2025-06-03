@@ -16,6 +16,7 @@ const transformDocument = document => {
     status: rest.status,
     completedAt: rest.completedAt,
     timeSpent: rest.timeSpent,
+    groupId: rest.groupId || 'не задана',
   });
 
   const result = {
@@ -305,23 +306,48 @@ export const deleteTestAttemptsByTestId = async testId => {
  * Получение завершенных попыток прохождения теста для указанных пользователей.
  * @param {string} testId - ID теста.
  * @param {Array<string>} userIds - Массив ID пользователей.
+ * @param {string} groupId - ID группы (опционально).
  * @returns {Promise<Array<Object>>} - Список попыток.
  */
-export const getCompletedAttemptsByTestAndUsers = async (testId, userIds) => {
+export const getCompletedAttemptsByTestAndUsers = async (
+  testId,
+  userIds,
+  groupId = null
+) => {
   if (!userIds || userIds.length === 0) {
+    console.log(
+      `[TestAttemptRepository] Пустой массив пользователей для теста ${testId}`
+    );
     return [];
   }
 
-  // Ищем только полностью завершенные попытки с установленным результатом
-  const attempts = await TestAttemptModel.find({
+  console.log(
+    `[TestAttemptRepository] Поиск попыток для теста ${testId}, пользователей [${userIds.join(
+      ', '
+    )}]${groupId ? `, группы ${groupId}` : ''}`
+  );
+
+  // Формируем условия запроса
+  const query = {
     test: testId,
     user: { $in: userIds },
     status: 'completed',
     result: { $exists: true }, // Должен быть установлен результат
     completedAt: { $exists: true }, // Должно быть установлено время завершения
-  })
+  };
+
+  // Если указан groupId, добавляем его в условия запроса
+  if (groupId) {
+    query.groupId = groupId;
+    console.log(`[TestAttemptRepository] Добавлен фильтр по группе: ${groupId}`);
+  }
+
+  console.log(`[TestAttemptRepository] Запрос в MongoDB:`, JSON.stringify(query));
+
+  // Ищем только полностью завершенные попытки с установленным результатом
+  const attempts = await TestAttemptModel.find(query)
     .populate('user', 'firstName lastName email')
-    .populate('result', 'title description')
+    .populate('result')
     .populate({
       path: 'answers.question',
       select: 'text type options',
@@ -331,32 +357,18 @@ export const getCompletedAttemptsByTestAndUsers = async (testId, userIds) => {
       },
     })
     .populate('answers.selectedOptions', 'text value')
-    .sort({ completedAt: -1 })
+    .sort({ completedAt: -1 }) // Сортируем по времени завершения (новые сверху)
     .exec();
 
-  console.log(
-    `[TestAttemptRepository] Получено ${attempts.length} результатов теста для пользователей`
-  );
+  console.log(`[TestAttemptRepository] Найдено ${attempts.length} попыток`);
+
   if (attempts.length > 0) {
-    attempts.forEach((attempt, index) => {
-      console.log(`[TestAttemptRepository] Попытка ${index + 1}:`, {
-        id: attempt._id,
-        user: attempt.user
-          ? {
-              id: attempt.user._id,
-              firstName: attempt.user.firstName,
-              lastName: attempt.user.lastName,
-            }
-          : 'не задан',
-        result: attempt.result
-          ? {
-              id: attempt.result._id,
-              title: attempt.result.title,
-            }
-          : 'не задан',
-        completedAt: attempt.completedAt,
-        answers: attempt.answers ? attempt.answers.length : 0,
-      });
+    console.log(`[TestAttemptRepository] Первая попытка:`, {
+      id: attempts[0]._id,
+      user: attempts[0].user ? attempts[0].user._id : 'пользователь не задан',
+      result: attempts[0].result ? attempts[0].result._id : 'результат не задан',
+      completedAt: attempts[0].completedAt,
+      groupId: attempts[0].groupId || 'группа не задана',
     });
   }
 
@@ -369,6 +381,8 @@ export const getCompletedAttemptsByTestAndUsers = async (testId, userIds) => {
  * @returns {Promise<Array<Object>>} - Список ответов с детальной информацией.
  */
 export const getAttemptAnswers = async attemptId => {
+  console.log(`[TestAttemptRepository] Получение ответов для попытки ${attemptId}`);
+
   const attempt = await TestAttemptModel.findById(attemptId)
     .populate({
       path: 'answers.question',
@@ -383,7 +397,15 @@ export const getAttemptAnswers = async attemptId => {
     .select('answers result')
     .exec();
 
+  console.log(`[TestAttemptRepository] Попытка найдена: ${attempt ? 'Да' : 'Нет'}`);
+  console.log(
+    `[TestAttemptRepository] Количество ответов: ${
+      attempt && attempt.answers ? attempt.answers.length : 0
+    }`
+  );
+
   if (!attempt || !attempt.answers) {
+    console.log(`[TestAttemptRepository] Нет ответов для попытки ${attemptId}`);
     return [];
   }
 
@@ -428,6 +450,16 @@ export const getAttemptAnswers = async attemptId => {
       const { _originalQuestionText, ...rest } = answer;
       return rest;
     });
+
+  console.log(
+    `[TestAttemptRepository] Обработано уникальных ответов: ${processedAnswers.length}`
+  );
+  if (processedAnswers.length > 0) {
+    console.log(
+      `[TestAttemptRepository] Пример первого обработанного ответа:`,
+      JSON.stringify(processedAnswers[0])
+    );
+  }
 
   return processedAnswers;
 };

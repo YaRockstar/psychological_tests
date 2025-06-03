@@ -9,6 +9,11 @@ router.get('/', authenticate, TestAttemptController.getUserTestAttempts);
 
 // Маршруты для получения, обновления и удаления попытки
 router.get('/:id', authenticate, TestAttemptController.getTestAttemptById);
+router.get(
+  '/:id/details',
+  authenticate,
+  TestAttemptController.getTestAttemptDetailsForAuthor
+);
 router.delete('/:id', authenticate, TestAttemptController.deleteTestAttempt);
 
 // Маршруты для управления статусом прохождения

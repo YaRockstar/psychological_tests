@@ -69,9 +69,28 @@ function TestHistory() {
 
         // Убедимся, что response.data - это массив
         const attemptsData = Array.isArray(response.data) ? response.data : [];
+        console.log('Всего получено попыток:', attemptsData.length);
+
+        // Выводим в консоль информацию о каждой попытке для отладки
+        attemptsData.forEach((attempt, index) => {
+          console.log(`Попытка ${index + 1}:`, {
+            id: attempt._id,
+            status: attempt.status,
+            timeSpent: attempt.timeSpent,
+            hasResult: !!attempt.result,
+            completedAt: attempt.completedAt,
+          });
+        });
+
+        // Фильтруем только завершенные попытки с временем прохождения и результатами
+        const filteredAttempts = attemptsData.filter(attempt => {
+          return attempt.status === 'completed' && attempt.timeSpent && attempt.result;
+        });
+
+        console.log('После фильтрации осталось попыток:', filteredAttempts.length);
 
         // Сортируем по дате (сначала новые)
-        const sortedAttempts = attemptsData.sort(
+        const sortedAttempts = filteredAttempts.sort(
           (a, b) =>
             new Date(b.completedAt || b.startedAt) -
             new Date(a.completedAt || a.startedAt)
@@ -311,12 +330,6 @@ function TestHistory() {
                       className="text-indigo-600 hover:text-indigo-900 mr-4"
                     >
                       Просмотреть результаты
-                    </Link>
-                    <Link
-                      to={`/test-attempt/${attempt._id}`}
-                      className="text-indigo-600 hover:text-indigo-900"
-                    >
-                      Детали прохождения
                     </Link>
                   </td>
                 </tr>

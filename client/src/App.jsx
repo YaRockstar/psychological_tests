@@ -13,12 +13,12 @@ import TestsList from './components/TestsList';
 import TestTaking from './components/TestTaking';
 import TestResults from './components/TestResults';
 import TestHistory from './components/TestHistory';
-import TestAttemptDetails from './components/TestAttemptDetails';
 import AuthRedirect from './components/AuthRedirect';
 import AuthorGroups from './components/AuthorGroups';
 import UserGroups from './components/UserGroups';
 import JoinGroup from './components/JoinGroup';
 import GroupResults from './components/GroupResults';
+import AttemptDetails from './components/AttemptDetails';
 
 function App() {
   return (
@@ -126,14 +126,6 @@ function App() {
           }
         />
         <Route
-          path="/test-attempt/:attemptId"
-          element={
-            <Layout>
-              <TestAttemptDetails />
-            </Layout>
-          }
-        />
-        <Route
           path="/groups"
           element={
             <Layout>
@@ -162,6 +154,14 @@ function App() {
           element={
             <Layout>
               <GroupResults />
+            </Layout>
+          }
+        />
+        <Route
+          path="/attempt-details/:attemptId"
+          element={
+            <Layout>
+              <AttemptDetails />
             </Layout>
           }
         />

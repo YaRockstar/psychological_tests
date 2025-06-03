@@ -344,10 +344,11 @@ export async function updateTestRating(id, rating) {
  * Получение попыток прохождения теста для участников группы.
  * @param {string} testId - ID теста.
  * @param {Array<string>} memberIds - ID участников группы.
+ * @param {string} groupId - ID группы.
  * @returns {Promise<Array>} - Массив попыток с детальной информацией.
  * @throws {NotValidError} - Если параметры не валидны.
  */
-export async function getGroupTestAttempts(testId, memberIds) {
+export async function getGroupTestAttempts(testId, memberIds, groupId) {
   if (!testId) {
     throw new NotValidError('ID теста не указан');
   }
@@ -356,11 +357,18 @@ export async function getGroupTestAttempts(testId, memberIds) {
     return []; // Если нет участников, возвращаем пустой массив
   }
 
+  console.log(
+    `[TestService] Получение попыток для группы ${groupId}, теста ${testId} и ${memberIds.length} участников`
+  );
+
   // Получаем все завершенные попытки для данного теста и участников группы
+  // Игнорируем фильтр по groupId, так как старые попытки могут его не содержать
   const attempts = await TestAttemptRepository.getCompletedAttemptsByTestAndUsers(
     testId,
     memberIds
   );
+
+  console.log(`[TestService] Найдено ${attempts.length} попыток`);
 
   // Получаем детальную информацию о каждой попытке, включая ответы на вопросы
   const detailedAttempts = await Promise.all(

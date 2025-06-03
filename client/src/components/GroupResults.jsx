@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Navigate, useParams, Link } from 'react-router-dom';
+import { Navigate, useParams, Link, useNavigate } from 'react-router-dom';
 import { testAPI, groupAPI, userAPI } from '../utils/api';
 
 function GroupResults() {
@@ -11,6 +11,7 @@ function GroupResults() {
   const [group, setGroup] = useState(null);
   const [test, setTest] = useState(null);
   const [results, setResults] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -297,10 +298,7 @@ function GroupResults() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button
                           onClick={() => {
-                            const details = document.getElementById(
-                              `details-${attempt._id}`
-                            );
-                            details.open = !details.open;
+                            navigate(`/attempt-details/${attempt._id}`);
                           }}
                           className="text-indigo-600 hover:text-indigo-900"
                         >
@@ -312,56 +310,6 @@ function GroupResults() {
                 </tbody>
               </table>
             </div>
-
-            {/* Детальные результаты для каждой попытки */}
-            {results.map(attempt => (
-              <details
-                id={`details-${attempt._id}`}
-                key={`details-${attempt._id}`}
-                className="mt-4 p-4 border border-gray-200 rounded-md"
-              >
-                <summary className="font-medium text-indigo-600 cursor-pointer">
-                  Детали прохождения:{' '}
-                  {attempt.userFullName || attempt.user?.firstName || 'Пользователь'}{' '}
-                </summary>
-                <div className="mt-3">
-                  <h3 className="font-medium text-gray-700 mb-2">Ответы на вопросы:</h3>
-                  <div className="space-y-3">
-                    {attempt.answers?.map((answer, index) => (
-                      <div key={answer.questionId} className="p-3 bg-gray-50 rounded-md">
-                        <p className="font-medium">
-                          Вопрос {index + 1}: {answer.questionText}
-                        </p>
-                        <p className="text-gray-600 mt-1">
-                          <span className="font-medium">Ответ:</span>{' '}
-                          {answer.questionType === 'text'
-                            ? answer.textAnswer || 'Нет ответа'
-                            : answer.questionType === 'scale'
-                            ? `${answer.scaleValue || 0}`
-                            : answer.questionType === 'single' ||
-                              answer.questionType === 'multiple'
-                            ? `Выбраны варианты: ${
-                                Array.isArray(answer.selectedOptions)
-                                  ? answer.selectedOptions
-                                      .map(opt =>
-                                        typeof opt === 'object' && opt.text
-                                          ? opt.text
-                                          : opt
-                                      )
-                                      .join(', ')
-                                  : 'Нет ответа'
-                              }`
-                            : 'Неизвестный формат ответа'}
-                        </p>
-                      </div>
-                    ))}
-                    {(!attempt.answers || attempt.answers.length === 0) && (
-                      <p className="text-gray-500 italic">Нет данных об ответах</p>
-                    )}
-                  </div>
-                </div>
-              </details>
-            ))}
           </div>
         </div>
       )}

@@ -4,8 +4,7 @@ import * as ResultRepository from '../repositories/ResultRepository.js';
 import { NotValidError } from '../errors/NotValidError.js';
 import { NotFoundError } from '../errors/NotFoundError.js';
 import TestAttemptModel from '../models/TestAttemptModel.js';
-import { validateId } from '../utils/validators.js';
-import mongoose from 'mongoose';
+import QuestionModel from '../models/QuestionModel.js';
 
 /**
  * Валидация данных попытки прохождения теста.
@@ -72,6 +71,13 @@ export async function createTestAttempt(attemptData) {
     throw new NotFoundError('Тест не найден');
   }
 
+  // Если есть groupId, логируем это
+  if (attemptData.groupId) {
+    console.log(
+      `[TestAttemptService] Создание попытки с groupId: ${attemptData.groupId}`
+    );
+  }
+
   // Устанавливаем начальные значения
   const newAttemptData = {
     ...attemptData,
@@ -79,6 +85,13 @@ export async function createTestAttempt(attemptData) {
     status: 'completed',
     answers: [],
   };
+
+  console.log(`[TestAttemptService] Данные для создания попытки:`, {
+    test: newAttemptData.test,
+    user: newAttemptData.user,
+    groupId: newAttemptData.groupId || 'не задана',
+    status: newAttemptData.status,
+  });
 
   const createdAttempt = await TestAttemptRepository.createTestAttempt(newAttemptData);
 
@@ -108,184 +121,107 @@ export async function getTestAttemptById(id) {
 }
 
 /**
- * Получает попытку прохождения теста с деталями.
- * @param {string} attemptId - ID попытки прохождения теста.
- * @returns {Promise<Object>} - Объект попытки с деталями.
+ * Получение полной информации о попытке прохождения теста, включая данные о тесте и группе.
+ * @param {string} attemptId - ID попытки.
+ * @returns {Promise<Object>} - Полная информация о попытке.
  */
-export const getTestAttemptWithDetails = async attemptId => {
-  validateId(attemptId);
-
-  console.log(`[TestAttemptService] Получение попытки теста: ${attemptId}`);
-
-  // Используем populate для загрузки связанных данных
-  const attempt = await TestAttemptModel.findById(attemptId)
-    .populate({
-      path: 'test',
-      select: 'title description type category difficulty imageUrl',
-    })
-    .populate({
-      path: 'answers.question',
-      select:
-        'text type options correctAnswer minScale maxScale minScaleLabel maxScaleLabel',
-    })
-    .populate('result')
-    .exec();
-
-  if (!attempt) {
-    throw new NotFoundError(`Попытка прохождения теста ${attemptId} не найдена`);
+export async function getTestAttemptWithDetails(attemptId) {
+  if (!attemptId) {
+    throw new NotValidError('ID попытки не указан');
   }
 
-  console.log(`[TestAttemptService] Загружены данные попытки ID=${attemptId}`);
-  console.log(
-    `[TestAttemptService] Данные о тесте:`,
-    attempt.test
-      ? {
-          _id: attempt.test._id,
-          title: attempt.test.title,
-          type: attempt.test.type,
-        }
-      : 'Тест не найден'
-  );
-
-  // Рассчитываем дополнительные метрики для ответа
-  const attemptObj = attempt.toObject();
-
-  // Получаем список ID вопросов, на которые ответил пользователь
-  const answeredQuestionIds = [];
-  if (attemptObj.answers && attemptObj.answers.length > 0) {
-    attemptObj.answers.forEach(answer => {
-      if (answer.question && answer.question._id) {
-        answeredQuestionIds.push(answer.question._id.toString());
-      }
-    });
-  }
-
-  // Загрузим только те вопросы теста, на которые ответил пользователь
   try {
-    const QuestionModel = mongoose.model('Question');
+    console.log(`[TestAttemptService] Получение попытки теста: ${attemptId}`);
 
-    // Получаем вопросы с их вариантами ответов
-    let questions = [];
+    // Получаем попытку с базовой информацией
+    const attempt = await TestAttemptModel.findById(attemptId)
+      .populate('user', 'firstName lastName email')
+      .populate('test')
+      .populate('result')
+      .exec();
 
-    if (answeredQuestionIds.length > 0) {
-      questions = await QuestionModel.find({
-        _id: { $in: answeredQuestionIds },
-      })
-        .populate('options')
-        .exec();
-
-      console.log(
-        `[TestAttemptService] Загружено ${questions.length} вопросов для попытки`
-      );
+    if (!attempt) {
+      console.log(`[TestAttemptService] Попытка с ID=${attemptId} не найдена`);
+      return null;
     }
 
-    // Добавляем вопросы к ответу
-    attemptObj.questions = questions;
+    console.log(`[TestAttemptService] Загружены данные попытки ID=${attemptId}`);
 
-    // Форматируем ответы пользователя для клиента
-    if (attemptObj.answers && attemptObj.answers.length > 0) {
-      attemptObj.answers = attemptObj.answers
-        .map(answer => {
-          // Находим связанный вопрос
-          const question = answer.question;
+    // Логируем данные о тесте для отладки
+    console.log(`[TestAttemptService] Данные о тесте:`, {
+      _id: attempt.test?._id,
+      title: attempt.test?.title,
+      type: attempt.test?.type,
+    });
 
-          if (!question) {
-            console.log(`[TestAttemptService] Не найден вопрос для ответа ${answer._id}`);
-            return null;
-          }
+    // Получаем вопросы теста, если они есть
+    if (attempt.test) {
+      try {
+        const questions = await QuestionModel.find({ test: attempt.test._id })
+          .populate('options')
+          .exec();
 
-          // Преобразуем ответ в зависимости от типа вопроса
-          const formattedAnswer = {
-            _id: answer._id,
-            questionId: question._id,
-          };
-
-          switch (question.type) {
-            case 'single-choice':
-              // Выбранный вариант для вопроса с одним вариантом ответа
-              if (answer.selectedOptions && answer.selectedOptions.length > 0) {
-                formattedAnswer.selectedOptionId = answer.selectedOptions[0].toString();
-              }
-              break;
-
-            case 'multiple-choice':
-              // Выбранные варианты для вопроса с множественным выбором
-              if (answer.selectedOptions && answer.selectedOptions.length > 0) {
-                formattedAnswer.selectedOptionIds = answer.selectedOptions.map(opt =>
-                  typeof opt === 'object' ? opt._id.toString() : opt.toString()
-                );
-              } else {
-                formattedAnswer.selectedOptionIds = [];
-              }
-              break;
-
-            case 'text':
-              // Текстовый ответ
-              formattedAnswer.text = answer.textAnswer || '';
-              break;
-
-            case 'scale':
-              // Ответ со шкалой
-              formattedAnswer.scaleValue = answer.scaleValue || 0;
-              break;
-          }
-
-          return formattedAnswer;
-        })
-        .filter(answer => answer !== null); // Удаляем null-ответы
-    }
-  } catch (error) {
-    console.error('[TestAttemptService] Ошибка при загрузке вопросов:', error);
-  }
-
-  // Подсчитываем общее число вопросов и правильных ответов
-  const totalQuestions = attemptObj.answers ? attemptObj.answers.length : 0;
-  let correctAnswers = 0;
-
-  if (attemptObj.answers && attemptObj.answers.length > 0 && attemptObj.questions) {
-    // Подсчитываем правильные ответы для тестов с правильными ответами
-    correctAnswers = attemptObj.answers.filter(answer => {
-      const question = attemptObj.questions.find(
-        q => q._id.toString() === answer.questionId.toString()
-      );
-
-      if (!question || !question.correctAnswer) return false;
-
-      // Проверка для вопросов с одним вариантом ответа
-      if (question.type === 'single-choice' && question.correctAnswer.optionId) {
-        return answer.selectedOptionId === question.correctAnswer.optionId.toString();
-      }
-
-      // Проверка для вопросов с несколькими вариантами ответа
-      if (question.type === 'multiple-choice' && question.correctAnswer.optionIds) {
-        const correctIds = question.correctAnswer.optionIds.map(id => id.toString());
-        const selectedIds = answer.selectedOptionIds || [];
-
-        // Проверяем совпадение выбранных и правильных вариантов
-        return (
-          correctIds.length === selectedIds.length &&
-          correctIds.every(id => selectedIds.includes(id))
+        console.log(
+          `[TestAttemptService] Загружено ${questions.length} вопросов для попытки`
+        );
+      } catch (err) {
+        console.error(
+          `[TestAttemptService] Ошибка при загрузке вопросов: ${err.message}`
         );
       }
+    }
 
+    // Для расчета времени прохождения, если нужно
+    if (attempt.timeSpent && !attempt.duration) {
+      console.log(
+        `[TestAttemptService] Копируем timeSpent (${attempt.timeSpent}) в поле duration`
+      );
+      attempt.duration = attempt.timeSpent;
+    }
+
+    return attempt;
+  } catch (error) {
+    console.error(`[TestAttemptService] Ошибка при получении попытки: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * Проверка, является ли пользователь автором группы для данной попытки.
+ * @param {string} attemptId - ID попытки.
+ * @param {string} userId - ID пользователя.
+ * @returns {Promise<boolean>} - Результат проверки.
+ */
+export async function isGroupAuthorForAttempt(attemptId, userId) {
+  if (!attemptId || !userId) {
+    return false;
+  }
+
+  try {
+    // Получаем попытку
+    const attempt = await TestAttemptModel.findById(attemptId);
+
+    if (!attempt || !attempt.groupId) {
       return false;
-    }).length;
-  }
+    }
 
-  // Добавляем метрики к результату
-  attemptObj.totalQuestions = totalQuestions;
-  attemptObj.correctAnswers = correctAnswers;
+    // Получаем информацию о группе через репозиторий
+    const GroupRepository = await import('../repositories/GroupRepository.js');
+    const group = await GroupRepository.getGroupById(attempt.groupId);
 
-  // Для совместимости с клиентом - если есть поле timeSpent, копируем его в duration
-  if (attemptObj.timeSpent && !attemptObj.duration) {
-    attemptObj.duration = attemptObj.timeSpent;
-    console.log(
-      `[TestAttemptService] Копируем timeSpent (${attemptObj.timeSpent}) в поле duration`
+    if (!group) {
+      return false;
+    }
+
+    // Проверяем, является ли пользователь автором группы
+    return group.authorId.toString() === userId.toString();
+  } catch (error) {
+    console.error(
+      `[TestAttemptService] Ошибка при проверке автора группы: ${error.message}`
     );
+    return false;
   }
-
-  return attemptObj;
-};
+}
 
 /**
  * Получение попыток прохождения тестов пользователя.
@@ -790,6 +726,37 @@ export async function clearUserTestAttempts(userId) {
     };
   } catch (error) {
     console.error(`[TestAttemptService] Ошибка при очистке истории: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * Получение детальной информации об ответах на вопросы в попытке.
+ * @param {string} attemptId - ID попытки.
+ * @returns {Promise<Array<Object>>} - Список ответов с детальной информацией.
+ */
+export async function getAttemptAnswersWithDetails(attemptId) {
+  if (!attemptId) {
+    throw new NotValidError('ID попытки не указан');
+  }
+
+  try {
+    console.log(`[TestAttemptService] Получение ответов для попытки ${attemptId}`);
+    const answers = await TestAttemptRepository.getAttemptAnswers(attemptId);
+    console.log(`[TestAttemptService] Получено ${answers ? answers.length : 0} ответов`);
+
+    if (answers && answers.length > 0) {
+      console.log(
+        `[TestAttemptService] Пример первого ответа:`,
+        JSON.stringify(answers[0], null, 2)
+      );
+    } else {
+      console.log(`[TestAttemptService] Ответы не найдены для попытки ${attemptId}`);
+    }
+
+    return answers;
+  } catch (error) {
+    console.error(`[TestAttemptService] Ошибка при получении ответов: ${error.message}`);
     throw error;
   }
 }

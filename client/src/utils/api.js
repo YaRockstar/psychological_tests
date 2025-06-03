@@ -81,7 +81,8 @@ export const testAPI = {
   // Методы для получения результатов
   getTestAttempts: () => api.get('/api/test-attempts'),
   getUserTestAttempts: () => api.get('/api/test-attempts'),
-  getTestAttemptDetails: attemptId => api.get(`/api/test-attempts/${attemptId}`),
+  getTestAttemptById: attemptId => api.get(`/api/test-attempts/${attemptId}`),
+  getTestAttemptDetails: attemptId => api.get(`/api/test-attempts/${attemptId}/details`),
   getTestResultById: resultId => api.get(`/api/results/${resultId}`),
   getUserTestResults: params => api.get('/api/results/user', { params }),
   getTestResultsByTestId: testId => api.get(`/api/results/test/${testId}`),

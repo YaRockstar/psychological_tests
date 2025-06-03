@@ -463,9 +463,19 @@ export const startTestAttempt = async (req, res) => {
       // Если тест проходится в рамках группы, сохраняем groupId
       if (groupId) {
         attemptData.groupId = groupId;
+        logger.debug(`Сохраняем groupId ${groupId} в попытке для пользователя ${userId}`);
       }
 
       testAttempt = await TestAttemptService.createTestAttempt(attemptData);
+
+      // Проверяем, сохранился ли groupId
+      if (groupId && testAttempt) {
+        logger.debug(
+          `Проверка сохранения groupId: ${
+            testAttempt.groupId ? 'сохранен' : 'не сохранен'
+          }`
+        );
+      }
 
       // Увеличиваем счетчик прохождений теста
       await TestService.incrementTestAttempts(testId);
@@ -515,7 +525,7 @@ export async function getGroupTestResults(req, res) {
     const memberIds = group.members;
 
     // Получаем попытки прохождения теста для участников группы
-    const attempts = await TestService.getGroupTestAttempts(testId, memberIds);
+    const attempts = await TestService.getGroupTestAttempts(testId, memberIds, groupId);
 
     logger.debug(`Получено ${attempts.length} результатов для группы ID: ${groupId}`);
 

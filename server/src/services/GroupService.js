@@ -1,5 +1,6 @@
 import * as GroupRepository from '../repositories/GroupRepository.js';
 import { NotFoundError, NotValidError } from '../utils/errors.js';
+import mongoose from 'mongoose';
 
 /**
  * Создание новой группы
@@ -237,4 +238,34 @@ export async function getUserGroups(userId) {
   }
 
   return await GroupRepository.getUserGroups(userId);
+}
+
+/**
+ * Получение группы по ID попытки прохождения теста
+ * @param {string} attemptId ID попытки прохождения теста
+ * @returns {Promise<Object|null>} Группа или null, если группа не найдена
+ * @throws {NotValidError} Если ID попытки не указан
+ */
+export async function getGroupByTestAttemptId(attemptId) {
+  if (!attemptId) {
+    throw new NotValidError('ID попытки теста не указан');
+  }
+
+  try {
+    // Получаем попытку прохождения теста
+    const TestAttemptModel = mongoose.model('TestAttempt');
+    const attempt = await TestAttemptModel.findById(attemptId);
+
+    if (!attempt || !attempt.groupId) {
+      return null;
+    }
+
+    // Получаем группу по ID
+    return await getGroupById(attempt.groupId);
+  } catch (error) {
+    console.error(
+      `[GroupService] Ошибка при получении группы по ID попытки: ${error.message}`
+    );
+    return null;
+  }
 }
