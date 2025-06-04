@@ -14,12 +14,10 @@ function TestsList() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    // Проверяем, авторизован ли пользователь
     const token = localStorage.getItem('token');
     if (token) {
       setIsLoggedIn(true);
 
-      // Получаем роль пользователя
       const fetchUserRole = async () => {
         try {
           const userData = localStorage.getItem('userData');
@@ -32,7 +30,6 @@ function TestsList() {
             }
           }
 
-          // Дополнительно проверяем на сервере
           const response = await userAPI.getCurrentUser();
           setUserRole(response.data.role || '');
         } catch (err) {
@@ -48,48 +45,31 @@ function TestsList() {
       fetchUserRole();
     }
 
-    // Загружаем список тестов
     const fetchTests = async () => {
       try {
-        console.log(
-          'Загрузка тестов с фильтрами:',
-          filters,
-          'и поисковым запросом:',
-          searchTerm
-        );
         setLoading(true);
 
-        // Формируем параметры запроса
         const params = { ...filters, query: searchTerm };
-        // Удаляем пустые параметры
+
         Object.keys(params).forEach(key => !params[key] && delete params[key]);
 
-        console.log('Итоговые параметры запроса:', params);
-
-        // Используем метод getPublicTests вместо getTests, так как getTests требует роли админа
         const response = await testAPI.getPublicTests(params);
-        console.log('Получено тестов:', response.data.length);
+
         setTests(response.data);
         setError(null);
       } catch (error) {
-        console.error('Ошибка при загрузке тестов:', error);
-
         if (error.response) {
-          console.error('Статус ошибки:', error.response.status);
-          console.error('Данные ошибки:', error.response.data);
           setError(
             error.response.data.message ||
               `Ошибка загрузки тестов. Код: ${error.response.status}`
           );
         } else if (error.request) {
-          console.error('Нет ответа от сервера', error.request);
           setError('Нет ответа от сервера. Проверьте подключение к интернету.');
         } else {
-          console.error('Ошибка запроса:', error.message);
           setError(`Ошибка загрузки: ${error.message}`);
         }
 
-        setTests([]); // Сбрасываем предыдущие результаты при ошибке
+        setTests([]);
       } finally {
         setLoading(false);
       }
@@ -98,31 +78,27 @@ function TestsList() {
     fetchTests();
   }, [filters, searchTerm]);
 
-  // Если пользователь - автор, перенаправляем на главную страницу
   if (isLoggedIn && userRole === 'author') {
     return <Navigate to="/home" />;
   }
 
   const handleFilterChange = e => {
     const { name, value } = e.target;
-    console.log('Изменение фильтра:', name, value);
+
     setFilters(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSearchChange = e => {
-    console.log('Изменение поискового запроса:', e.target.value);
     setSearchTerm(e.target.value);
   };
 
   const handleClearFilters = () => {
-    console.log('Сброс всех фильтров');
     setFilters({
       testType: '',
     });
     setSearchTerm('');
   };
 
-  // Преобразование типа теста в читаемый формат
   const getTestTypeName = type => {
     const types = {
       personality: 'Личность',
@@ -135,7 +111,6 @@ function TestsList() {
   };
 
   const getTestImage = test => {
-    // Если у теста есть собственная ссылка на изображение, используем её
     if (test.imageUrl && test.imageUrl.trim() !== '') {
       return test.imageUrl;
     }
@@ -163,7 +138,6 @@ function TestsList() {
         Психологические тесты
       </h1>
 
-      {/* Фильтры и поиск */}
       <div className="mb-8 bg-white p-4 rounded-lg shadow-md">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>

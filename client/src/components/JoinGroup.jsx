@@ -27,8 +27,8 @@ function JoinGroup() {
         if (userData) {
           try {
             JSON.parse(userData);
-          } catch (error) {
-            console.error('Ошибка при парсинге данных пользователя:', error);
+          } catch {
+            return;
           }
         }
 
@@ -44,7 +44,6 @@ function JoinGroup() {
             // Автоматически присоединяемся к группе
             await joinGroup();
           } catch (error) {
-            console.error('Ошибка при получении группы:', error);
             setError(
               error.response?.data?.message ||
                 'Не удалось найти группу по указанному коду приглашения'
@@ -56,7 +55,6 @@ function JoinGroup() {
           setLoading(false);
         }
       } catch (err) {
-        console.error('Ошибка при получении данных пользователя:', err);
         if (err.response && err.response.status === 401) {
           setIsAuthenticated(false);
         } else {
@@ -75,7 +73,6 @@ function JoinGroup() {
         setSuccess(true);
         setLoading(false);
       } catch (error) {
-        console.error('Ошибка при присоединении к группе:', error);
         setError(error.response?.data?.message || 'Не удалось присоединиться к группе');
         setLoading(false);
       }
