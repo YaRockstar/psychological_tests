@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
-import { groupAPI, userAPI } from '../utils/api';
+import { Navigate, Link } from 'react-router-dom';
+import { groupAPI, userAPI, testAPI } from '../utils/api';
 
 function UserGroups() {
   const [groups, setGroups] = useState([]);
@@ -10,6 +10,8 @@ function UserGroups() {
   const [inviteCode, setInviteCode] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [authors, setAuthors] = useState({});
+  const [groupTests, setGroupTests] = useState({});
+  const [userAttempts, setUserAttempts] = useState({});
 
   useEffect(() => {
     // Проверяем авторизацию
@@ -37,6 +39,13 @@ function UserGroups() {
       // Загружаем информацию об авторах групп
       const authorIds = [...new Set(groupsData.map(group => group.authorId))];
       await fetchAuthorsInfo(authorIds);
+
+      // Загружаем информацию о тестах групп
+      const testIds = [...new Set(groupsData.map(group => group.testId).filter(Boolean))];
+      await fetchTestsInfo(testIds);
+
+      // Проверяем попытки пользователя для каждой группы
+      await checkUserAttemptsForGroups(groupsData);
 
       setLoading(false);
     } catch (error) {
@@ -70,6 +79,65 @@ function UserGroups() {
     }
   };
 
+  // Загружаем информацию о тестах
+  const fetchTestsInfo = async testIds => {
+    try {
+      const testsData = {};
+
+      for (const testId of testIds) {
+        try {
+          console.log(`Загрузка данных теста с ID: ${testId}`);
+          const response = await testAPI.getTestById(testId);
+          console.log('Полученные данные теста:', response.data);
+          testsData[testId] = response.data;
+        } catch (err) {
+          console.error(`Ошибка при загрузке данных теста ${testId}:`, err);
+          testsData[testId] = { title: 'Тест не найден' };
+        }
+      }
+
+      console.log('Загруженные данные тестов:', testsData);
+      setGroupTests(testsData);
+    } catch (error) {
+      console.error('Ошибка при загрузке данных тестов:', error);
+    }
+  };
+
+  // Проверяем попытки пользователя для групп
+  const checkUserAttemptsForGroups = async groupsData => {
+    try {
+      const attemptsData = {};
+
+      for (const group of groupsData) {
+        if (group.testId && group._id) {
+          try {
+            console.log(`Проверка попытки для группы ${group._id}, тест ${group.testId}`);
+            const response = await testAPI.checkUserAttemptInGroup(
+              group.testId,
+              group._id
+            );
+            attemptsData[`${group.testId}_${group._id}`] = response.data;
+            console.log('Результат проверки:', response.data);
+          } catch (err) {
+            console.error(`Ошибка при проверке попытки для группы ${group._id}:`, err);
+            attemptsData[`${group.testId}_${group._id}`] = { hasAttempt: false };
+          }
+        }
+      }
+
+      console.log('Загруженные данные попыток:', attemptsData);
+      setUserAttempts(attemptsData);
+    } catch (error) {
+      console.error('Ошибка при проверке попыток пользователя:', error);
+    }
+  };
+
+  // Получение состояния попытки для группы
+  const getUserAttemptForGroup = (testId, groupId) => {
+    const key = `${testId}_${groupId}`;
+    return userAttempts[key] || { hasAttempt: false };
+  };
+
   // Получение имени автора по ID
   const getAuthorName = authorId => {
     if (!authorId) return 'Неизвестный автор';
@@ -86,6 +154,12 @@ function UserGroups() {
       author.fullName ||
       'Неизвестный автор'
     );
+  };
+
+  // Получение теста по ID
+  const getTest = testId => {
+    if (!testId) return null;
+    return groupTests[testId] || null;
   };
 
   // Обработчик присоединения к группе
@@ -216,9 +290,13 @@ function UserGroups() {
               value={inviteCode}
               onChange={e => setInviteCode(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Введите код приглашения"
+              placeholder="Введите код приглашения, который вам предоставил автор группы"
               required
             />
+            <p className="mt-1 text-sm text-gray-500">
+              Введите код приглашения, который вам предоставил автор группы
+              (преподаватель).
+            </p>
           </div>
           <button
             type="submit"
@@ -256,6 +334,61 @@ function UserGroups() {
                 <p className="text-gray-600 mb-4">
                   {group.description || 'Нет описания'}
                 </p>
+
+                {/* Блок с информацией о связанном тесте */}
+                {group.testId && (
+                  <div className="bg-indigo-50 p-4 rounded-md mb-4">
+                    <h3 className="font-medium text-indigo-700 mb-2">Связанный тест:</h3>
+                    <p className="text-indigo-800 font-medium text-lg mb-2">
+                      {getTest(group.testId)?.title || 'Загрузка...'}
+                    </p>
+                    <p className="text-gray-600 text-sm mb-3">
+                      {getTest(group.testId)?.description?.substring(0, 150) || ''}
+                      {getTest(group.testId)?.description?.length > 150 ? '...' : ''}
+                    </p>
+
+                    {(() => {
+                      const attemptStatus = getUserAttemptForGroup(
+                        group.testId,
+                        group._id
+                      );
+
+                      if (attemptStatus.hasAttempt) {
+                        return (
+                          <div className="space-y-2">
+                            <div className="px-4 py-2 bg-green-100 text-green-800 rounded-md text-center">
+                              ✓ Тест уже пройден
+                              {attemptStatus.completedAt && (
+                                <div className="text-sm mt-1">
+                                  Дата прохождения:{' '}
+                                  {new Date(attemptStatus.completedAt).toLocaleString()}
+                                </div>
+                              )}
+                            </div>
+                            {attemptStatus.attemptId && (
+                              <Link
+                                to={`/test-results/${attemptStatus.attemptId}`}
+                                className="inline-block w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-center rounded-md transition-colors"
+                              >
+                                Посмотреть результаты
+                              </Link>
+                            )}
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <Link
+                            to={`/test/${group.testId}?groupId=${group._id}`}
+                            className="inline-block px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors"
+                          >
+                            Пройти тест
+                          </Link>
+                        );
+                      }
+                    })()}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <div className="border-t border-gray-200 pt-4 mt-4">

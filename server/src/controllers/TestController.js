@@ -4,6 +4,7 @@ import * as TestService from '../services/TestService.js';
 import * as QuestionService from '../services/QuestionService.js';
 import * as TestAttemptService from '../services/TestAttemptService.js';
 import { NotFoundError, NotValidError, ForbiddenError } from '../utils/errors.js';
+import * as GroupService from '../services/GroupService.js';
 
 /**
  * Обработчик ошибок сервиса.
@@ -95,8 +96,8 @@ export async function getPublicTests(req, res) {
   logger.debug('Запрос на получение публичных тестов');
 
   try {
-    const { category, testType, query, limit } = req.query;
-    const options = { category, testType, query, limit: parseInt(limit) || 50 };
+    const { testType, query, limit } = req.query;
+    const options = { testType, query, limit: parseInt(limit) || 50 };
 
     const tests = await TestService.getPublicTests(options);
     logger.debug(`Получено ${tests.length} публичных тестов`);
@@ -407,6 +408,28 @@ export const startTestAttempt = async (req, res) => {
   try {
     const { id: testId } = req.params;
     const userId = req.user._id;
+    const { groupId } = req.query; // Получаем ID группы, если пользователь проходит тест в рамках группы
+
+    // Если указан groupId, проверяем, проходил ли уже пользователь этот тест в рамках ЭТОЙ конкретной группы
+    if (groupId) {
+      logger.debug(
+        `Проверка попыток для теста ${testId} пользователя ${userId} в группе ${groupId}`
+      );
+
+      // Проверяем, есть ли уже завершенная попытка для этого теста в рамках данной группы
+      const completedAttemptInGroup =
+        await TestAttemptService.getUserCompletedAttemptInGroup(userId, testId, groupId);
+
+      if (completedAttemptInGroup) {
+        logger.debug(
+          `Пользователь ${userId} уже проходил тест ${testId} в группе ${groupId} (попытка ${completedAttemptInGroup._id})`
+        );
+        return res.status(400).json({
+          message:
+            'Вы уже проходили этот тест в рамках данной группы. Повторное прохождение невозможно.',
+        });
+      }
+    }
 
     // Проверяем, есть ли уже активная попытка прохождения этого теста
     const userAttempts = await TestAttemptService.getUserTestAttempts(userId);
@@ -430,7 +453,22 @@ export const startTestAttempt = async (req, res) => {
         startedAt: new Date(),
       };
 
+      // Если тест проходится в рамках группы, сохраняем groupId
+      if (groupId) {
+        attemptData.groupId = groupId;
+        logger.debug(`Сохраняем groupId ${groupId} в попытке для пользователя ${userId}`);
+      }
+
       testAttempt = await TestAttemptService.createTestAttempt(attemptData);
+
+      // Проверяем, сохранился ли groupId
+      if (groupId && testAttempt) {
+        logger.debug(
+          `Проверка сохранения groupId: ${
+            testAttempt.groupId ? 'сохранен' : 'не сохранен'
+          }`
+        );
+      }
 
       // Увеличиваем счетчик прохождений теста
       await TestService.incrementTestAttempts(testId);
@@ -445,3 +483,63 @@ export const startTestAttempt = async (req, res) => {
     handleServiceError(error, res);
   }
 };
+
+/**
+ * Получение результатов прохождения теста для конкретной группы.
+ * @param {Object} req - HTTP запрос.
+ * @param {Object} res - HTTP ответ.
+ */
+export async function getGroupTestResults(req, res) {
+  const { groupId } = req.params;
+  logger.debug(`Запрос на получение результатов теста для группы ID: ${groupId}`);
+
+  try {
+    const userId = req.user._id;
+
+    // Проверяем, является ли пользователь автором группы
+    const group = await GroupService.getGroupById(groupId);
+
+    if (!group) {
+      return res.status(HttpStatusCode.NOT_FOUND).json({
+        message: 'Группа не найдена',
+      });
+    }
+
+    if (group.authorId.toString() !== userId.toString()) {
+      return res.status(HttpStatusCode.FORBIDDEN).json({
+        message: 'У вас нет прав для просмотра результатов этой группы',
+      });
+    }
+
+    // Получаем ID теста, связанного с группой
+    const testId = group.testId;
+
+    // Получаем ID участников группы
+    const memberIds = group.members;
+
+    // Получаем попытки прохождения теста для участников группы
+    const attempts = await TestService.getGroupTestAttempts(testId, memberIds, groupId);
+
+    logger.debug(`Получено ${attempts.length} результатов для группы ID: ${groupId}`);
+
+    res.status(HttpStatusCode.OK).json(attempts);
+  } catch (error) {
+    logger.debug(`Ошибка при получении результатов теста для группы: ${error.message}`);
+
+    if (error.name === 'NotFoundError') {
+      return res.status(HttpStatusCode.NOT_FOUND).json({
+        message: error.message,
+      });
+    }
+
+    if (error.name === 'NotValidError') {
+      return res.status(HttpStatusCode.BAD_REQUEST).json({
+        message: error.message,
+      });
+    }
+
+    res.status(HttpStatusCode.INTERNAL_SERVER_ERROR).json({
+      message: 'Ошибка при получении результатов теста для группы',
+    });
+  }
+}

@@ -1,8 +1,7 @@
 import * as TestRepository from '../repositories/TestRepository.js';
-import * as QuestionRepository from '../repositories/QuestionRepository.js';
-import * as OptionRepository from '../repositories/OptionRepository.js';
-import * as ResultRepository from '../repositories/ResultRepository.js';
 import * as TestAttemptRepository from '../repositories/TestAttemptRepository.js';
+import * as UserRepository from '../repositories/UserRepository.js';
+import * as ResultRepository from '../repositories/ResultRepository.js';
 import { NotValidError } from '../errors/NotValidError.js';
 import { NotFoundError } from '../errors/NotFoundError.js';
 
@@ -20,18 +19,9 @@ export function validateTest(testData) {
     throw new NotValidError('Описание теста обязательно');
   }
 
-  if (!testData.category || testData.category.trim() === '') {
-    throw new NotValidError('Категория теста обязательна');
-  }
-
   const validTestTypes = ['personality', 'iq', 'emotional', 'aptitude', 'career'];
   if (testData.testType && !validTestTypes.includes(testData.testType)) {
     throw new NotValidError('Некорректный тип теста');
-  }
-
-  const validDifficulties = ['easy', 'medium', 'hard'];
-  if (testData.difficulty && !validDifficulties.includes(testData.difficulty)) {
-    throw new NotValidError('Некорректная сложность теста');
   }
 
   if (testData.timeLimit && typeof testData.timeLimit !== 'number') {
@@ -60,9 +50,7 @@ export function normalizeTestData(testData) {
   return {
     title: testData.title,
     description: testData.description,
-    category: testData.category,
     testType: testData.testType || 'personality',
-    difficulty: testData.difficulty || 'medium',
     timeLimit: testData.timeLimit || 0,
     passingScore: testData.passingScore || 0,
     isPublic: testData.isPublic || false,
@@ -350,4 +338,155 @@ export async function updateTestRating(id, rating) {
   }
 
   return await TestRepository.updateTestRating(id, rating);
+}
+
+/**
+ * Получение попыток прохождения теста для участников группы.
+ * @param {string} testId - ID теста.
+ * @param {Array<string>} memberIds - ID участников группы.
+ * @param {string} groupId - ID группы.
+ * @returns {Promise<Array>} - Массив попыток с детальной информацией.
+ * @throws {NotValidError} - Если параметры не валидны.
+ */
+export async function getGroupTestAttempts(testId, memberIds, groupId) {
+  if (!testId) {
+    throw new NotValidError('ID теста не указан');
+  }
+
+  if (!Array.isArray(memberIds) || memberIds.length === 0) {
+    return []; // Если нет участников, возвращаем пустой массив
+  }
+
+  console.log(
+    `[TestService] Получение попыток для группы ${groupId}, теста ${testId} и ${memberIds.length} участников`
+  );
+
+  // Получаем только те завершенные попытки, которые были выполнены в рамках данной группы
+  // Передаем groupId для фильтрации только по попыткам из этой группы
+  const attempts = await TestAttemptRepository.getCompletedAttemptsByTestAndUsers(
+    testId,
+    memberIds,
+    groupId // Передаем groupId для фильтрации
+  );
+
+  console.log(`[TestService] Найдено ${attempts.length} попыток для группы ${groupId}`);
+
+  // Получаем детальную информацию о каждой попытке, включая ответы на вопросы
+  const detailedAttempts = await Promise.all(
+    attempts.map(async attempt => {
+      console.log(`[TestService] Обработка попытки ${attempt._id}:`, {
+        userId: attempt.userId || attempt.user?._id || 'не найден',
+        resultId: attempt.result?._id || attempt.result || 'не найден',
+        hasUser: !!attempt.user,
+        hasResult: !!attempt.result,
+        groupId: attempt.groupId || 'не задана',
+      });
+
+      // Информация о пользователе может быть уже в объекте attempt после populate
+      let userData = null;
+      if (attempt.user) {
+        userData = {
+          _id: attempt.user._id.toString(),
+          firstName: attempt.user.firstName || 'Неизвестный',
+          lastName: attempt.user.lastName || '',
+          email: attempt.user.email || '',
+          fullName:
+            attempt.user.firstName && attempt.user.lastName
+              ? `${attempt.user.firstName} ${attempt.user.lastName}`
+              : attempt.user.firstName || 'Неизвестный пользователь',
+        };
+        console.log(`[TestService] Данные пользователя из попытки:`, userData);
+      } else {
+        try {
+          const userId = attempt.userId || attempt.user;
+          if (userId) {
+            const user = await UserRepository.getUserById(userId);
+            userData = {
+              _id: user._id.toString(),
+              firstName: user.firstName || 'Неизвестный',
+              lastName: user.lastName || '',
+              email: user.email || '',
+              fullName:
+                user.firstName && user.lastName
+                  ? `${user.firstName} ${user.lastName}`
+                  : user.firstName || 'Неизвестный пользователь',
+            };
+            console.log(`[TestService] Данные пользователя из репозитория:`, userData);
+          }
+        } catch (error) {
+          console.error(
+            `[TestService] Ошибка при получении данных пользователя: ${error.message}`
+          );
+          userData = {
+            _id: attempt.userId || attempt.user || 'unknown',
+            firstName: 'Неизвестный пользователь',
+            fullName: 'Неизвестный пользователь',
+          };
+        }
+      }
+
+      // Получаем информацию о результате
+      let resultData = null;
+
+      // Результат может быть уже в объекте attempt после populate
+      if (attempt.result) {
+        if (typeof attempt.result === 'object' && attempt.result.title) {
+          resultData = {
+            _id: attempt.result._id.toString(),
+            title: attempt.result.title || 'Результат теста',
+            description: attempt.result.description || '',
+          };
+          console.log(`[TestService] Данные результата из попытки:`, resultData);
+        } else {
+          // Если result есть, но это не объект с title, пробуем получить его из базы
+          try {
+            const resultId =
+              typeof attempt.result === 'object' ? attempt.result._id : attempt.result;
+
+            const result = await ResultRepository.getResultById(resultId);
+            if (result) {
+              resultData = {
+                _id: resultId.toString(),
+                title: result.title || 'Результат теста',
+                description: result.description || '',
+              };
+              console.log(`[TestService] Данные результата из репозитория:`, resultData);
+            } else {
+              resultData = { _id: resultId.toString(), title: 'Неизвестный результат' };
+            }
+          } catch (error) {
+            console.error(
+              `[TestService] Ошибка при получении данных результата: ${error.message}`
+            );
+            resultData = {
+              _id:
+                typeof attempt.result === 'object'
+                  ? attempt.result._id.toString()
+                  : String(attempt.result),
+              title: 'Неизвестный результат',
+            };
+          }
+        }
+      }
+
+      // Преобразуем attempt в обычный объект, если это еще не сделано
+      const attemptObj = attempt.toObject ? attempt.toObject() : attempt;
+
+      const formattedCompletedAt = attempt.completedAt
+        ? new Date(attempt.completedAt).toLocaleDateString()
+        : 'Invalid Date';
+
+      return {
+        ...attemptObj,
+        user: userData,
+        userFullName: userData.fullName,
+        completedAtFormatted: formattedCompletedAt,
+        result: resultData || attemptObj.result,
+        resultTitle: resultData ? resultData.title : 'Нет результата',
+        answers: await TestAttemptRepository.getAttemptAnswers(attempt._id),
+      };
+    })
+  );
+
+  return detailedAttempts;
 }

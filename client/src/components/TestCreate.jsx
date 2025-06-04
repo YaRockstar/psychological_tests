@@ -13,9 +13,7 @@ function TestCreate() {
   const [testData, setTestData] = useState({
     title: '',
     description: '',
-    category: '',
     testType: 'personality',
-    difficulty: 'medium',
     imageUrl: '',
     timeLimit: 0,
     passingScore: 0,
@@ -214,26 +212,6 @@ function TestCreate() {
             />
           </div>
 
-          {/* Категория */}
-          <div>
-            <label
-              className="block text-gray-700 text-sm font-bold mb-2"
-              htmlFor="category"
-            >
-              Категория*
-            </label>
-            <input
-              id="category"
-              type="text"
-              name="category"
-              value={testData.category}
-              onChange={handleInputChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="Например: Психология, Образование"
-            />
-          </div>
-
           {/* URL изображения */}
           <div className="md:col-span-2">
             <label
@@ -262,14 +240,13 @@ function TestCreate() {
               className="block text-gray-700 text-sm font-bold mb-2"
               htmlFor="testType"
             >
-              Тип теста*
+              Тип теста
             </label>
             <select
               id="testType"
               name="testType"
               value={testData.testType}
               onChange={handleInputChange}
-              required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               <option value="personality">Личность</option>
@@ -277,27 +254,6 @@ function TestCreate() {
               <option value="emotional">Эмоциональный интеллект</option>
               <option value="aptitude">Способности</option>
               <option value="career">Карьера</option>
-            </select>
-          </div>
-
-          {/* Сложность */}
-          <div>
-            <label
-              className="block text-gray-700 text-sm font-bold mb-2"
-              htmlFor="difficulty"
-            >
-              Сложность
-            </label>
-            <select
-              id="difficulty"
-              name="difficulty"
-              value={testData.difficulty}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              <option value="easy">Легкий</option>
-              <option value="medium">Средний</option>
-              <option value="hard">Сложный</option>
             </select>
           </div>
 

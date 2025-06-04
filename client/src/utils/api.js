@@ -70,7 +70,8 @@ export const testAPI = {
   getTestQuestions: id => api.get(`/api/tests/${id}/questions`),
 
   // Методы для прохождения тестов
-  startTestAttempt: testId => api.post(`/api/tests/${testId}/attempt`),
+  startTestAttempt: (testId, groupId) =>
+    api.post(`/api/tests/${testId}/attempt`, {}, { params: groupId ? { groupId } : {} }),
   saveTestAnswer: (attemptId, answerData) =>
     api.post(`/api/test-attempts/${attemptId}/answer`, answerData),
   completeTestAttempt: (attemptId, data = {}) =>
@@ -80,13 +81,23 @@ export const testAPI = {
   // Методы для получения результатов
   getTestAttempts: () => api.get('/api/test-attempts'),
   getUserTestAttempts: () => api.get('/api/test-attempts'),
-  getTestAttemptDetails: attemptId => api.get(`/api/test-attempts/${attemptId}`),
+  getTestAttemptById: attemptId => api.get(`/api/test-attempts/${attemptId}`),
+  getTestAttemptDetails: attemptId => api.get(`/api/test-attempts/${attemptId}/details`),
   getTestResultById: resultId => api.get(`/api/results/${resultId}`),
   getUserTestResults: params => api.get('/api/results/user', { params }),
   getTestResultsByTestId: testId => api.get(`/api/results/test/${testId}`),
+  getGroupTestResults: groupId => api.get(`/api/tests/group/${groupId}/results`),
 
   // Очистка истории тестов
   clearUserTestHistory: () => api.delete('/api/test-attempts/user/history'),
+
+  // Проверка, проходил ли пользователь тест в конкретной группе
+  checkUserAttemptInGroup: (testId, groupId) =>
+    api.get(`/api/test-attempts/check-group/${testId}/${groupId}`),
+
+  // Полное удаление попытки с ответами
+  deleteTestAttemptWithAnswers: attemptId =>
+    api.delete(`/api/test-attempts/${attemptId}/with-answers`),
 };
 
 export const groupAPI = {
@@ -94,7 +105,7 @@ export const groupAPI = {
   createGroup: groupData => api.post('/api/groups', groupData),
   getAuthorGroups: () => api.get('/api/groups/my'),
   updateGroup: (groupId, groupData) => api.put(`/api/groups/${groupId}`, groupData),
-  regenerateInviteCode: groupId => api.post(`/api/groups/${groupId}/invite`),
+  regenerateInviteCode: groupId => api.post(`/api/groups/${groupId}/invite-code`),
   deleteGroup: groupId => api.delete(`/api/groups/${groupId}`),
   removeUserFromGroup: (groupId, userId) =>
     api.delete(`/api/groups/${groupId}/users/${userId}`),
@@ -102,8 +113,8 @@ export const groupAPI = {
   // Методы для пользователей
   getUserGroups: () => api.get('/api/groups/joined'),
   getGroupById: groupId => api.get(`/api/groups/${groupId}`),
-  getGroupByInviteCode: inviteCode => api.get(`/api/groups/invite/${inviteCode}`),
-  joinGroup: inviteCode => api.post(`/api/groups/join/${inviteCode}`),
+  getGroupByInviteCode: inviteCode => api.get(`/api/groups/by-code/${inviteCode}`),
+  joinGroup: inviteCode => api.post(`/api/groups/join`, { inviteCode }),
   leaveGroup: groupId => api.post(`/api/groups/${groupId}/leave`),
 };
 

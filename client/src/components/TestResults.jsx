@@ -81,8 +81,12 @@ function TestResults() {
 
         try {
           // Сначала пробуем загрузить попытку из URL
-          const attemptResponse = await testAPI.getTestAttemptDetails(currentAttemptId);
+          const attemptResponse = await testAPI.getTestAttemptById(currentAttemptId);
           setTestAttempt(attemptResponse.data);
+
+          // Отладочная информация
+          console.log('Данные попытки:', attemptResponse.data);
+          console.log('Ответы на вопросы:', attemptResponse.data.answers);
 
           // Загружаем данные о тесте
           if (attemptResponse.data.test) {
@@ -114,9 +118,7 @@ function TestResults() {
           ) {
             try {
               // Пробуем загрузить последнюю сохраненную попытку
-              const lastAttemptResponse = await testAPI.getTestAttemptDetails(
-                lastAttemptId
-              );
+              const lastAttemptResponse = await testAPI.getTestAttemptById(lastAttemptId);
               setTestAttempt(lastAttemptResponse.data);
 
               // Загружаем данные о тесте
@@ -380,6 +382,47 @@ function TestResults() {
             <div className="bg-indigo-50 p-4 rounded-lg">
               <h4 className="text-lg font-medium text-indigo-800 mb-2">{result.title}</h4>
               <p className="text-gray-700">{result.description}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Ответы на вопросы */}
+        {testAttempt.answers && testAttempt.answers.length > 0 && (
+          <div className="p-6 border-t border-gray-200">
+            <h3 className="text-xl font-semibold text-center mb-4">Ваши ответы</h3>
+            <div className="space-y-4">
+              {testAttempt.answers.map((answer, index) => (
+                <div
+                  key={answer.questionId || index}
+                  className="bg-gray-50 p-4 rounded-md"
+                >
+                  <p className="font-medium text-gray-800">
+                    Вопрос {index + 1}: {answer.questionText}
+                  </p>
+                  <p className="text-gray-700 mt-2">
+                    <span className="font-medium">Ответ: </span>
+                    {answer.questionType === 'text' ? (
+                      answer.textAnswer || 'Нет ответа'
+                    ) : answer.questionType === 'scale' ? (
+                      `${answer.scaleValue || 0}`
+                    ) : answer.questionType === 'single' ||
+                      answer.questionType === 'multiple' ? (
+                      <span>
+                        Выбраны варианты:{' '}
+                        {Array.isArray(answer.selectedOptions)
+                          ? answer.selectedOptions
+                              .map(opt =>
+                                typeof opt === 'object' && opt.text ? opt.text : opt
+                              )
+                              .join(', ')
+                          : 'Нет ответа'}
+                      </span>
+                    ) : (
+                      'Неизвестный формат ответа'
+                    )}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         )}

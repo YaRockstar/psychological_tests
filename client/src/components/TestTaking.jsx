@@ -1,25 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Navigate } from 'react-router-dom';
+import { useParams, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { testAPI, userAPI } from '../utils/api';
 
 function TestTaking() {
   const { testId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const groupId = queryParams.get('groupId');
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [userRole, setUserRole] = useState('');
   const [test, setTest] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [testAttempt, setTestAttempt] = useState(null);
-  const [timeLeft, setTimeLeft] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [criticalError, setCriticalError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [answerStatus, setAnswerStatus] = useState('');
   const [testStarted, setTestStarted] = useState(false);
+  const [isContinuing, setIsContinuing] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // Начальное время прохождения (для точного подсчета времени)
   const [startTime, setStartTime] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [isContinuing, setIsContinuing] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -61,7 +66,9 @@ function TestTaking() {
         if (err.response && err.response.status === 401) {
           setIsAuthenticated(false);
         } else {
-          setError('Ошибка при проверке прав доступа. Пожалуйста, попробуйте позже.');
+          setCriticalError(
+            'Ошибка при проверке прав доступа. Пожалуйста, попробуйте позже.'
+          );
           setLoading(false);
         }
       }
@@ -103,37 +110,48 @@ function TestTaking() {
             setIsContinuing(true);
           } else {
             // Создаем новую попытку прохождения теста
-            const attemptResponse = await testAPI.startTestAttempt(processedTestId);
+            const attemptResponse = await testAPI.startTestAttempt(
+              processedTestId,
+              groupId
+            );
             console.log('Создана новая попытка теста:', attemptResponse.data._id);
             setTestAttempt(attemptResponse.data);
           }
         } catch (attemptError) {
           console.error('Ошибка при работе с попытками теста:', attemptError);
 
-          // Проверяем, не ошибка ли это доступа
-          if (attemptError.response && attemptError.response.status === 403) {
-            setError(
+          // Проверяем тип ошибки
+          if (attemptError.response && attemptError.response.status === 400) {
+            // Пользователь уже проходил тест в данной группе
+            setCriticalError(
+              attemptError.response.data.message ||
+                'Вы уже проходили этот тест в рамках данной группы. Повторное прохождение невозможно.'
+            );
+            setLoading(false);
+            return;
+          } else if (attemptError.response && attemptError.response.status === 403) {
+            setCriticalError(
               'У вас нет доступа к этой попытке теста. Будет создана новая попытка.'
             );
 
             try {
               // Создаем новую попытку прохождения теста
-              const newAttemptResponse = await testAPI.startTestAttempt(processedTestId);
+              const newAttemptResponse = await testAPI.startTestAttempt(
+                processedTestId,
+                groupId
+              );
               setTestAttempt(newAttemptResponse.data);
             } catch (newAttemptError) {
               console.error('Ошибка при создании новой попытки:', newAttemptError);
-              setError(
+              setCriticalError(
                 'Невозможно создать попытку прохождения теста. Пожалуйста, попробуйте позже.'
               );
             }
           } else {
-            setError('Ошибка при получении попыток теста. Пожалуйста, попробуйте позже.');
+            setCriticalError(
+              'Ошибка при получении попыток теста. Пожалуйста, попробуйте позже.'
+            );
           }
-        }
-
-        // Устанавливаем таймер, если есть ограничение по времени
-        if (testResponse.data.timeLimit && testResponse.data.timeLimit > 0) {
-          setTimeLeft(testResponse.data.timeLimit * 60); // Переводим в секунды
         }
 
         setLoading(false);
@@ -142,10 +160,10 @@ function TestTaking() {
         if (error.response && error.response.status === 401) {
           setIsAuthenticated(false);
         } else if (error.response && error.response.status === 403) {
-          setError('У вас нет доступа к этому тесту.');
+          setCriticalError('У вас нет доступа к этому тесту.');
           setLoading(false);
         } else {
-          setError(
+          setCriticalError(
             error.response?.data?.message ||
               'Не удалось загрузить тест. Попробуйте позже.'
           );
@@ -155,16 +173,16 @@ function TestTaking() {
     };
 
     checkUserRole();
-  }, [testId]);
+  }, [testId, groupId]);
 
   // Эффект для автоматического запуска теста при продолжении
   useEffect(() => {
     // Если мы продолжаем тест и все готово для его запуска
-    if (isContinuing && !loading && test && !testStarted && !error) {
+    if (isContinuing && !loading && test && !testStarted && !criticalError) {
       // Автоматически запускаем тест
       handleStartTest();
     }
-  }, [isContinuing, loading, test, testStarted, error]);
+  }, [isContinuing, loading, test, testStarted, criticalError]);
 
   // Запуск таймера отслеживания времени прохождения
   useEffect(() => {
@@ -182,47 +200,18 @@ function TestTaking() {
     };
   }, [testStarted, startTime]);
 
-  // Таймер для теста с ограничением времени
-  useEffect(() => {
-    if (timeLeft === null || loading || !testAttempt || !testStarted) return;
-
-    if (timeLeft <= 0) {
-      handleSubmitTest();
-      return;
-    }
-
-    const timer = setInterval(() => {
-      setTimeLeft(prevTime => prevTime - 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeLeft, loading, testAttempt, testStarted]);
-
   // Функция запуска теста
   const handleStartTest = () => {
-    setStartTime(new Date());
+    const newStartTime = new Date();
+    setStartTime(newStartTime);
+    setElapsedTime(0);
     setTestStarted(true);
-  };
-
-  // Форматирование оставшегося времени
-  const formatTime = seconds => {
-    if (seconds >= 3600) {
-      const hours = Math.floor(seconds / 3600);
-      const mins = Math.floor((seconds % 3600) / 60);
-      const secs = seconds % 60;
-      return `${hours}:${mins.toString().padStart(2, '0')}:${secs
-        .toString()
-        .padStart(2, '0')}`;
-    } else {
-      const mins = Math.floor(seconds / 60);
-      const secs = seconds % 60;
-      return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }
   };
 
   // Обработка ответа пользователя
   const handleAnswer = async (questionId, answerValue) => {
-    setAnswerStatus('Сохранение ответа...');
+    setSuccessMessage('Сохранение ответа...');
+    setError(null);
 
     // Обновляем локальное состояние с выбранным ответом
     setQuestions(prevQuestions => {
@@ -236,7 +225,7 @@ function TestTaking() {
 
     if (!testAttempt) {
       setError('Ошибка: Нет активной попытки прохождения теста.');
-      setAnswerStatus('Ошибка сохранения ответа');
+      setSuccessMessage('');
       return;
     }
 
@@ -248,14 +237,14 @@ function TestTaking() {
     try {
       // Пытаемся сохранить ответ
       await testAPI.saveTestAnswer(testAttempt._id, answerData);
-      setAnswerStatus('Ответ сохранен');
-      setTimeout(() => setAnswerStatus(''), 2000);
+      setSuccessMessage('Ответ сохранен');
+      setTimeout(() => setSuccessMessage(''), 2000);
     } catch (error) {
       // Если получаем ответ 410 (Gone), это значит что предыдущая попытка была завершена
       if (error.response && error.response.status === 410) {
         try {
           // Создаем новую попытку теста
-          const newAttemptResponse = await testAPI.startTestAttempt(testId);
+          const newAttemptResponse = await testAPI.startTestAttempt(testId, groupId);
           const newAttemptId = newAttemptResponse.data._id;
 
           // Сохраняем новый ID попытки
@@ -264,12 +253,12 @@ function TestTaking() {
 
           // Пробуем сохранить ответ с новой попыткой
           await testAPI.saveTestAnswer(newAttemptId, answerData);
-          setAnswerStatus('Ответ сохранен (создана новая попытка)');
-          setTimeout(() => setAnswerStatus(''), 3000);
+          setSuccessMessage('Ответ сохранен (создана новая попытка)');
+          setTimeout(() => setSuccessMessage(''), 3000);
         } catch (newAttemptError) {
           console.error('Ошибка при создании новой попытки:', newAttemptError);
           setError('Не удалось создать новую попытку прохождения теста.');
-          setAnswerStatus('Ошибка сохранения ответа');
+          setSuccessMessage('');
         }
       } else {
         console.error('Ошибка при сохранении ответа:', error);
@@ -277,7 +266,7 @@ function TestTaking() {
           error.response?.data?.message ||
             'Произошла ошибка при сохранении ответа. Попробуйте еще раз.'
         );
-        setAnswerStatus('Ошибка сохранения ответа');
+        setSuccessMessage('');
       }
     }
   };
@@ -352,6 +341,38 @@ function TestTaking() {
     }
   };
 
+  // Обработка отказа от прохождения теста
+  const handleAbandonTest = async () => {
+    // Показываем подтверждающий диалог
+    const confirmed = window.confirm(
+      'Вы уверены, что хотите отказаться от прохождения теста? Все ваши ответы будут потеряны и попытка будет полностью удалена.'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      if (testAttempt && testAttempt._id) {
+        // Полностью удаляем попытку вместе с ответами
+        await testAPI.deleteTestAttemptWithAnswers(testAttempt._id);
+        console.log('Попытка теста была полностью удалена вместе с ответами');
+      }
+    } catch (error) {
+      console.error('Ошибка при удалении попытки теста:', error);
+      // Не показываем ошибку пользователю, так как мы все равно уходим со страницы
+    }
+
+    // Перенаправляем пользователя обратно
+    if (groupId) {
+      // Если тест проходился в рамках группы, возвращаемся к группам
+      navigate('/my-groups');
+    } else {
+      // Иначе возвращаемся к списку тестов
+      navigate('/tests');
+    }
+  };
+
   // Сохранение ответа и переход к следующему вопросу
   const handleNextWithSave = () => {
     // Получаем текущий вопрос
@@ -364,8 +385,9 @@ function TestTaking() {
       goToNextQuestion();
     } else {
       // Показываем уведомление, что нужно выбрать ответ
-      setAnswerStatus('Пожалуйста, выберите ответ перед тем, как продолжить');
-      setTimeout(() => setAnswerStatus(''), 3000);
+      setError('Пожалуйста, выберите ответ перед тем, как продолжить');
+      setSuccessMessage('');
+      setTimeout(() => setError(''), 3000);
     }
   };
 
@@ -377,8 +399,8 @@ function TestTaking() {
     if (!question) return null;
 
     return (
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h3 className="text-xl font-semibold mb-4">{question.text}</h3>
+      <div className="bg-white p-8 rounded-lg shadow-md">
+        <h3 className="text-xl font-semibold mb-6">{question.text}</h3>
 
         {/* Отображение вариантов ответа в зависимости от типа вопроса */}
         {question.type === 'single' && (
@@ -482,12 +504,12 @@ function TestTaking() {
     );
   }
 
-  if (error) {
+  if (criticalError) {
     return (
       <div className="w-full max-w-4xl mx-auto py-8 px-4">
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           <p className="font-bold">Ошибка!</p>
-          <p>{error}</p>
+          <p>{criticalError}</p>
         </div>
         <button
           onClick={() => navigate('/tests')}
@@ -541,15 +563,6 @@ function TestTaking() {
             {test.passingScore > 0 && (
               <p className="text-gray-600">Проходной балл: {test.passingScore}</p>
             )}
-            <p className="text-gray-600">Категория: {test.category}</p>
-            <p className="text-gray-600">
-              Сложность:{' '}
-              {test.difficulty === 'easy'
-                ? 'Легкий'
-                : test.difficulty === 'medium'
-                ? 'Средний'
-                : 'Сложный'}
-            </p>
           </div>
 
           <div className="flex justify-between mt-8">
@@ -574,46 +587,62 @@ function TestTaking() {
 
   return (
     <div className="w-full max-w-4xl mx-auto py-8 px-4">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">{test.title}</h1>
-        <p className="text-gray-600">{test.description}</p>
-      </div>
-
-      {/* Прогресс и таймер */}
-      <div className="flex justify-between items-center mb-6">
-        <div className="text-sm text-gray-600">
-          Вопрос {currentQuestionIndex + 1} из {questions.length}
-        </div>
-        <div className="flex gap-4">
-          <div className="text-sm font-medium">
-            Время прохождения: {formatTime(elapsedTime)}
-          </div>
-          {timeLeft !== null && (
-            <div className="text-sm font-medium">
-              Осталось времени: {formatTime(timeLeft)}
+      <div className="max-w-4xl mx-auto">
+        {/* Заголовок теста */}
+        <div className="mb-8">
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{test?.title}</h1>
+              {test?.description && (
+                <p className="text-lg text-gray-600">{test.description}</p>
+              )}
             </div>
-          )}
-        </div>
-      </div>
+          </div>
 
-      {/* Индикатор прогресса */}
-      <div className="w-full bg-gray-200 rounded-full h-2.5 mb-6">
-        <div
-          className="bg-indigo-600 h-2.5 rounded-full"
-          style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
-        ></div>
+          {/* Информация о прогрессе */}
+          <div className="flex justify-between items-center text-sm text-gray-600">
+            <span>
+              Вопрос {currentQuestionIndex + 1} из {questions.length}
+            </span>
+            <span className="font-bold">
+              {startTime
+                ? `${Math.floor(elapsedTime / 60)}:${(elapsedTime % 60)
+                    .toString()
+                    .padStart(2, '0')}`
+                : '0:00'}
+              {test?.timeLimit > 0 && ` / ${test.timeLimit} мин`}
+            </span>
+          </div>
+
+          {/* Прогресс бар */}
+          <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
+            <div
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+              style={{
+                width: `${((currentQuestionIndex + 1) / questions.length) * 100}%`,
+              }}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Индикатор статуса ответа */}
-      <div id="answer-status" className="text-center text-sm font-medium mb-4 h-6">
-        {answerStatus}
+      <div id="answer-status" className="text-center text-sm font-medium mb-2 h-6">
+        {successMessage && (
+          <span className="text-green-600 bg-green-50 px-3 py-1 rounded-md">
+            {successMessage}
+          </span>
+        )}
+        {error && (
+          <span className="text-red-600 bg-red-50 px-3 py-1 rounded-md">{error}</span>
+        )}
       </div>
 
       {/* Текущий вопрос */}
-      {renderCurrentQuestion()}
+      <div className="mt-2">{renderCurrentQuestion()}</div>
 
       {/* Навигационные кнопки */}
-      <div className="mt-8 flex justify-between">
+      <div className="mt-8 flex justify-between items-center">
         <button
           onClick={goToPrevQuestion}
           disabled={currentQuestionIndex === 0}
@@ -624,6 +653,15 @@ function TestTaking() {
           }`}
         >
           Назад
+        </button>
+
+        {/* Кнопка отказа от прохождения */}
+        <button
+          onClick={handleAbandonTest}
+          className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
+          title="Отказаться от прохождения теста"
+        >
+          Отказаться
         </button>
 
         {currentQuestionIndex < questions.length - 1 ? (

@@ -1,5 +1,6 @@
 import * as TestAttemptService from '../services/TestAttemptService.js';
 import * as ResultService from '../services/ResultService.js';
+import * as GroupService from '../services/GroupService.js';
 import { NotFoundError, NotValidError, ForbiddenError } from '../utils/errors.js';
 
 /**
@@ -68,15 +69,104 @@ export const getTestAttemptById = async (req, res) => {
       )}`
     );
 
-    // Проверяем, принадлежит ли попытка текущему пользователю
-    if (attempt.user.toString() !== userId.toString()) {
+    // Проверяем, есть ли у текущего пользователя право на просмотр этой попытки
+    // Три варианта доступа:
+    // 1. Пользователь является автором теста
+    // 2. Пользователь является автором группы, к которой относится попытка
+    // 3. Пользователь является владельцем попытки (сам проходил тест)
+
+    const isTestAuthor =
+      attempt.test &&
+      attempt.test.authorId &&
+      attempt.test.authorId.toString() === userId.toString();
+
+    // Проверяем, является ли пользователь автором группы
+    let isGroupAuthor = false;
+
+    if (attempt.groupId) {
+      // Получаем группу по ID попытки
+      const group = await GroupService.getGroupByTestAttemptId(id);
+
+      if (group && group.authorId.toString() === userId.toString()) {
+        isGroupAuthor = true;
+        console.log(
+          `[TestAttemptController] Пользователь ${userId} является автором группы ${group._id}`
+        );
+      }
+    }
+
+    // Проверяем, является ли пользователь владельцем попытки
+    const isAttemptOwner =
+      attempt.user &&
+      (typeof attempt.user === 'string'
+        ? attempt.user.toString() === userId.toString()
+        : attempt.user._id && attempt.user._id.toString() === userId.toString());
+
+    if (isAttemptOwner) {
       console.log(
-        `[TestAttemptController] Ошибка доступа: пользователь ${userId} пытается получить попытку пользователя ${attempt.user}`
+        `[TestAttemptController] Пользователь ${userId} является владельцем попытки ${attempt._id}`
+      );
+    }
+
+    if (!isTestAuthor && !isGroupAuthor && !isAttemptOwner) {
+      console.log(
+        `[TestAttemptController] Ошибка доступа: пользователь ${userId} не имеет прав на просмотр попытки ${attempt._id}`
       );
       throw new ForbiddenError('У вас нет доступа к этой попытке прохождения теста');
     }
 
-    res.status(200).json(attempt);
+    // Получаем полные ответы пользователя
+    const answers = await TestAttemptService.getAttemptAnswersWithDetails(id);
+
+    // Получаем информацию о результате, если он есть
+    let resultInfo = null;
+    if (attempt.result) {
+      if (typeof attempt.result === 'object' && attempt.result.title) {
+        resultInfo = {
+          _id: attempt.result._id.toString(),
+          title: attempt.result.title,
+          description: attempt.result.description || '',
+        };
+        console.log(
+          `[TestAttemptController] Информация о результате получена из объекта попытки:`,
+          resultInfo
+        );
+      } else {
+        // Если result есть, но это не объект с title, пробуем получить его из базы
+        try {
+          const resultId =
+            typeof attempt.result === 'object' ? attempt.result._id : attempt.result;
+          const ResultRepository = await import('../repositories/ResultRepository.js');
+          const result = await ResultRepository.getResultById(resultId);
+
+          if (result) {
+            resultInfo = {
+              _id: resultId.toString(),
+              title: result.title || 'Результат теста',
+              description: result.description || '',
+            };
+            console.log(
+              `[TestAttemptController] Информация о результате получена из репозитория:`,
+              resultInfo
+            );
+          }
+        } catch (error) {
+          console.error(
+            `[TestAttemptController] Ошибка при получении данных результата: ${error.message}`
+          );
+        }
+      }
+    }
+
+    // Формируем полный ответ
+    const detailedAttempt = {
+      ...attempt.toObject(),
+      answers: answers,
+      resultTitle: resultInfo ? resultInfo.title : 'Нет результата',
+      result: resultInfo || attempt.result,
+    };
+
+    res.status(200).json(detailedAttempt);
   } catch (error) {
     console.error(
       `[TestAttemptController] Ошибка при получении попытки: ${error.message}`
@@ -105,7 +195,13 @@ export const saveTestAnswer = async (req, res) => {
     const attempt = await TestAttemptService.getTestAttemptById(id);
 
     // Проверяем, принадлежит ли попытка текущему пользователю
-    if (attempt.user.toString() !== userId.toString()) {
+    const isAttemptOwner =
+      attempt.user &&
+      (typeof attempt.user === 'string'
+        ? attempt.user.toString() === userId.toString()
+        : attempt.user._id && attempt.user._id.toString() === userId.toString());
+
+    if (!isAttemptOwner) {
       throw new ForbiddenError('У вас нет доступа к этой попытке прохождения теста');
     }
 
@@ -161,7 +257,13 @@ export const completeTestAttempt = async (req, res) => {
     );
 
     // Проверяем, принадлежит ли попытка текущему пользователю
-    if (attempt.user.toString() !== userId.toString()) {
+    const isAttemptOwner =
+      attempt.user &&
+      (typeof attempt.user === 'string'
+        ? attempt.user.toString() === userId.toString()
+        : attempt.user._id && attempt.user._id.toString() === userId.toString());
+
+    if (!isAttemptOwner) {
       throw new ForbiddenError('У вас нет доступа к этой попытке прохождения теста');
     }
 
@@ -261,7 +363,13 @@ export const abandonTestAttempt = async (req, res) => {
     const attempt = await TestAttemptService.getTestAttemptById(id);
 
     // Проверяем, принадлежит ли попытка текущему пользователю
-    if (attempt.user.toString() !== userId.toString()) {
+    const isAttemptOwner =
+      attempt.user &&
+      (typeof attempt.user === 'string'
+        ? attempt.user.toString() === userId.toString()
+        : attempt.user._id && attempt.user._id.toString() === userId.toString());
+
+    if (!isAttemptOwner) {
       throw new ForbiddenError('У вас нет доступа к этой попытке прохождения теста');
     }
 
@@ -301,12 +409,55 @@ export const deleteTestAttempt = async (req, res) => {
     const attempt = await TestAttemptService.getTestAttemptById(id);
 
     // Проверяем, принадлежит ли попытка текущему пользователю
-    if (attempt.user.toString() !== userId.toString()) {
+    const isAttemptOwner =
+      attempt.user &&
+      (typeof attempt.user === 'string'
+        ? attempt.user.toString() === userId.toString()
+        : attempt.user._id && attempt.user._id.toString() === userId.toString());
+
+    if (!isAttemptOwner) {
       throw new ForbiddenError('У вас нет доступа к этой попытке прохождения теста');
     }
 
     // Удаляем попытку
     await TestAttemptService.deleteTestAttempt(id);
+
+    res.status(204).send();
+  } catch (error) {
+    handleServiceError(error, res);
+  }
+};
+
+/**
+ * Полностью удаляет попытку прохождения теста вместе с ответами.
+ * @param {Object} req - Объект запроса Express.
+ * @param {Object} res - Объект ответа Express.
+ */
+export const deleteTestAttemptWithAnswers = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    // Получаем данные попытки для проверки доступа
+    const attempt = await TestAttemptService.getTestAttemptById(id);
+
+    // Проверяем, принадлежит ли попытка текущему пользователю
+    const isAttemptOwner =
+      attempt.user &&
+      (typeof attempt.user === 'string'
+        ? attempt.user.toString() === userId.toString()
+        : attempt.user._id && attempt.user._id.toString() === userId.toString());
+
+    if (!isAttemptOwner) {
+      throw new ForbiddenError('У вас нет доступа к этой попытке прохождения теста');
+    }
+
+    console.log(
+      `[TestAttemptController] Полное удаление попытки ${id} с ответами пользователем ${userId}`
+    );
+
+    // Полностью удаляем попытку с ответами
+    await TestAttemptService.deleteTestAttemptWithAnswers(id);
 
     res.status(204).send();
   } catch (error) {
@@ -338,6 +489,176 @@ export const clearUserTestHistory = async (req, res) => {
     });
   } catch (error) {
     console.error('Ошибка при очистке истории тестов:', error);
+    handleServiceError(error, res);
+  }
+};
+
+/**
+ * Получает детальную информацию о попытке прохождения теста для автора группы.
+ * @param {Object} req - Объект запроса Express.
+ * @param {Object} res - Объект ответа Express.
+ */
+export const getTestAttemptDetailsForAuthor = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    console.log(
+      `[TestAttemptController] Запрос детальной информации о попытке ID=${id} автором ${userId}`
+    );
+
+    // Получаем данные попытки с полной информацией
+    const attempt = await TestAttemptService.getTestAttemptWithDetails(id);
+
+    if (!attempt) {
+      console.log(`[TestAttemptController] Попытка с ID=${id} не найдена`);
+      throw new NotFoundError('Попытка прохождения теста не найдена');
+    }
+
+    // Проверяем, есть ли у текущего пользователя право на просмотр этой попытки
+    // Три варианта доступа:
+    // 1. Пользователь является автором теста
+    // 2. Пользователь является автором группы, к которой относится попытка
+    // 3. Пользователь является владельцем попытки (сам проходил тест)
+
+    const isTestAuthor =
+      attempt.test &&
+      attempt.test.authorId &&
+      attempt.test.authorId.toString() === userId.toString();
+
+    // Проверяем, является ли пользователь автором группы
+    let isGroupAuthor = false;
+
+    if (attempt.groupId) {
+      // Получаем группу по ID попытки
+      const group = await GroupService.getGroupByTestAttemptId(id);
+
+      if (group && group.authorId.toString() === userId.toString()) {
+        isGroupAuthor = true;
+        console.log(
+          `[TestAttemptController] Пользователь ${userId} является автором группы ${group._id}`
+        );
+      }
+    }
+
+    // Проверяем, является ли пользователь владельцем попытки
+    const isAttemptOwner =
+      attempt.user &&
+      (typeof attempt.user === 'string'
+        ? attempt.user.toString() === userId.toString()
+        : attempt.user._id && attempt.user._id.toString() === userId.toString());
+
+    if (isAttemptOwner) {
+      console.log(
+        `[TestAttemptController] Пользователь ${userId} является владельцем попытки ${attempt._id}`
+      );
+    }
+
+    if (!isTestAuthor && !isGroupAuthor && !isAttemptOwner) {
+      console.log(
+        `[TestAttemptController] Ошибка доступа: пользователь ${userId} не имеет прав на просмотр попытки ${attempt._id}`
+      );
+      throw new ForbiddenError('У вас нет доступа к этой попытке прохождения теста');
+    }
+
+    // Получаем полные ответы пользователя
+    const answers = await TestAttemptService.getAttemptAnswersWithDetails(id);
+
+    // Получаем информацию о результате, если он есть
+    let resultInfo = null;
+    if (attempt.result) {
+      if (typeof attempt.result === 'object' && attempt.result.title) {
+        resultInfo = {
+          _id: attempt.result._id.toString(),
+          title: attempt.result.title,
+          description: attempt.result.description || '',
+        };
+        console.log(
+          `[TestAttemptController] Информация о результате получена из объекта попытки:`,
+          resultInfo
+        );
+      } else {
+        // Если result есть, но это не объект с title, пробуем получить его из базы
+        try {
+          const resultId =
+            typeof attempt.result === 'object' ? attempt.result._id : attempt.result;
+          const ResultRepository = await import('../repositories/ResultRepository.js');
+          const result = await ResultRepository.getResultById(resultId);
+
+          if (result) {
+            resultInfo = {
+              _id: resultId.toString(),
+              title: result.title || 'Результат теста',
+              description: result.description || '',
+            };
+            console.log(
+              `[TestAttemptController] Информация о результате получена из репозитория:`,
+              resultInfo
+            );
+          }
+        } catch (error) {
+          console.error(
+            `[TestAttemptController] Ошибка при получении данных результата: ${error.message}`
+          );
+        }
+      }
+    }
+
+    // Формируем полный ответ
+    const detailedAttempt = {
+      ...attempt.toObject(),
+      answers: answers,
+      resultTitle: resultInfo ? resultInfo.title : 'Нет результата',
+      result: resultInfo || attempt.result,
+    };
+
+    res.status(200).json(detailedAttempt);
+  } catch (error) {
+    console.error(
+      `[TestAttemptController] Ошибка при получении деталей попытки: ${error.message}`
+    );
+    handleServiceError(error, res);
+  }
+};
+
+/**
+ * Проверяет, проходил ли пользователь тест в рамках конкретной группы.
+ * @param {Object} req - Объект запроса Express.
+ * @param {Object} res - Объект ответа Express.
+ */
+export const checkUserAttemptInGroup = async (req, res) => {
+  try {
+    const { testId, groupId } = req.params;
+    const userId = req.user._id;
+
+    console.log(
+      `[TestAttemptController] Проверка попытки пользователя ${userId} для теста ${testId} в группе ${groupId}`
+    );
+
+    // Проверяем, есть ли у пользователя завершенная попытка в данной группе
+    const attempt = await TestAttemptService.getUserCompletedAttemptInGroup(
+      userId,
+      testId,
+      groupId
+    );
+
+    const hasAttempt = !!attempt;
+
+    console.log(
+      `[TestAttemptController] Результат проверки: ${
+        hasAttempt ? 'попытка найдена' : 'попытка не найдена'
+      }`
+    );
+
+    res.status(200).json({
+      hasAttempt,
+      attemptId: attempt ? attempt._id : null,
+      completedAt: attempt ? attempt.completedAt : null,
+    });
+  } catch (error) {
+    console.error(
+      `[TestAttemptController] Ошибка при проверке попытки: ${error.message}`
+    );
     handleServiceError(error, res);
   }
 };

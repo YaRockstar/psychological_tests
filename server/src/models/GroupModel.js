@@ -20,6 +20,11 @@ const groupSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    testId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Test',
+      required: true,
+    },
     inviteCode: {
       type: String,
       required: true,
@@ -57,6 +62,7 @@ groupSchema.pre('save', function (next) {
 // Индексы для повышения производительности запросов
 groupSchema.index({ authorId: 1 });
 groupSchema.index({ inviteCode: 1 }, { unique: true });
+groupSchema.index({ testId: 1 });
 
 const GroupModel = mongoose.model('Group', groupSchema);
 

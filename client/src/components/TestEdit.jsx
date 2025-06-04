@@ -15,9 +15,7 @@ function TestEdit() {
   const [testData, setTestData] = useState({
     title: '',
     description: '',
-    category: '',
     testType: 'personality',
-    difficulty: 'medium',
     imageUrl: '',
     timeLimit: 0,
     passingScore: 0,
@@ -630,25 +628,6 @@ function TestEdit() {
               />
             </div>
 
-            <div>
-              <label
-                className="block text-gray-700 text-sm font-bold mb-2"
-                htmlFor="category"
-              >
-                Категория*
-              </label>
-              <input
-                id="category"
-                type="text"
-                name="category"
-                value={testData.category}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                placeholder="Например: Психология, Образование"
-              />
-            </div>
-
             <div className="md:col-span-2">
               <label
                 className="block text-gray-700 text-sm font-bold mb-2"
@@ -690,26 +669,6 @@ function TestEdit() {
                 <option value="emotional">Эмоциональный интеллект</option>
                 <option value="aptitude">Способности</option>
                 <option value="career">Карьера</option>
-              </select>
-            </div>
-
-            <div>
-              <label
-                className="block text-gray-700 text-sm font-bold mb-2"
-                htmlFor="difficulty"
-              >
-                Сложность
-              </label>
-              <select
-                id="difficulty"
-                name="difficulty"
-                value={testData.difficulty}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                <option value="easy">Легкий</option>
-                <option value="medium">Средний</option>
-                <option value="hard">Сложный</option>
               </select>
             </div>
 
