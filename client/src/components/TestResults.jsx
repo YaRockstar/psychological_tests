@@ -33,8 +33,8 @@ function TestResults() {
               setLoading(false);
               return; // Выходим из функции, если пользователь - автор
             }
-          } catch (error) {
-            console.error('Ошибка при парсинге данных пользователя:', error);
+          } catch {
+            // Игнорируем ошибки парсинга
           }
         }
 
@@ -49,7 +49,6 @@ function TestResults() {
           setLoading(false);
         }
       } catch (err) {
-        console.error('Ошибка при получении данных пользователя:', err);
         if (err.response && err.response.status === 401) {
           setIsAuthenticated(false);
         } else {
@@ -218,7 +217,7 @@ function TestResults() {
     };
 
     checkUserRole();
-  }, [attemptId, testAttempt]);
+  }, [attemptId]);
 
   // Форматирование даты
   const formatDate = dateString => {
