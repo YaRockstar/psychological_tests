@@ -13,7 +13,7 @@ function TestEditor() {
   const [questions, setQuestions] = useState([]);
   const [newQuestion, setNewQuestion] = useState({
     text: '',
-    type: 'single', // single, multiple, text, scale
+    type: 'single',
     order: 1,
     options: [
       { text: '', value: 0, order: 1 },
@@ -21,7 +21,6 @@ function TestEditor() {
     ],
   });
 
-  // Проверка авторизации и загрузка данных
   useEffect(() => {
     const checkAuthAndLoadData = async () => {
       try {
@@ -31,7 +30,6 @@ function TestEditor() {
           return;
         }
 
-        // Получаем данные пользователя
         const userResponse = await userAPI.getCurrentUser();
         const userData = userResponse.data;
 
@@ -43,16 +41,12 @@ function TestEditor() {
 
         setIsAuthor(true);
 
-        // Загружаем данные теста
         const testResponse = await testAPI.getTestById(id);
         setTest(testResponse.data);
 
-        // Загружаем вопросы теста
         const questionsResponse = await testAPI.getTestQuestions(id);
         setQuestions(questionsResponse.data);
       } catch (error) {
-        console.error('Ошибка при загрузке данных:', error);
-
         if (error.response && error.response.status === 401) {
           setIsAuthenticated(false);
         } else {
@@ -66,14 +60,9 @@ function TestEditor() {
     checkAuthAndLoadData();
   }, [id]);
 
-  // Обработчик добавления нового вопроса
   const handleAddQuestion = async e => {
     e.preventDefault();
 
-    // TODO: Реализовать добавление вопроса через API, когда будет готово
-    console.log('Добавление нового вопроса:', newQuestion);
-
-    // Временное решение для демонстрации
     setQuestions([
       ...questions,
       {
@@ -83,11 +72,10 @@ function TestEditor() {
       },
     ]);
 
-    // Сбросить форму нового вопроса
     setNewQuestion({
       text: '',
       type: 'single',
-      order: questions.length + 2, // +1 для текущего массива и +1 для следующего вопроса
+      order: questions.length + 2,
       options: [
         { text: '', value: 0, order: 1 },
         { text: '', value: 0, order: 2 },
@@ -95,7 +83,6 @@ function TestEditor() {
     });
   };
 
-  // Обработчик изменения данных нового вопроса
   const handleQuestionChange = e => {
     const { name, value } = e.target;
     setNewQuestion({
@@ -104,7 +91,6 @@ function TestEditor() {
     });
   };
 
-  // Обработчик изменения варианта ответа
   const handleOptionChange = (index, field, value) => {
     const updatedOptions = [...newQuestion.options];
     updatedOptions[index] = {
@@ -117,7 +103,6 @@ function TestEditor() {
     });
   };
 
-  // Добавление нового варианта ответа
   const handleAddOption = () => {
     setNewQuestion({
       ...newQuestion,
@@ -128,7 +113,6 @@ function TestEditor() {
     });
   };
 
-  // Удаление варианта ответа
   const handleRemoveOption = index => {
     if (newQuestion.options.length <= 2) {
       alert('Должно быть как минимум два варианта ответа');
@@ -142,12 +126,10 @@ function TestEditor() {
     });
   };
 
-  // Редирект, если пользователь не авторизован
   if (!isAuthenticated) {
     return <Navigate to="/login" />;
   }
 
-  // Запрещаем доступ, если пользователь не автор
   if (!isAuthor) {
     return (
       <div className="w-full max-w-4xl mx-auto py-8 px-4">
@@ -183,7 +165,6 @@ function TestEditor() {
         Редактирование теста: {test.title}
       </h1>
 
-      {/* Вкладки */}
       <div className="mb-6 border-b border-gray-200">
         <ul className="flex flex-wrap -mb-px">
           <li className="mr-2">
@@ -237,7 +218,6 @@ function TestEditor() {
         </ul>
       </div>
 
-      {/* Содержимое вкладок */}
       {activeTab === 'general' && (
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-bold mb-4">Сведения о тесте</h2>
@@ -306,7 +286,6 @@ function TestEditor() {
 
       {activeTab === 'questions' && (
         <div className="space-y-6">
-          {/* Список существующих вопросов */}
           {questions.length > 0 ? (
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-bold mb-4">Вопросы теста</h2>
@@ -323,13 +302,13 @@ function TestEditor() {
                       <div className="flex space-x-2">
                         <button
                           className="text-indigo-600 hover:text-indigo-800"
-                          onClick={() => console.log('Edit question', question._id)}
+                          onClick={() => {}}
                         >
                           Редактировать
                         </button>
                         <button
                           className="text-red-600 hover:text-red-800"
-                          onClick={() => console.log('Delete question', question._id)}
+                          onClick={() => {}}
                         >
                           Удалить
                         </button>
@@ -362,7 +341,6 @@ function TestEditor() {
             </div>
           )}
 
-          {/* Форма добавления нового вопроса */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-bold mb-4">Добавить новый вопрос</h2>
             <form onSubmit={handleAddQuestion} className="space-y-4">

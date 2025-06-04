@@ -106,7 +106,7 @@ export const getUserTestAttempts = async (userId, options = {}) => {
   const { limit, skip, sort = { createdAt: -1 } } = options;
 
   const query = TestAttemptModel.find({ user: userId })
-    .populate('test', 'title description category testType difficulty imageUrl')
+    .populate('test', 'title description testType imageUrl')
     .populate('result', 'title');
 
   if (limit) query.limit(limit);
@@ -173,7 +173,7 @@ export const getAuthorTestsAttempts = async (authorId, testIds, options = {}) =>
     test: { $in: testIds },
     status: 'completed',
   })
-    .populate('test', 'title category testType')
+    .populate('test', 'title testType')
     .populate('user', 'firstName lastName email')
     .sort({ createdAt: -1 });
 

@@ -7,7 +7,6 @@ function AuthorGroups() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
-  const [userRole, setUserRole] = useState(''); // eslint-disable-line no-unused-vars
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showInviteCode, setShowInviteCode] = useState({});
   const [newGroup, setNewGroup] = useState({ name: '', description: '', testId: '' });
@@ -36,7 +35,6 @@ function AuthorGroups() {
         if (userData) {
           try {
             const parsedData = JSON.parse(userData);
-            setUserRole(parsedData.role || '');
 
             // Если пользователь - автор, загружаем его группы
             if (parsedData.role === 'author') {
@@ -52,7 +50,6 @@ function AuthorGroups() {
         // Проверяем на сервере
         const response = await userAPI.getCurrentUser();
         console.log('Данные пользователя с сервера:', response.data);
-        setUserRole(response.data.role || '');
 
         // Если пользователь - автор, загружаем его группы
         if (response.data.role === 'author') {
