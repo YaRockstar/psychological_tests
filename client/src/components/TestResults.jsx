@@ -186,14 +186,12 @@ function TestResults() {
             // Другая ошибка, не связанная с доступом
             // Если у нас есть данные из localStorage, используем их
             if (lastTestTitle) {
-              if (!testAttempt) {
-                // Создаем минимальный объект попытки, чтобы страница отобразилась
-                setTestAttempt({
-                  status: 'in-progress',
-                  totalQuestions: 0,
-                  correctAnswers: 0,
-                });
-              }
+              // Создаем минимальный объект попытки
+              setTestAttempt({
+                status: 'in-progress',
+                totalQuestions: 0,
+                correctAnswers: 0,
+              });
               setLoading(false);
               return;
             }
