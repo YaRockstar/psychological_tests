@@ -19,6 +19,8 @@ import UserGroups from './components/UserGroups';
 import JoinGroup from './components/JoinGroup';
 import GroupResults from './components/GroupResults';
 import AttemptDetails from './components/AttemptDetails';
+import CreateGroup from './components/CreateGroup';
+import CompareGroups from './components/CompareGroups';
 
 function App() {
   return (
@@ -162,6 +164,22 @@ function App() {
           element={
             <Layout>
               <AttemptDetails />
+            </Layout>
+          }
+        />
+        <Route
+          path="/create-group"
+          element={
+            <Layout>
+              <CreateGroup />
+            </Layout>
+          }
+        />
+        <Route
+          path="/compare-groups"
+          element={
+            <Layout>
+              <CompareGroups />
             </Layout>
           }
         />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { groupAPI, userAPI, testAPI } from '../utils/api';
 
@@ -13,23 +13,8 @@ function UserGroups() {
   const [groupTests, setGroupTests] = useState({});
   const [userAttempts, setUserAttempts] = useState({});
 
-  useEffect(() => {
-    // Проверяем авторизацию
-    const token = localStorage.getItem('token');
-    if (!token) {
-      setIsLoggedIn(false);
-      setLoading(false);
-      return;
-    }
-
-    setIsLoggedIn(true);
-
-    // Загружаем группы пользователя
-    fetchUserGroups();
-  }, []);
-
   // Загружаем группы пользователя
-  const fetchUserGroups = async () => {
+  const fetchUserGroups = useCallback(async () => {
     try {
       setLoading(true);
       const response = await groupAPI.getUserGroups();
@@ -53,7 +38,22 @@ function UserGroups() {
       setError('Не удалось загрузить группы. Пожалуйста, попробуйте позже.');
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // Проверяем авторизацию
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setIsLoggedIn(false);
+      setLoading(false);
+      return;
+    }
+
+    setIsLoggedIn(true);
+
+    // Загружаем группы пользователя
+    fetchUserGroups();
+  }, [fetchUserGroups]);
 
   // Загружаем информацию об авторах
   const fetchAuthorsInfo = async authorIds => {

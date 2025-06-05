@@ -1,5 +1,6 @@
 import GroupModel from '../models/GroupModel.js';
 import crypto from 'crypto';
+import mongoose from 'mongoose';
 
 /**
  * Генерация уникального кода приглашения
@@ -55,7 +56,35 @@ export async function getGroupsByAuthorId(authorId) {
  * @returns {Promise<Object|null>} Найденная группа или null
  */
 export async function getGroupById(groupId) {
-  return await GroupModel.findById(groupId).exec();
+  console.log(`[GroupRepository] Получение группы по ID: ${groupId}`);
+
+  if (!groupId) {
+    console.log(`[GroupRepository] Ошибка: ID группы не указан`);
+    return null;
+  }
+
+  // Проверяем, является ли ID валидным ObjectId для MongoDB
+  if (!mongoose.Types.ObjectId.isValid(groupId)) {
+    console.log(`[GroupRepository] Ошибка: невалидный ID группы ${groupId}`);
+    return null;
+  }
+
+  try {
+    const group = await GroupModel.findById(groupId).exec();
+
+    if (!group) {
+      console.log(`[GroupRepository] Группа с ID ${groupId} не найдена`);
+      return null;
+    }
+
+    console.log(
+      `[GroupRepository] Группа найдена: ${group.name}, участников: ${group.members.length}`
+    );
+    return group;
+  } catch (error) {
+    console.error(`[GroupRepository] Ошибка при получении группы ${groupId}:`, error);
+    return null;
+  }
 }
 
 /**

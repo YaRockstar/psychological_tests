@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { groupAPI, userAPI, testAPI } from '../utils/api';
 
 function AuthorGroups() {
@@ -385,12 +385,20 @@ function AuthorGroups() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Мои группы</h1>
-        <button
-          onClick={() => setShowCreateForm(true)}
-          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
-        >
-          Создать группу
-        </button>
+        <div className="flex space-x-3">
+          <Link
+            to="/compare-groups"
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Сравнить группы
+          </Link>
+          <Link
+            to="/create-group"
+            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors"
+          >
+            Создать группу
+          </Link>
+        </div>
       </div>
 
       {/* Сообщение об ошибке */}
