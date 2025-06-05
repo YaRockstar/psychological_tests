@@ -506,6 +506,33 @@ function CompareGroups() {
     return (
       <div className="border border-gray-200 rounded-md p-4 mb-4">
         <h3 className="font-medium text-lg mb-2">{question.questionText}</h3>
+
+        {/* Показываем уведомление, если недостаточно данных для анализа */}
+        {question.insufficientData && (
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-100 rounded-md text-yellow-700">
+            <div className="flex items-start">
+              <svg
+                className="h-5 w-5 mr-2 mt-0.5 text-yellow-500"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-8.414l2.707-2.707a1 1 0 00-1.414-1.414L10 7.586 7.707 5.293a1 1 0 00-1.414 1.414L8.586 9l-2.293 2.293a1 1 0 101.414 1.414L10 10.414l2.293 2.293a1 1 0 001.414-1.414L11.414 9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <div>
+                <p className="font-medium">Недостаточно данных</p>
+                <p className="text-sm">
+                  {question.message ||
+                    'Невозможно провести статистический анализ для этого вопроса из-за недостаточного количества данных или несбалансированных ответов.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mb-3 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <p className="font-medium">Тип вопроса:</p>
@@ -528,15 +555,19 @@ function CompareGroups() {
           </div>
           <div>
             <p className="font-medium">Статистическая значимость:</p>
-            <p className={getSignificanceColor(question.isSignificant)}>
-              {question.isSignificant
-                ? `Значимые различия (p = ${
-                    question.pValue ? question.pValue : '< 0.05'
-                  })`
-                : `Нет значимых различий (p = ${
-                    question.pValue ? question.pValue : '> 0.05'
-                  })`}
-            </p>
+            {question.insufficientData ? (
+              <p className="text-yellow-600">Анализ невозможен</p>
+            ) : (
+              <p className={getSignificanceColor(question.isSignificant)}>
+                {question.isSignificant
+                  ? `Значимые различия (p = ${
+                      question.pValue ? question.pValue : '< 0.05'
+                    })`
+                  : `Нет значимых различий (p = ${
+                      question.pValue ? question.pValue : '> 0.05'
+                    })`}
+              </p>
+            )}
           </div>
         </div>
         <div className="mb-3">
@@ -579,6 +610,7 @@ function CompareGroups() {
             </div>
           )}
 
+          {/* Отображаем распределение ответов, даже если недостаточно данных для статистического анализа */}
           {currentViewMode === 'table' &&
             renderContingencyTable(question.contingencyTable, group1Name, group2Name)}
           {currentViewMode === 'bar' && (
@@ -611,24 +643,37 @@ function CompareGroups() {
             </div>
           )}
         </div>
-        <div className="mb-3 text-sm text-gray-600">
-          <p className="font-medium">Статистические показатели:</p>
-          <p>Значение хи-квадрат: {question.chiSquare.toFixed(2)}</p>
-          <p>Степени свободы: {question.degreesOfFreedom}</p>
-          {question.criticalValue && (
-            <p>Критическое значение (α=0.05): {question.criticalValue}</p>
-          )}
-        </div>
+        {!question.insufficientData && (
+          <div className="mb-3 text-sm text-gray-600">
+            <p className="font-medium">Статистические показатели:</p>
+            <p>Значение хи-квадрат: {question.chiSquare.toFixed(2)}</p>
+            <p>Степени свободы: {question.degreesOfFreedom}</p>
+            {question.criticalValue && (
+              <p>Критическое значение (α=0.05): {question.criticalValue}</p>
+            )}
+          </div>
+        )}
       </div>
     );
   };
 
   // Компонент для отображения значений хи-квадрат по вопросам
   const ChiSquareChartView = ({ questionResults }) => {
-    // Отсортируем вопросы по значению хи-квадрат
-    const sortedQuestions = [...questionResults].sort(
-      (a, b) => b.chiSquare - a.chiSquare
-    );
+    // Фильтруем вопросы с недостаточными данными
+    const validQuestions = questionResults.filter(q => !q.insufficientData);
+
+    // Если нет вопросов с достаточными данными для анализа, показываем сообщение
+    if (validQuestions.length === 0) {
+      return (
+        <div className="bg-yellow-50 border border-yellow-100 rounded-md p-4 text-yellow-700">
+          <h3 className="font-medium mb-2">Невозможно построить график</h3>
+          <p>Недостаточно данных для статистического анализа ни по одному из вопросов.</p>
+        </div>
+      );
+    }
+
+    // Создаем копию массива и сортируем по значению хи-квадрат
+    const sortedQuestions = [...validQuestions].sort((a, b) => b.chiSquare - a.chiSquare);
 
     // Возьмем только топ-10 вопросов для лучшей читаемости
     const topQuestions = sortedQuestions.slice(0, 10);
@@ -794,13 +839,19 @@ function CompareGroups() {
                 {/* Топ вопросов по значению хи-квадрат */}
                 <div className="mb-6">
                   <h4 className="font-medium mb-2">
-                    Топ-10 вопросов с наибольшей статистической разницей:
+                    {result.questionResults.filter(q => !q.insufficientData).length > 0
+                      ? 'Топ-10 вопросов с наибольшей статистической разницей:'
+                      : 'Статистический анализ вопросов:'}
                   </h4>
                   <ChiSquareChartView questionResults={result.questionResults} />
                 </div>
 
                 {/* Результаты по каждому вопросу */}
                 <div className="space-y-6">
+                  <h4 className="font-medium mb-2">
+                    Результаты по всем вопросам ({result.questionResults.length}) в
+                    порядке теста:
+                  </h4>
                   {result.questionResults.map((questionResult, index) => (
                     <div key={index} className="border rounded-lg p-4">
                       <QuestionDetails
