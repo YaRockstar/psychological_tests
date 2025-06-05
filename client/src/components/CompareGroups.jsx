@@ -600,51 +600,6 @@ function CompareGroups() {
     );
   };
 
-  // Компонент для отображения общего результата сравнения в виде диаграммы
-  const SummaryChartView = ({ significantQuestions, totalQuestions }) => {
-    const data = {
-      labels: ['Значимые различия', 'Без значимых различий'],
-      datasets: [
-        {
-          label: 'Количество вопросов',
-          data: [significantQuestions, totalQuestions - significantQuestions],
-          backgroundColor: ['rgba(255, 99, 132, 0.6)', 'rgba(54, 162, 235, 0.6)'],
-          borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)'],
-          borderWidth: 1,
-        },
-      ],
-    };
-
-    const options = {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'bottom',
-        },
-        title: {
-          display: true,
-          text: 'Общий результат сравнения групп',
-        },
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: 'Количество вопросов',
-          },
-        },
-      },
-    };
-
-    return (
-      <div className="w-full h-64">
-        <Bar data={data} options={options} />
-      </div>
-    );
-  };
-
   // Компонент для отображения значений хи-квадрат по вопросам
   const ChiSquareChartView = ({ questionResults }) => {
     // Отсортируем вопросы по значению хи-квадрат
@@ -1059,40 +1014,12 @@ function CompareGroups() {
                   backgroundColor: currentResult.isSignificant ? '#FEE2E2' : '#DCFCE7',
                 }}
               >
-                <p className="font-medium mb-1">Результат сравнения:</p>
-                <p
-                  className={
-                    currentResult.isSignificant ? 'text-red-700' : 'text-green-700'
-                  }
-                >
-                  {currentResult.isSignificant
-                    ? 'Обнаружены статистически значимые различия между группами'
-                    : 'Статистически значимых различий между группами не обнаружено'}
+                <p className="font-medium mb-1">Примечание о статистическом анализе:</p>
+                <p className="text-gray-700">
+                  Анализ проведен с использованием критерия хи-квадрат для каждого вопроса
+                  отдельно. Пожалуйста, изучите результаты по каждому вопросу в разделе
+                  "Детальный анализ вопросов" ниже.
                 </p>
-                <p className="mt-2">
-                  <span className="font-medium">Значение хи-квадрат (среднее):</span>{' '}
-                  {currentResult.chiSquareValue.toFixed(2)}
-                </p>
-                <p className="mt-1">
-                  <span className="font-medium">Уровень значимости:</span>{' '}
-                  {currentResult.pValue
-                    ? `p = ${currentResult.pValue}`
-                    : currentResult.isSignificant
-                    ? 'p < 0.05'
-                    : 'p > 0.05'}
-                </p>
-                {currentResult.significantQuestions !== undefined && (
-                  <p className="mt-1">
-                    <span className="font-medium">Значимые вопросы:</span>{' '}
-                    {`${currentResult.significantQuestions || 0} из ${
-                      currentResult.totalQuestions || 0
-                    } (${
-                      currentResult.significantPercentage !== undefined
-                        ? currentResult.significantPercentage
-                        : ((currentResult.significantRatio || 0) * 100).toFixed(1)
-                    }%)`}
-                  </p>
-                )}
 
                 {/* Отображение информации о малых выборках */}
                 {currentResult.isSmallSample && (
@@ -1104,48 +1031,37 @@ function CompareGroups() {
                 )}
               </div>
 
-              {/* Добавляем визуализацию общего результата */}
-              {currentResult.significantQuestions !== undefined && (
-                <div className="mb-4">
-                  <h3 className="font-medium text-lg mb-3">Визуализация результатов</h3>
-                  <div className="grid grid-cols-1 gap-6">
-                    <div>
-                      <p className="font-medium mb-2">
-                        Распределение вопросов по значимости:
-                      </p>
-                      <SummaryChartView
-                        significantQuestions={currentResult.significantQuestions}
-                        totalQuestions={currentResult.totalQuestions}
-                      />
+              {/* Удаляем визуализацию общего результата и общую диаграмму, оставляем только ChiSquareChartView */}
+              {currentResult.questionResults &&
+                currentResult.questionResults.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="font-medium text-lg mb-3">
+                      Визуализация значений хи-квадрат
+                    </h3>
+                    <div className="grid grid-cols-1 gap-6">
+                      <div>
+                        <p className="font-medium mb-2">
+                          Сравнение значений хи-квадрат по вопросам:
+                        </p>
+                        <ChiSquareChartView
+                          questionResults={currentResult.questionResults}
+                        />
+                      </div>
                     </div>
-
-                    {currentResult.questionResults &&
-                      currentResult.questionResults.length > 0 && (
-                        <div>
-                          <p className="font-medium mb-2">
-                            Сравнение значений хи-квадрат по вопросам:
-                          </p>
-                          <ChiSquareChartView
-                            questionResults={currentResult.questionResults}
-                          />
-                        </div>
-                      )}
                   </div>
-                </div>
-              )}
+                )}
 
               <div className="text-sm text-gray-600 space-y-2">
                 <p>
-                  {currentResult.isSignificant
-                    ? 'Выявленные различия указывают на то, что ответы участников в этих группах статистически значимо отличаются друг от друга.'
-                    : 'Отсутствие статистически значимых различий указывает на то, что ответы участников в обеих группах статистически схожи.'}
+                  Статистический критерий хи-квадрат позволяет выявить различия в
+                  распределении ответов между группами для каждого отдельного вопроса.
+                  Значимый результат (p &lt; 0.05) указывает на то, что распределение
+                  ответов в группах существенно отличается.
                 </p>
                 <p>
-                  <span className="font-medium">Примечание:</span> В дополнение к среднему
-                  значению хи-квадрат, доля значимых вопросов дает более точное
-                  представление о различиях между группами. Высокий процент значимых
-                  вопросов указывает на существенные различия в ответах по большинству
-                  вопросов теста.
+                  <span className="font-medium">Примечание:</span> При интерпретации
+                  результатов важно учитывать конкретный контекст вопросов и
+                  психологический смысл выявленных различий.
                 </p>
               </div>
 
