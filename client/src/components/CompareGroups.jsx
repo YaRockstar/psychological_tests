@@ -1,6 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { groupAPI, userAPI } from '../utils/api';
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+} from 'chart.js';
+import { Pie, Bar } from 'react-chartjs-2';
+
+// Регистрируем необходимые компоненты Chart.js
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title
+);
 
 function CompareGroups() {
   const [groups, setGroups] = useState([]);
@@ -260,6 +282,134 @@ function CompareGroups() {
     return isSignificant ? 'text-red-600' : 'text-green-600';
   };
 
+  // Компонент для отображения круговой диаграммы
+  const PieChartView = ({ table, group1Name, group2Name, groupIndex }) => {
+    if (!table || Object.keys(table).length === 0) {
+      return <p className="text-gray-500 italic">Нет данных для диаграммы</p>;
+    }
+
+    // Формируем данные для диаграммы
+    const labels = Object.keys(table);
+    const data = {
+      labels,
+      datasets: [
+        {
+          label: groupIndex === 0 ? group1Name : group2Name,
+          data: labels.map(key => table[key][groupIndex]),
+          backgroundColor: [
+            'rgba(255, 99, 132, 0.6)',
+            'rgba(54, 162, 235, 0.6)',
+            'rgba(255, 206, 86, 0.6)',
+            'rgba(75, 192, 192, 0.6)',
+            'rgba(153, 102, 255, 0.6)',
+            'rgba(255, 159, 64, 0.6)',
+            'rgba(199, 199, 199, 0.6)',
+            'rgba(83, 102, 255, 0.6)',
+            'rgba(40, 159, 64, 0.6)',
+            'rgba(210, 199, 199, 0.6)',
+          ],
+          borderColor: [
+            'rgba(255, 99, 132, 1)',
+            'rgba(54, 162, 235, 1)',
+            'rgba(255, 206, 86, 1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(153, 102, 255, 1)',
+            'rgba(255, 159, 64, 1)',
+            'rgba(199, 199, 199, 1)',
+            'rgba(83, 102, 255, 1)',
+            'rgba(40, 159, 64, 1)',
+            'rgba(210, 199, 199, 1)',
+          ],
+          borderWidth: 1,
+        },
+      ],
+    };
+
+    const options = {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'bottom',
+        },
+        title: {
+          display: true,
+          text: `Распределение ответов в группе "${
+            groupIndex === 0 ? group1Name : group2Name
+          }"`,
+        },
+      },
+    };
+
+    return (
+      <div className="w-full h-64">
+        <Pie data={data} options={options} />
+      </div>
+    );
+  };
+
+  // Компонент для отображения столбчатой диаграммы сравнения
+  const BarChartView = ({ table, group1Name, group2Name }) => {
+    if (!table || Object.keys(table).length === 0) {
+      return <p className="text-gray-500 italic">Нет данных для диаграммы</p>;
+    }
+
+    // Формируем данные для диаграммы
+    const labels = Object.keys(table);
+    const data = {
+      labels,
+      datasets: [
+        {
+          label: group1Name,
+          data: labels.map(key => table[key][0]),
+          backgroundColor: 'rgba(54, 162, 235, 0.6)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 1,
+        },
+        {
+          label: group2Name,
+          data: labels.map(key => table[key][1]),
+          backgroundColor: 'rgba(255, 99, 132, 0.6)',
+          borderColor: 'rgba(255, 99, 132, 1)',
+          borderWidth: 1,
+        },
+      ],
+    };
+
+    const options = {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: true,
+          text: 'Сравнение распределения ответов между группами',
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Количество ответов',
+          },
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Варианты ответов',
+          },
+        },
+      },
+    };
+
+    return (
+      <div className="w-full h-80">
+        <Bar data={data} options={options} />
+      </div>
+    );
+  };
+
   // Вспомогательная функция для отображения таблицы сопряженности
   const renderContingencyTable = (table, group1Name, group2Name) => {
     if (!table || Object.keys(table).length === 0) {
@@ -331,6 +481,8 @@ function CompareGroups() {
 
   // Компонент для отображения подробной информации о вопросе
   const QuestionDetails = ({ question, group1Name, group2Name }) => {
+    const [viewMode, setViewMode] = useState('table'); // 'table', 'pie', 'bar'
+
     return (
       <div className="border border-gray-200 rounded-md p-4 mb-4">
         <h3 className="font-medium text-lg mb-2">{question.questionText}</h3>
@@ -368,8 +520,73 @@ function CompareGroups() {
           </div>
         </div>
         <div className="mb-3">
-          <p className="font-medium mb-1">Таблица распределения ответов:</p>
-          {renderContingencyTable(question.contingencyTable, group1Name, group2Name)}
+          <div className="flex justify-between items-center mb-2">
+            <p className="font-medium">Распределение ответов:</p>
+            <div className="flex space-x-2 text-sm">
+              <button
+                onClick={() => setViewMode('table')}
+                className={`px-2 py-1 rounded ${
+                  viewMode === 'table'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Таблица
+              </button>
+              <button
+                onClick={() => setViewMode('bar')}
+                className={`px-2 py-1 rounded ${
+                  viewMode === 'bar'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Столбчатая
+              </button>
+              <button
+                onClick={() => setViewMode('pie')}
+                className={`px-2 py-1 rounded ${
+                  viewMode === 'pie'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Круговая
+              </button>
+            </div>
+          </div>
+
+          {viewMode === 'table' &&
+            renderContingencyTable(question.contingencyTable, group1Name, group2Name)}
+          {viewMode === 'bar' && (
+            <BarChartView
+              table={question.contingencyTable}
+              group1Name={group1Name}
+              group2Name={group2Name}
+            />
+          )}
+          {viewMode === 'pie' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-center font-medium mb-2">{group1Name}</p>
+                <PieChartView
+                  table={question.contingencyTable}
+                  group1Name={group1Name}
+                  group2Name={group2Name}
+                  groupIndex={0}
+                />
+              </div>
+              <div>
+                <p className="text-center font-medium mb-2">{group2Name}</p>
+                <PieChartView
+                  table={question.contingencyTable}
+                  group1Name={group1Name}
+                  group2Name={group2Name}
+                  groupIndex={1}
+                />
+              </div>
+            </div>
+          )}
         </div>
         <div className="mb-3 text-sm text-gray-600">
           <p className="font-medium">Статистические показатели:</p>
@@ -379,6 +596,136 @@ function CompareGroups() {
             <p>Критическое значение (α=0.05): {question.criticalValue}</p>
           )}
         </div>
+      </div>
+    );
+  };
+
+  // Компонент для отображения общего результата сравнения в виде диаграммы
+  const SummaryChartView = ({ significantQuestions, totalQuestions }) => {
+    const data = {
+      labels: ['Значимые различия', 'Без значимых различий'],
+      datasets: [
+        {
+          label: 'Количество вопросов',
+          data: [significantQuestions, totalQuestions - significantQuestions],
+          backgroundColor: ['rgba(255, 99, 132, 0.6)', 'rgba(54, 162, 235, 0.6)'],
+          borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)'],
+          borderWidth: 1,
+        },
+      ],
+    };
+
+    const options = {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+        },
+        title: {
+          display: true,
+          text: 'Общий результат сравнения групп',
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Количество вопросов',
+          },
+        },
+      },
+    };
+
+    return (
+      <div className="w-full h-64">
+        <Bar data={data} options={options} />
+      </div>
+    );
+  };
+
+  // Компонент для отображения значений хи-квадрат по вопросам
+  const ChiSquareChartView = ({ questionResults }) => {
+    // Отсортируем вопросы по значению хи-квадрат
+    const sortedQuestions = [...questionResults].sort(
+      (a, b) => b.chiSquare - a.chiSquare
+    );
+
+    // Возьмем только топ-10 вопросов для лучшей читаемости
+    const topQuestions = sortedQuestions.slice(0, 10);
+
+    // Сократим длинные тексты вопросов
+    const shortenText = (text, maxLength = 30) => {
+      if (text.length <= maxLength) return text;
+      return text.substring(0, maxLength) + '...';
+    };
+
+    const data = {
+      labels: topQuestions.map(
+        (q, index) => `#${index + 1}: ${shortenText(q.questionText)}`
+      ),
+      datasets: [
+        {
+          label: 'Значение хи-квадрат',
+          data: topQuestions.map(q => q.chiSquare),
+          backgroundColor: topQuestions.map(q =>
+            q.isSignificant ? 'rgba(255, 99, 132, 0.6)' : 'rgba(54, 162, 235, 0.6)'
+          ),
+          borderColor: topQuestions.map(q =>
+            q.isSignificant ? 'rgba(255, 99, 132, 1)' : 'rgba(54, 162, 235, 1)'
+          ),
+          borderWidth: 1,
+        },
+      ],
+    };
+
+    const options = {
+      indexAxis: 'y', // Горизонтальная диаграмма для лучшей читаемости
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: true,
+          text: 'Топ-10 вопросов по значению хи-квадрат',
+        },
+        tooltip: {
+          callbacks: {
+            title: function (tooltipItems) {
+              const index = tooltipItems[0].dataIndex;
+              return topQuestions[index].questionText;
+            },
+            label: function (context) {
+              const index = context.dataIndex;
+              const question = topQuestions[index];
+              return [
+                `Хи-квадрат: ${question.chiSquare.toFixed(2)}`,
+                `p-value: ${
+                  question.pValue || (question.isSignificant ? '< 0.05' : '> 0.05')
+                }`,
+                `Значимо: ${question.isSignificant ? 'Да' : 'Нет'}`,
+              ];
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Значение хи-квадрат',
+          },
+        },
+      },
+    };
+
+    return (
+      <div className="w-full h-96">
+        <Bar data={data} options={options} />
       </div>
     );
   };
@@ -756,6 +1103,36 @@ function CompareGroups() {
                   </p>
                 )}
               </div>
+
+              {/* Добавляем визуализацию общего результата */}
+              {currentResult.significantQuestions !== undefined && (
+                <div className="mb-4">
+                  <h3 className="font-medium text-lg mb-3">Визуализация результатов</h3>
+                  <div className="grid grid-cols-1 gap-6">
+                    <div>
+                      <p className="font-medium mb-2">
+                        Распределение вопросов по значимости:
+                      </p>
+                      <SummaryChartView
+                        significantQuestions={currentResult.significantQuestions}
+                        totalQuestions={currentResult.totalQuestions}
+                      />
+                    </div>
+
+                    {currentResult.questionResults &&
+                      currentResult.questionResults.length > 0 && (
+                        <div>
+                          <p className="font-medium mb-2">
+                            Сравнение значений хи-квадрат по вопросам:
+                          </p>
+                          <ChiSquareChartView
+                            questionResults={currentResult.questionResults}
+                          />
+                        </div>
+                      )}
+                  </div>
+                </div>
+              )}
 
               <div className="text-sm text-gray-600 space-y-2">
                 <p>
