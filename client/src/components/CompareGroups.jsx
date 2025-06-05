@@ -16,6 +16,8 @@ function CompareGroups() {
   const [showResults, setShowResults] = useState(false);
   const [currentResult, setCurrentResult] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [showQuestionDetails, setShowQuestionDetails] = useState(false);
+  const [showAllQuestions, setShowAllQuestions] = useState(false);
 
   useEffect(() => {
     const checkAuthAndLoadData = async () => {
@@ -251,6 +253,134 @@ function CompareGroups() {
   // Получение информации о группе
   const getGroupInfo = groupId => {
     return groups.find(g => g._id === groupId) || {};
+  };
+
+  // Вспомогательная функция для определения цвета в зависимости от значимости
+  const getSignificanceColor = isSignificant => {
+    return isSignificant ? 'text-red-600' : 'text-green-600';
+  };
+
+  // Вспомогательная функция для отображения таблицы сопряженности
+  const renderContingencyTable = (table, group1Name, group2Name) => {
+    if (!table || Object.keys(table).length === 0) {
+      return <p className="text-gray-500 italic">Нет данных для отображения</p>;
+    }
+
+    return (
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Вариант ответа
+              </th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {group1Name}
+              </th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {group2Name}
+              </th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Всего
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {Object.entries(table).map(([answerValue, counts], index) => {
+              const total = (counts[0] || 0) + (counts[1] || 0);
+              return (
+                <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                    {answerValue}
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                    {counts[0] || 0}
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                    {counts[1] || 0}
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                    {total}
+                  </td>
+                </tr>
+              );
+            })}
+            {/* Строка с итогами */}
+            <tr className="bg-gray-100">
+              <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                Всего
+              </td>
+              <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                {Object.values(table).reduce((sum, counts) => sum + (counts[0] || 0), 0)}
+              </td>
+              <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                {Object.values(table).reduce((sum, counts) => sum + (counts[1] || 0), 0)}
+              </td>
+              <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                {Object.values(table).reduce(
+                  (sum, counts) => sum + (counts[0] || 0) + (counts[1] || 0),
+                  0
+                )}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  // Компонент для отображения подробной информации о вопросе
+  const QuestionDetails = ({ question, group1Name, group2Name }) => {
+    return (
+      <div className="border border-gray-200 rounded-md p-4 mb-4">
+        <h3 className="font-medium text-lg mb-2">{question.questionText}</h3>
+        <div className="mb-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="font-medium">Тип вопроса:</p>
+            <p className="text-gray-700">
+              {(() => {
+                switch (question.questionType) {
+                  case 'single':
+                    return 'Одиночный выбор';
+                  case 'multiple':
+                    return 'Множественный выбор';
+                  case 'scale':
+                    return 'Шкала';
+                  case 'text':
+                    return 'Текстовый ответ';
+                  default:
+                    return question.questionType || 'Неизвестно';
+                }
+              })()}
+            </p>
+          </div>
+          <div>
+            <p className="font-medium">Статистическая значимость:</p>
+            <p className={getSignificanceColor(question.isSignificant)}>
+              {question.isSignificant
+                ? `Значимые различия (p = ${
+                    question.pValue ? question.pValue : '< 0.05'
+                  })`
+                : `Нет значимых различий (p = ${
+                    question.pValue ? question.pValue : '> 0.05'
+                  })`}
+            </p>
+          </div>
+        </div>
+        <div className="mb-3">
+          <p className="font-medium mb-1">Таблица распределения ответов:</p>
+          {renderContingencyTable(question.contingencyTable, group1Name, group2Name)}
+        </div>
+        <div className="mb-3 text-sm text-gray-600">
+          <p className="font-medium">Статистические показатели:</p>
+          <p>Значение хи-квадрат: {question.chiSquare.toFixed(2)}</p>
+          <p>Степени свободы: {question.degreesOfFreedom}</p>
+          {question.criticalValue && (
+            <p>Критическое значение (α=0.05): {question.criticalValue}</p>
+          )}
+        </div>
+      </div>
+    );
   };
 
   // Если пользователь не авторизован, перенаправляем на страницу входа
@@ -640,6 +770,64 @@ function CompareGroups() {
                   вопросов указывает на существенные различия в ответах по большинству
                   вопросов теста.
                 </p>
+              </div>
+
+              {/* Добавляем новую секцию для детального анализа вопросов */}
+              <div className="mt-6 border-t pt-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-semibold text-lg">Детальный анализ вопросов</h3>
+                  <button
+                    onClick={() => setShowQuestionDetails(!showQuestionDetails)}
+                    className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md transition-colors"
+                  >
+                    {showQuestionDetails ? 'Скрыть детали' : 'Показать детали'}
+                  </button>
+                </div>
+
+                {showQuestionDetails && currentResult.questionResults && (
+                  <div>
+                    <div className="flex justify-between items-center mb-3">
+                      <p className="text-sm text-gray-600">
+                        Показаны{' '}
+                        {showAllQuestions
+                          ? 'все вопросы'
+                          : `только вопросы со значимыми различиями (${
+                              currentResult.questionResults.filter(q => q.isSignificant)
+                                .length
+                            })`}
+                      </p>
+                      <button
+                        onClick={() => setShowAllQuestions(!showAllQuestions)}
+                        className="text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        {showAllQuestions
+                          ? 'Показать только значимые'
+                          : 'Показать все вопросы'}
+                      </button>
+                    </div>
+
+                    {currentResult.questionResults.filter(
+                      q => showAllQuestions || q.isSignificant
+                    ).length === 0 && (
+                      <p className="text-center py-4 text-gray-500">
+                        {showAllQuestions
+                          ? 'Нет данных для отображения'
+                          : 'Нет вопросов со статистически значимыми различиями'}
+                      </p>
+                    )}
+
+                    {currentResult.questionResults
+                      .filter(q => showAllQuestions || q.isSignificant)
+                      .map((question, index) => (
+                        <QuestionDetails
+                          key={index}
+                          question={question}
+                          group1Name={currentResult.group1Name}
+                          group2Name={currentResult.group2Name}
+                        />
+                      ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

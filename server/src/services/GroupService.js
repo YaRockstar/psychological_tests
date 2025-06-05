@@ -886,6 +886,10 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
           isSignificant,
           criticalValue: criticalValue ? criticalValue.toFixed(3) : null,
           pValue: pValue || null,
+          // Добавляем таблицу сопряженности для отображения в интерфейсе
+          contingencyTable: contingencyTable,
+          // Добавляем тип вопроса для правильного отображения
+          questionType: question.type || 'unknown',
         });
 
         // Увеличиваем общие значения
