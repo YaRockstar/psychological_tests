@@ -826,7 +826,8 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
     // 2. Категории с ожидаемой частотой менее 5 пропускаются (классическое требование критерия хи-квадрат)
     // 3. Для малых выборок категории автоматически группируются, чтобы увеличить ожидаемые частоты
     // 4. Результаты объединяются с учетом нормализации (во избежание зависимости от порядка групп)
-    for (const question of questions) {
+    for (let questionIndex = 0; questionIndex < questions.length; questionIndex++) {
+      const question = questions[questionIndex];
       try {
         // Проверяем наличие ID вопроса
         if (!question || !question._id) {
@@ -848,11 +849,29 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
           group2Attempts
         );
 
-        // Если таблица пуста или недостаточно данных, пропускаем вопрос
+        // Если таблица пуста или недостаточно данных, добавляем вопрос с флагом "недостаточно данных"
         if (!contingencyTable || Object.keys(contingencyTable).length <= 1) {
           console.log(
-            `[GroupService] Пропуск вопроса ${questionId}: недостаточно данных для сравнения`
+            `[GroupService] Вопрос ${questionId}: недостаточно данных для полноценного статистического анализа`
           );
+
+          // Добавляем вопрос с пустыми статистическими данными
+          questionResults.push({
+            questionId: question._id,
+            questionText: question.text || 'Текст вопроса отсутствует',
+            chiSquare: 0,
+            degreesOfFreedom: 0,
+            isSignificant: false,
+            criticalValue: null,
+            pValue: null,
+            contingencyTable: contingencyTable || {},
+            questionType: question.type || 'unknown',
+            insufficientData: true, // Добавляем флаг о недостаточности данных
+            message: 'Недостаточно данных для статистического анализа',
+            questionIndex: questionIndex, // Сохраняем индекс вопроса для сортировки
+          });
+
+          validQuestionCount++;
           continue;
         }
 
@@ -868,11 +887,38 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
           console.log(
             `[GroupService] Расчет хи-квадрат не вернул результат для вопроса ${questionId}`
           );
+
+          // Добавляем вопрос с пустыми статистическими данными
+          questionResults.push({
+            questionId: question._id,
+            questionText: question.text || 'Текст вопроса отсутствует',
+            chiSquare: 0,
+            degreesOfFreedom: 0,
+            isSignificant: false,
+            criticalValue: null,
+            pValue: null,
+            contingencyTable: contingencyTable,
+            questionType: question.type || 'unknown',
+            insufficientData: true,
+            message: 'Ошибка при статистическом анализе',
+            questionIndex: questionIndex, // Сохраняем индекс вопроса для сортировки
+          });
+
+          validQuestionCount++;
           continue;
         }
 
-        const { chiSquare, degreesOfFreedom, isSignificant, criticalValue, pValue } =
-          result;
+        const {
+          chiSquare,
+          degreesOfFreedom,
+          isSignificant,
+          criticalValue,
+          pValue,
+          error,
+        } = result;
+
+        // Проверяем, есть ли ошибка в результате
+        const hasError = !!error;
 
         // Добавляем результат вопроса
         questionResults.push({
@@ -887,6 +933,10 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
           contingencyTable: contingencyTable,
           // Добавляем тип вопроса для правильного отображения
           questionType: question.type || 'unknown',
+          // Добавляем информацию об ошибке, если она есть
+          insufficientData: hasError,
+          message: error || null,
+          questionIndex: questionIndex, // Сохраняем индекс вопроса для сортировки
         });
 
         validQuestionCount++;
@@ -910,6 +960,9 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
     if (questionResults.length === 0) {
       throw new Error('Не удалось выполнить статистический анализ: недостаточно данных');
     }
+
+    // Сортируем результаты по индексу вопроса, чтобы сохранить порядок вопросов в тесте
+    questionResults.sort((a, b) => a.questionIndex - b.questionIndex);
 
     // Определяем наличие малой выборки для информационных целей
     const group1Size = group1Attempts.length;
