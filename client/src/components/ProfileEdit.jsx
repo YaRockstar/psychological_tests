@@ -34,9 +34,8 @@ function ProfileEdit() {
                 birthDate: parsedUser.birthDate ? parsedUser.birthDate.split('T')[0] : '',
               });
             }
-            // eslint-disable-next-line no-unused-vars
-          } catch (parseError) {
-            console.error('Ошибка при парсинге данных пользователя из localStorage');
+          } catch {
+            return;
           }
         }
 
@@ -54,8 +53,7 @@ function ProfileEdit() {
           });
           setErrors({});
         }
-        // eslint-disable-next-line no-unused-vars
-      } catch (error) {
+      } catch {
         // Если не удалось загрузить данные с сервера, но есть данные из localStorage,
         // не показываем ошибку, т.к. у нас уже есть данные для отображения
         const hasLocalData = localStorage.getItem('userData');

@@ -22,7 +22,6 @@ function TestTaking() {
   const [isContinuing, setIsContinuing] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Начальное время прохождения (для точного подсчета времени)
   const [startTime, setStartTime] = useState(null);
   const [elapsedTime, setElapsedTime] = useState(0);
 
@@ -33,10 +32,8 @@ function TestTaking() {
       return;
     }
 
-    // Проверяем роль пользователя
     const checkUserRole = async () => {
       try {
-        // Сначала пытаемся получить роль из localStorage
         const userData = localStorage.getItem('userData');
         if (userData) {
           try {
@@ -44,25 +41,22 @@ function TestTaking() {
             if (parsedData.role === 'author') {
               setUserRole('author');
               setLoading(false);
-              return; // Выходим из функции, если пользователь - автор
+              return;
             }
-          } catch (error) {
-            console.error('Ошибка при парсинге данных пользователя:', error);
+          } catch {
+            return;
           }
         }
 
-        // Затем проверяем на сервере
         const response = await userAPI.getCurrentUser();
         setUserRole(response.data.role || '');
 
-        // Если пользователь не автор, загружаем тест
         if (response.data.role !== 'author') {
           await loadTest();
         } else {
           setLoading(false);
         }
       } catch (err) {
-        console.error('Ошибка при получении данных пользователя:', err);
         if (err.response && err.response.status === 401) {
           setIsAuthenticated(false);
         } else {
@@ -77,23 +71,18 @@ function TestTaking() {
     const loadTest = async () => {
       try {
         setLoading(true);
-        // Проверяем и преобразуем ID теста
-        const processedTestId = typeof testId === 'object' ? testId._id : testId;
-        console.log('Обработанный ID теста:', processedTestId);
 
-        // Загружаем данные теста
+        const processedTestId = typeof testId === 'object' ? testId._id : testId;
+
         const testResponse = await testAPI.getTestById(processedTestId);
         setTest(testResponse.data);
 
-        // Загружаем вопросы
         const questionsResponse = await testAPI.getTestQuestions(processedTestId);
         setQuestions(questionsResponse.data || []);
 
         try {
-          // Получаем текущие попытки пользователя
           const attemptsResponse = await testAPI.getTestAttempts();
 
-          // Проверяем, есть ли незавершенная попытка для этого теста
           const existingAttempt = attemptsResponse.data.find(
             attempt =>
               (attempt.test === processedTestId ||
@@ -104,25 +93,19 @@ function TestTaking() {
           );
 
           if (existingAttempt) {
-            console.log('Найдена существующая попытка теста:', existingAttempt._id);
             setTestAttempt(existingAttempt);
-            // Если есть незавершенная попытка, считаем что мы продолжаем тест
+
             setIsContinuing(true);
           } else {
-            // Создаем новую попытку прохождения теста
             const attemptResponse = await testAPI.startTestAttempt(
               processedTestId,
               groupId
             );
-            console.log('Создана новая попытка теста:', attemptResponse.data._id);
+
             setTestAttempt(attemptResponse.data);
           }
         } catch (attemptError) {
-          console.error('Ошибка при работе с попытками теста:', attemptError);
-
-          // Проверяем тип ошибки
           if (attemptError.response && attemptError.response.status === 400) {
-            // Пользователь уже проходил тест в данной группе
             setCriticalError(
               attemptError.response.data.message ||
                 'Вы уже проходили этот тест в рамках данной группы. Повторное прохождение невозможно.'
@@ -135,14 +118,12 @@ function TestTaking() {
             );
 
             try {
-              // Создаем новую попытку прохождения теста
               const newAttemptResponse = await testAPI.startTestAttempt(
                 processedTestId,
                 groupId
               );
               setTestAttempt(newAttemptResponse.data);
-            } catch (newAttemptError) {
-              console.error('Ошибка при создании новой попытки:', newAttemptError);
+            } catch {
               setCriticalError(
                 'Невозможно создать попытку прохождения теста. Пожалуйста, попробуйте позже.'
               );
@@ -156,7 +137,6 @@ function TestTaking() {
 
         setLoading(false);
       } catch (error) {
-        console.error('Ошибка при загрузке теста:', error);
         if (error.response && error.response.status === 401) {
           setIsAuthenticated(false);
         } else if (error.response && error.response.status === 403) {
@@ -175,16 +155,12 @@ function TestTaking() {
     checkUserRole();
   }, [testId, groupId]);
 
-  // Эффект для автоматического запуска теста при продолжении
   useEffect(() => {
-    // Если мы продолжаем тест и все готово для его запуска
     if (isContinuing && !loading && test && !testStarted && !criticalError) {
-      // Автоматически запускаем тест
       handleStartTest();
     }
   }, [isContinuing, loading, test, testStarted, criticalError]);
 
-  // Запуск таймера отслеживания времени прохождения
   useEffect(() => {
     let timer;
     if (testStarted && startTime) {
@@ -200,7 +176,6 @@ function TestTaking() {
     };
   }, [testStarted, startTime]);
 
-  // Функция запуска теста
   const handleStartTest = () => {
     const newStartTime = new Date();
     setStartTime(newStartTime);
@@ -208,12 +183,10 @@ function TestTaking() {
     setTestStarted(true);
   };
 
-  // Обработка ответа пользователя
   const handleAnswer = async (questionId, answerValue) => {
     setSuccessMessage('Сохранение ответа...');
     setError(null);
 
-    // Обновляем локальное состояние с выбранным ответом
     setQuestions(prevQuestions => {
       return prevQuestions.map(q => {
         if (q._id === questionId) {
@@ -255,13 +228,11 @@ function TestTaking() {
           await testAPI.saveTestAnswer(newAttemptId, answerData);
           setSuccessMessage('Ответ сохранен (создана новая попытка)');
           setTimeout(() => setSuccessMessage(''), 3000);
-        } catch (newAttemptError) {
-          console.error('Ошибка при создании новой попытки:', newAttemptError);
+        } catch {
           setError('Не удалось создать новую попытку прохождения теста.');
           setSuccessMessage('');
         }
       } else {
-        console.error('Ошибка при сохранении ответа:', error);
         setError(
           error.response?.data?.message ||
             'Произошла ошибка при сохранении ответа. Попробуйте еще раз.'
@@ -306,7 +277,6 @@ function TestTaking() {
 
       // Вычисляем точное время прохождения
       const actualTimeSpent = Math.floor((new Date() - startTime) / 1000);
-      console.log('Фактическое время прохождения (секунд):', actualTimeSpent);
 
       // Завершаем попытку теста с передачей реального времени
       await testAPI.completeTestAttempt(testAttempt._id, { timeSpent: actualTimeSpent });
@@ -341,9 +311,7 @@ function TestTaking() {
     }
   };
 
-  // Обработка отказа от прохождения теста
   const handleAbandonTest = async () => {
-    // Показываем подтверждающий диалог
     const confirmed = window.confirm(
       'Вы уверены, что хотите отказаться от прохождения теста? Все ваши ответы будут потеряны и попытка будет полностью удалена.'
     );
@@ -354,44 +322,33 @@ function TestTaking() {
 
     try {
       if (testAttempt && testAttempt._id) {
-        // Полностью удаляем попытку вместе с ответами
         await testAPI.deleteTestAttemptWithAnswers(testAttempt._id);
-        console.log('Попытка теста была полностью удалена вместе с ответами');
       }
-    } catch (error) {
-      console.error('Ошибка при удалении попытки теста:', error);
+    } catch {
       // Не показываем ошибку пользователю, так как мы все равно уходим со страницы
     }
 
-    // Перенаправляем пользователя обратно
     if (groupId) {
-      // Если тест проходился в рамках группы, возвращаемся к группам
       navigate('/my-groups');
     } else {
-      // Иначе возвращаемся к списку тестов
       navigate('/tests');
     }
   };
 
-  // Сохранение ответа и переход к следующему вопросу
   const handleNextWithSave = () => {
-    // Получаем текущий вопрос
     const currentQuestion = questions[currentQuestionIndex];
-    // Проверяем наличие ответа на текущий вопрос
+
     if (currentQuestion && currentQuestion.userAnswer) {
-      // Сохраняем ответ
       handleAnswer(currentQuestion._id, currentQuestion.userAnswer);
-      // Переходим к следующему вопросу
+
       goToNextQuestion();
     } else {
-      // Показываем уведомление, что нужно выбрать ответ
       setError('Пожалуйста, выберите ответ перед тем, как продолжить');
       setSuccessMessage('');
       setTimeout(() => setError(''), 3000);
     }
   };
 
-  // Отображение текущего вопроса
   const renderCurrentQuestion = () => {
     if (!questions.length) return null;
 
@@ -537,7 +494,6 @@ function TestTaking() {
     );
   }
 
-  // Отображение экрана с информацией о тесте перед началом
   if (!testStarted) {
     return (
       <div className="w-full max-w-4xl mx-auto py-8 px-4">

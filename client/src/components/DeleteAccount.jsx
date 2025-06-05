@@ -28,7 +28,6 @@ function DeleteAccount() {
       localStorage.removeItem('userData');
       window.location.href = '/';
     } catch (error) {
-      console.error('Ошибка при удалении аккаунта:', error);
       setError(error.response?.data?.message || 'Произошла ошибка при удалении аккаунта');
       setIsDeleting(false);
     }

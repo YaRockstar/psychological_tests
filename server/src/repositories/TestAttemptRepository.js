@@ -106,7 +106,7 @@ export const getUserTestAttempts = async (userId, options = {}) => {
   const { limit, skip, sort = { createdAt: -1 } } = options;
 
   const query = TestAttemptModel.find({ user: userId })
-    .populate('test', 'title description category testType difficulty imageUrl')
+    .populate('test', 'title description testType imageUrl')
     .populate('result', 'title');
 
   if (limit) query.limit(limit);
@@ -173,7 +173,7 @@ export const getAuthorTestsAttempts = async (authorId, testIds, options = {}) =>
     test: { $in: testIds },
     status: 'completed',
   })
-    .populate('test', 'title category testType')
+    .populate('test', 'title testType')
     .populate('user', 'firstName lastName email')
     .sort({ createdAt: -1 });
 
@@ -515,4 +515,126 @@ export const getUserCompletedAttemptInGroup = async (userId, testId, groupId) =>
   );
 
   return attempt ? transformDocument(attempt) : null;
+};
+
+/**
+ * Получает завершенные попытки теста для указанных пользователей и группы
+ * @param {string} testId ID теста
+ * @param {Array} userIds Массив ID пользователей
+ * @param {string} groupId ID группы
+ * @returns {Promise<Array>} Массив попыток
+ */
+export const getCompletedAttemptsByTestUsersAndGroup = async (
+  testId,
+  userIds,
+  groupId
+) => {
+  console.log(
+    `[TestAttemptRepository] Получение завершенных попыток теста ${testId} для ${userIds.length} пользователей в группе ${groupId}`
+  );
+
+  const query = {
+    test: testId,
+    user: { $in: userIds },
+    groupId: groupId,
+    status: 'completed',
+    result: { $exists: true },
+    completedAt: { $exists: true },
+  };
+
+  console.log(`[TestAttemptRepository] Запрос для попыток:`, JSON.stringify(query));
+
+  try {
+    const attempts = await TestAttemptModel.find(query)
+      .populate('user', 'username email')
+      .populate({
+        path: 'answers.question',
+        select: 'text type options',
+      })
+      .populate({
+        path: 'answers.selectedOptions',
+        select: 'text value',
+      })
+      .exec();
+
+    console.log(`[TestAttemptRepository] Найдено ${attempts.length} завершенных попыток`);
+
+    // Проверяем наличие ответов в первой попытке для диагностики
+    if (attempts.length > 0) {
+      const firstAttempt = attempts[0];
+      console.log(
+        `[TestAttemptRepository] Первая попытка (ID: ${firstAttempt._id}): ` +
+          `имеет ${firstAttempt.answers ? firstAttempt.answers.length : 0} ответов`
+      );
+
+      if (firstAttempt.answers && firstAttempt.answers.length > 0) {
+        const firstAnswer = firstAttempt.answers[0];
+        console.log(
+          `[TestAttemptRepository] Пример первого ответа:`,
+          `questionId: ${
+            firstAnswer.question?._id || firstAnswer.question || 'не указан'
+          }, ` +
+            `selectedOptions: ${firstAnswer.selectedOptions?.length || 0}, ` +
+            `scaleValue: ${firstAnswer.scaleValue || 'не указан'}`
+        );
+      }
+    }
+
+    return attempts;
+  } catch (error) {
+    console.error(`[TestAttemptRepository] Ошибка при получении попыток:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Получает все завершенные попытки теста в группе
+ * @param {string} testId ID теста
+ * @param {string} groupId ID группы
+ * @returns {Promise<Array>} Массив попыток
+ */
+export const getCompletedAttemptsByTestAndGroup = async (testId, groupId) => {
+  console.log(
+    `[TestAttemptRepository] Получение всех завершенных попыток теста ${testId} в группе ${groupId}`
+  );
+
+  const query = {
+    test: testId,
+    groupId: groupId,
+    status: 'completed',
+    result: { $exists: true },
+    completedAt: { $exists: true },
+  };
+
+  console.log(`[TestAttemptRepository] Запрос для попыток:`, JSON.stringify(query));
+
+  try {
+    const attempts = await TestAttemptModel.find(query)
+      .populate('user', 'username email')
+      .populate({
+        path: 'answers.question',
+        select: 'text type options',
+      })
+      .populate({
+        path: 'answers.selectedOptions',
+        select: 'text value',
+      })
+      .exec();
+
+    console.log(`[TestAttemptRepository] Найдено ${attempts.length} завершенных попыток`);
+
+    // Проверяем наличие ответов в первой попытке для диагностики
+    if (attempts.length > 0) {
+      const firstAttempt = attempts[0];
+      console.log(
+        `[TestAttemptRepository] Первая попытка (ID: ${firstAttempt._id}): ` +
+          `имеет ${firstAttempt.answers ? firstAttempt.answers.length : 0} ответов`
+      );
+    }
+
+    return attempts;
+  } catch (error) {
+    console.error(`[TestAttemptRepository] Ошибка при получении попыток:`, error);
+    throw error;
+  }
 };

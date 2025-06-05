@@ -812,3 +812,57 @@ export async function getUserCompletedAttemptInGroup(userId, testId, groupId) {
     groupId
   );
 }
+
+/**
+ * Получает завершенные попытки теста для указанных пользователей и группы
+ * @param {string} testId ID теста
+ * @param {Array} userIds Массив ID пользователей
+ * @param {string} groupId ID группы
+ * @returns {Promise<Array>} Массив попыток
+ */
+export async function getCompletedAttemptsByTestAndUsers(testId, userIds, groupId) {
+  console.log(
+    `[TestAttemptService] Получение завершенных попыток теста ${testId} для ${userIds.length} пользователей в группе ${groupId}`
+  );
+
+  try {
+    const attempts = await TestAttemptRepository.getCompletedAttemptsByTestUsersAndGroup(
+      testId,
+      userIds,
+      groupId
+    );
+
+    console.log(`[TestAttemptService] Найдено ${attempts.length} завершенных попыток`);
+
+    return attempts;
+  } catch (error) {
+    console.error(`[TestAttemptService] Ошибка при получении попыток: ${error.message}`);
+    throw error;
+  }
+}
+
+/**
+ * Получает все завершенные попытки теста в группе
+ * @param {string} testId ID теста
+ * @param {string} groupId ID группы
+ * @returns {Promise<Array>} Массив попыток
+ */
+export async function getCompletedAttemptsByTestAndGroup(testId, groupId) {
+  console.log(
+    `[TestAttemptService] Получение всех завершенных попыток теста ${testId} в группе ${groupId}`
+  );
+
+  try {
+    const attempts = await TestAttemptRepository.getCompletedAttemptsByTestAndGroup(
+      testId,
+      groupId
+    );
+
+    console.log(`[TestAttemptService] Найдено ${attempts.length} завершенных попыток`);
+
+    return attempts;
+  } catch (error) {
+    console.error(`[TestAttemptService] Ошибка при получении попыток: ${error.message}`);
+    throw error;
+  }
+}

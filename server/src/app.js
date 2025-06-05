@@ -8,6 +8,7 @@ import testRouter from './routes/TestRouter.js';
 import testAttemptRouter from './routes/TestAttemptRouter.js';
 import resultRouter from './routes/ResultRouter.js';
 import groupRouter from './routes/GroupRouter.js';
+import groupComparisonRouter from './routes/GroupComparisonRouter.js';
 import logger from './utils/logger.js';
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
@@ -31,6 +32,7 @@ app.use('/api/tests', testRouter);
 app.use('/api/test-attempts', testAttemptRouter);
 app.use('/api/results', resultRouter);
 app.use('/api/groups', groupRouter);
+app.use('/api/group-comparisons', groupComparisonRouter);
 
 /**
  * Запуск сервера и подключение к базе данных.

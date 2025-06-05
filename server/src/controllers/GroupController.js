@@ -1,6 +1,10 @@
 import * as GroupService from '../services/GroupService.js';
 import { HttpStatusCode } from '../utils/httpStatusCodes.js';
 import logger from '../utils/logger.js';
+import * as TestService from '../services/TestService.js';
+import * as TestAttemptService from '../services/TestAttemptService.js';
+import * as QuestionService from '../services/QuestionService.js';
+import mongoose from 'mongoose';
 
 /**
  * Создание новой группы
@@ -423,3 +427,254 @@ export async function leaveGroup(req, res) {
     });
   }
 }
+
+/**
+ * Сравнивает результаты тестов двух групп с использованием критерия хи-квадрат.
+ * @param {Object} req - Объект запроса Express.
+ * @param {Object} res - Объект ответа Express.
+ */
+export const compareGroups = async (req, res) => {
+  try {
+    // Получаем ID групп из тела запроса
+    const { group1Id, group2Id } = req.body;
+    const userId = req.user._id;
+
+    console.log(
+      `[GroupController] Запрос на сравнение групп ${group1Id} и ${group2Id} от пользователя ${userId}`
+    );
+
+    // Проверяем наличие ID групп
+    if (!group1Id || !group2Id) {
+      console.log(`[GroupController] Ошибка: не указаны ID групп для сравнения`);
+      return res
+        .status(400)
+        .json({ message: 'Необходимо указать обе группы для сравнения' });
+    }
+
+    // Проверяем валидность ID групп
+    if (
+      !mongoose.Types.ObjectId.isValid(group1Id) ||
+      !mongoose.Types.ObjectId.isValid(group2Id)
+    ) {
+      console.log(
+        `[GroupController] Ошибка: невалидные ID групп ${group1Id} и/или ${group2Id}`
+      );
+      return res
+        .status(400)
+        .json({ message: 'Указаны некорректные идентификаторы групп' });
+    }
+
+    // Проверяем, что группы разные
+    if (group1Id === group2Id) {
+      console.log(`[GroupController] Ошибка: одинаковые ID групп ${group1Id}`);
+      return res
+        .status(400)
+        .json({ message: 'Необходимо выбрать две разные группы для сравнения' });
+    }
+
+    try {
+      // Вызываем сервис для сравнения групп
+      const comparisonResult = await GroupService.compareGroupsChiSquare(
+        group1Id,
+        group2Id,
+        userId
+      );
+
+      // Отправляем результат
+      console.log(`[GroupController] Успешное сравнение групп. Результат:`, {
+        id: comparisonResult._id,
+        chiSquareValue: comparisonResult.chiSquareValue,
+        isSignificant: comparisonResult.isSignificant,
+      });
+
+      return res.status(200).json(comparisonResult);
+    } catch (error) {
+      console.error(`[GroupController] Ошибка при анализе данных:`, error);
+
+      // Детальное логирование ошибки
+      if (error.stack) {
+        console.error(`[GroupController] Стек ошибки:`, error.stack);
+      }
+
+      // Проверяем на ошибку с undefined
+      if (
+        error.message &&
+        error.message.includes('Cannot read properties of undefined')
+      ) {
+        console.error(`[GroupController] Обнаружена ошибка с undefined:`, error.message);
+        return res.status(400).json({
+          message: 'Ошибка при обработке данных групп',
+          details:
+            'Неполные или некорректные данные ответов в одной из групп. Убедитесь, что все участники полностью прошли тест.',
+        });
+      }
+
+      // Обрабатываем конкретные типы ошибок
+      if (error.name === 'NotFoundError') {
+        return res.status(404).json({
+          message: error.message,
+          details: 'Проверьте, существуют ли указанные группы и доступны ли они вам',
+        });
+      }
+
+      if (error.name === 'NotValidError') {
+        return res.status(400).json({
+          message: error.message,
+          details: 'Проверьте корректность данных для сравнения групп',
+        });
+      }
+
+      // Общая ошибка сервера
+      return res.status(500).json({
+        message: 'Произошла ошибка при сравнении групп',
+        details: error.message,
+      });
+    }
+  } catch (error) {
+    console.error(`[GroupController] Критическая ошибка при обработке запроса:`, error);
+    if (error.stack) {
+      console.error(`[GroupController] Стек ошибки:`, error.stack);
+    }
+    return res.status(500).json({
+      message: 'Внутренняя ошибка сервера',
+      details: 'Пожалуйста, попробуйте позже или обратитесь к администратору',
+    });
+  }
+};
+
+/**
+ * Получает результаты сравнения групп для текущего пользователя.
+ * @param {Object} req - Объект запроса Express.
+ * @param {Object} res - Объект ответа Express.
+ */
+export const getGroupComparisonResults = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    console.log(
+      `[GroupController] Запрос на получение результатов сравнения групп для пользователя ${userId}`
+    );
+
+    // Проверяем, что пользователь имеет права доступа (уже проверено middleware authorize)
+    const results = await GroupService.getComparisonResultsByAuthor(userId);
+    console.log(
+      `[GroupController] Найдено ${results.length} результатов сравнения групп`
+    );
+
+    if (results.length > 0) {
+      console.log(`[GroupController] Пример первого результата:`, {
+        id: results[0]._id,
+        group1: results[0].group1Name,
+        group2: results[0].group2Name,
+        test: results[0].testName,
+        chiSquare: results[0].chiSquareValue,
+        isSignificant: results[0].isSignificant,
+      });
+    }
+
+    return res.status(200).json(results);
+  } catch (error) {
+    console.error(`[GroupController] Ошибка при получении результатов сравнения:`, error);
+    return res.status(500).json({
+      message: 'Ошибка при получении результатов сравнения групп',
+      details: error.message,
+    });
+  }
+};
+
+/**
+ * Удаляет результат сравнения групп по ID.
+ * @param {Object} req - Объект запроса Express.
+ * @param {Object} res - Объект ответа Express.
+ */
+export const deleteComparisonResult = async (req, res) => {
+  try {
+    const resultId = req.params.id;
+    const userId = req.user._id;
+
+    console.log(
+      `[GroupController] Запрос на удаление результата сравнения ${resultId} от пользователя ${userId}`
+    );
+
+    // Проверяем валидность ID
+    if (!mongoose.Types.ObjectId.isValid(resultId)) {
+      console.log(`[GroupController] Ошибка: невалидный ID результата ${resultId}`);
+      return res
+        .status(400)
+        .json({ message: 'Указан некорректный идентификатор результата' });
+    }
+
+    try {
+      // Вызываем сервис для удаления результата
+      const result = await GroupService.deleteComparisonResult(resultId, userId);
+
+      // Отправляем результат
+      console.log(`[GroupController] Результат сравнения ${resultId} успешно удален`);
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error(`[GroupController] Ошибка при удалении результата:`, error);
+
+      if (error.message.includes('не найден')) {
+        return res.status(404).json({
+          message: error.message,
+          details: 'Проверьте, существует ли указанный результат сравнения',
+        });
+      }
+
+      if (error.message.includes('нет прав')) {
+        return res.status(403).json({
+          message: error.message,
+          details: 'У вас нет прав на удаление данного результата сравнения',
+        });
+      }
+
+      return res.status(500).json({
+        message: 'Произошла ошибка при удалении результата сравнения',
+        details: error.message,
+      });
+    }
+  } catch (error) {
+    console.error(`[GroupController] Критическая ошибка при обработке запроса:`, error);
+    return res.status(500).json({
+      message: 'Внутренняя ошибка сервера',
+      details: 'Пожалуйста, попробуйте позже или обратитесь к администратору',
+    });
+  }
+};
+
+/**
+ * Удаляет все результаты сравнения групп пользователя.
+ * @param {Object} req - Объект запроса Express.
+ * @param {Object} res - Объект ответа Express.
+ */
+export const deleteAllComparisonResults = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    console.log(
+      `[GroupController] Запрос на удаление всех результатов сравнения от пользователя ${userId}`
+    );
+
+    try {
+      // Вызываем сервис для удаления всех результатов
+      const result = await GroupService.deleteAllComparisonResults(userId);
+
+      // Отправляем результат
+      console.log(
+        `[GroupController] Удалено ${result.deletedCount} результатов сравнения`
+      );
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error(`[GroupController] Ошибка при удалении результатов:`, error);
+      return res.status(500).json({
+        message: 'Произошла ошибка при удалении результатов сравнения',
+        details: error.message,
+      });
+    }
+  } catch (error) {
+    console.error(`[GroupController] Критическая ошибка при обработке запроса:`, error);
+    return res.status(500).json({
+      message: 'Внутренняя ошибка сервера',
+      details: 'Пожалуйста, попробуйте позже или обратитесь к администратору',
+    });
+  }
+};

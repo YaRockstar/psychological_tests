@@ -33,8 +33,8 @@ function TestResults() {
               setLoading(false);
               return; // Выходим из функции, если пользователь - автор
             }
-          } catch (error) {
-            console.error('Ошибка при парсинге данных пользователя:', error);
+          } catch {
+            // Игнорируем ошибки парсинга
           }
         }
 
@@ -49,7 +49,6 @@ function TestResults() {
           setLoading(false);
         }
       } catch (err) {
-        console.error('Ошибка при получении данных пользователя:', err);
         if (err.response && err.response.status === 401) {
           setIsAuthenticated(false);
         } else {
@@ -84,10 +83,6 @@ function TestResults() {
           const attemptResponse = await testAPI.getTestAttemptById(currentAttemptId);
           setTestAttempt(attemptResponse.data);
 
-          // Отладочная информация
-          console.log('Данные попытки:', attemptResponse.data);
-          console.log('Ответы на вопросы:', attemptResponse.data.answers);
-
           // Загружаем данные о тесте
           if (attemptResponse.data.test) {
             const testId =
@@ -108,8 +103,6 @@ function TestResults() {
             setResult(attemptResponse.data.result);
           }
         } catch (initialError) {
-          console.error('Ошибка при загрузке попытки из URL:', initialError);
-
           // Если ошибка доступа и есть сохраненная попытка, пробуем использовать её
           if (
             initialError.response &&
@@ -140,12 +133,7 @@ function TestResults() {
               if (lastAttemptResponse.data.result) {
                 setResult(lastAttemptResponse.data.result);
               }
-            } catch (lastAttemptError) {
-              console.error(
-                'Ошибка при загрузке последней сохраненной попытки:',
-                lastAttemptError
-              );
-
+            } catch {
               // Прекращаем загрузку если у нас уже есть базовые данные о тесте из localStorage
               if (lastTestTitle) {
                 setLoading(false);
@@ -157,8 +145,8 @@ function TestResults() {
                 try {
                   const testResponse = await testAPI.getTestById(lastTestId);
                   setTest(testResponse.data);
-                } catch (testError) {
-                  console.error('Ошибка при загрузке теста напрямую:', testError);
+                } catch {
+                  return;
                 }
               }
 
@@ -188,8 +176,7 @@ function TestResults() {
                 } else {
                   throw new Error('Не найдено доступных попыток прохождения теста');
                 }
-              } catch (attemptsError) {
-                console.error('Не удалось найти доступные попытки:', attemptsError);
+              } catch {
                 throw new Error(
                   'Не удалось получить результаты теста. Попробуйте пройти тест заново.'
                 );
@@ -199,14 +186,12 @@ function TestResults() {
             // Другая ошибка, не связанная с доступом
             // Если у нас есть данные из localStorage, используем их
             if (lastTestTitle) {
-              if (!testAttempt) {
-                // Создаем минимальный объект попытки, чтобы страница отобразилась
-                setTestAttempt({
-                  status: 'in-progress',
-                  totalQuestions: 0,
-                  correctAnswers: 0,
-                });
-              }
+              // Создаем минимальный объект попытки
+              setTestAttempt({
+                status: 'in-progress',
+                totalQuestions: 0,
+                correctAnswers: 0,
+              });
               setLoading(false);
               return;
             }
@@ -216,7 +201,6 @@ function TestResults() {
 
         setLoading(false);
       } catch (error) {
-        console.error('Ошибка при загрузке результатов:', error);
         if (error.response && error.response.status === 401) {
           setIsAuthenticated(false);
         } else {

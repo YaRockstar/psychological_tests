@@ -8,9 +8,8 @@ function AuthorTests() {
   const [error, setError] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [isAuthor, setIsAuthor] = useState(false);
-  const [filter, setFilter] = useState('all'); // all, published, draft
+  const [filter, setFilter] = useState('all');
 
-  // Проверка авторизации и роли пользователя
   useEffect(() => {
     const checkUserAuth = async () => {
       const token = localStorage.getItem('token');
@@ -28,7 +27,6 @@ function AuthorTests() {
           setError('Доступ разрешен только авторам тестов');
         } else {
           setIsAuthor(true);
-          // Обновляем данные в localStorage
           localStorage.setItem('userData', JSON.stringify(userData));
         }
       } catch (error) {
@@ -45,7 +43,6 @@ function AuthorTests() {
     checkUserAuth();
   }, []);
 
-  // Загрузка тестов автора
   useEffect(() => {
     const loadTests = async () => {
       if (!isAuthor) return;
@@ -70,7 +67,6 @@ function AuthorTests() {
     }
   }, [isAuthor]);
 
-  // Фильтрация тестов
   const filteredTests = tests.filter(test => {
     if (filter === 'all') return true;
     if (filter === 'published') return test.isPublic;
@@ -78,7 +74,6 @@ function AuthorTests() {
     return true;
   });
 
-  // Обработчик публикации/снятия с публикации
   const handlePublishToggle = async (testId, currentPublishState) => {
     try {
       if (currentPublishState) {
@@ -87,7 +82,6 @@ function AuthorTests() {
         await testAPI.publishTest(testId);
       }
 
-      // Обновляем список тестов
       const response = await testAPI.getAuthorTests();
       setTests(response.data);
     } catch (error) {
@@ -96,7 +90,6 @@ function AuthorTests() {
     }
   };
 
-  // Обработчик удаления теста
   const handleDeleteTest = async testId => {
     if (!confirm('Вы уверены, что хотите удалить этот тест?')) {
       return;
@@ -104,7 +97,6 @@ function AuthorTests() {
 
     try {
       await testAPI.deleteTest(testId);
-      // Обновляем список тестов
       setTests(tests.filter(test => test._id !== testId));
     } catch (error) {
       console.error('Ошибка при удалении теста:', error);

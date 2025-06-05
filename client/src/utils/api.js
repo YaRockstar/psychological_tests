@@ -110,6 +110,30 @@ export const groupAPI = {
   removeUserFromGroup: (groupId, userId) =>
     api.delete(`/api/groups/${groupId}/users/${userId}`),
 
+  // Сравнение групп
+  compareGroups: (group1Id, group2Id) => {
+    console.log(`Отправка запроса на сравнение групп: ${group1Id} и ${group2Id}`);
+    return api
+      .post('/api/group-comparisons/compare', { group1Id, group2Id })
+      .catch(error => {
+        console.error('Ошибка API при сравнении групп:', error);
+        if (error.response) {
+          console.error('Детали ошибки:', error.response.data);
+          console.error('Статус ошибки:', error.response.status);
+        } else if (error.request) {
+          console.error('Нет ответа от сервера:', error.request);
+        } else {
+          console.error('Ошибка запроса:', error.message);
+        }
+        throw error;
+      });
+  },
+  getGroupComparisonResults: () => api.get('/api/group-comparisons/comparison-results'),
+  deleteComparisonResult: resultId =>
+    api.delete(`/api/group-comparisons/comparison-results/${resultId}`),
+  deleteAllComparisonResults: () =>
+    api.delete('/api/group-comparisons/comparison-results'),
+
   // Методы для пользователей
   getUserGroups: () => api.get('/api/groups/joined'),
   getGroupById: groupId => api.get(`/api/groups/${groupId}`),
