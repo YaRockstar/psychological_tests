@@ -40,36 +40,26 @@ const GroupComparisonResultSchema = new mongoose.Schema({
     ref: 'User',
   },
 
-  // Результаты статистического анализа
-  chiSquareValue: {
-    type: Number,
-    required: true,
-  },
-  degreesOfFreedom: {
-    type: Number,
-    required: true,
-  },
-  isSignificant: {
-    type: Boolean,
-    required: true,
-  },
-  pValue: {
-    type: Number,
-    required: true,
-  },
-
-  // Информация о значимых вопросах
-  significantQuestions: {
-    type: Number,
-    default: 0,
-  },
+  // Информация о количестве вопросов
   totalQuestions: {
     type: Number,
     default: 0,
   },
-  significantRatio: {
-    type: Number,
-    default: 0,
+
+  // Детальные результаты по каждому вопросу
+  questionResults: {
+    type: Array,
+    default: [],
+  },
+
+  // Информация о малых выборках
+  isSmallSample: {
+    type: Boolean,
+    default: false,
+  },
+  adaptedMethod: {
+    type: String,
+    default: null,
   },
 
   // Дополнительные данные

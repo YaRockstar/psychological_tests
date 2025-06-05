@@ -480,11 +480,47 @@ export const compareGroups = async (req, res) => {
         userId
       );
 
+      // Сохраняем результат сравнения в базе данных
+      try {
+        // Подготавливаем данные для сохранения, включая детальную информацию по вопросам
+        const resultToSave = {
+          group1Id: comparisonResult.group1Id,
+          group1Name: comparisonResult.group1Name,
+          group2Id: comparisonResult.group2Id,
+          group2Name: comparisonResult.group2Name,
+          testId: comparisonResult.testId,
+          testName: comparisonResult.testName,
+          authorId: userId,
+          totalQuestions: comparisonResult.totalQuestions || 0,
+          questionResults: comparisonResult.questionResults || [],
+          isSmallSample: comparisonResult.isSmallSample || false,
+          adaptedMethod: comparisonResult.adaptedMethod || null,
+        };
+
+        // Сохраняем результат
+        const savedResult = await GroupService.saveComparisonResult(resultToSave);
+
+        // Добавляем ID сохраненного результата к возвращаемым данным
+        comparisonResult._id = savedResult._id;
+
+        console.log(
+          `[GroupController] Результат сравнения групп успешно сохранен с ID: ${savedResult._id}`
+        );
+      } catch (saveError) {
+        // Если произошла ошибка при сохранении, логируем её, но не прерываем выполнение
+        console.error(
+          `[GroupController] Ошибка при сохранении результата сравнения:`,
+          saveError
+        );
+      }
+
       // Отправляем результат
       console.log(`[GroupController] Успешное сравнение групп. Результат:`, {
         id: comparisonResult._id,
-        chiSquareValue: comparisonResult.chiSquareValue,
-        isSignificant: comparisonResult.isSignificant,
+        totalQuestions: comparisonResult.totalQuestions,
+        questionResultsCount: comparisonResult.questionResults
+          ? comparisonResult.questionResults.length
+          : 0,
       });
 
       return res.status(200).json(comparisonResult);

@@ -87,12 +87,14 @@ function CompareGroups() {
   }, []);
 
   // Загружаем сохраненные результаты сравнений
-  const fetchComparisonResults = async () => {
+  const fetchComparisonResults = async (showResultsPage = true) => {
     try {
       setLoading(true);
       const response = await groupAPI.getGroupComparisonResults();
       setComparisonResults(response.data);
-      setShowResults(true);
+      if (showResultsPage) {
+        setShowResults(true);
+      }
       setLoading(false);
     } catch (error) {
       console.error('Ошибка при загрузке результатов сравнений:', error);
@@ -187,10 +189,14 @@ function CompareGroups() {
         return;
       }
 
-      if (!response.data.chiSquareValue && response.data.chiSquareValue !== 0) {
+      if (
+        !response.data.questionResults ||
+        !Array.isArray(response.data.questionResults) ||
+        !response.data.totalQuestions
+      ) {
         console.error('Получены некорректные данные:', response.data);
         setError(
-          'Получены некорректные данные от сервера. Отсутствует значение хи-квадрат. Пожалуйста, повторите попытку.'
+          'Получены некорректные данные от сервера. Отсутствуют результаты по вопросам. Пожалуйста, повторите попытку.'
         );
         setComparing(false);
         return;
@@ -199,8 +205,14 @@ function CompareGroups() {
       setCurrentResult(response.data);
       setSuccessMessage('Сравнение групп успешно выполнено');
 
-      // Обновляем список результатов сравнений
-      fetchComparisonResults();
+      // Обновляем список результатов сравнений в фоновом режиме без переключения на них
+      try {
+        const resultsResponse = await groupAPI.getGroupComparisonResults();
+        setComparisonResults(resultsResponse.data);
+      } catch (error) {
+        console.error('Ошибка при обновлении списка результатов:', error);
+        // Не показываем ошибку пользователю, так как основная операция сравнения успешна
+      }
 
       setComparing(false);
     } catch (error) {
@@ -480,8 +492,16 @@ function CompareGroups() {
   };
 
   // Компонент для отображения подробной информации о вопросе
-  const QuestionDetails = ({ question, group1Name, group2Name }) => {
-    const [viewMode, setViewMode] = useState('table'); // 'table', 'pie', 'bar'
+  const QuestionDetails = ({
+    question,
+    group1Name,
+    group2Name,
+    viewMode: externalViewMode,
+  }) => {
+    const [internalViewMode, setViewMode] = useState('table'); // 'table', 'pie', 'bar'
+
+    // Используем внешний режим отображения, если он предоставлен, иначе используем внутренний
+    const currentViewMode = externalViewMode || internalViewMode;
 
     return (
       <div className="border border-gray-200 rounded-md p-4 mb-4">
@@ -520,52 +540,55 @@ function CompareGroups() {
           </div>
         </div>
         <div className="mb-3">
-          <div className="flex justify-between items-center mb-2">
-            <p className="font-medium">Распределение ответов:</p>
-            <div className="flex space-x-2 text-sm">
-              <button
-                onClick={() => setViewMode('table')}
-                className={`px-2 py-1 rounded ${
-                  viewMode === 'table'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                Таблица
-              </button>
-              <button
-                onClick={() => setViewMode('bar')}
-                className={`px-2 py-1 rounded ${
-                  viewMode === 'bar'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                Столбчатая
-              </button>
-              <button
-                onClick={() => setViewMode('pie')}
-                className={`px-2 py-1 rounded ${
-                  viewMode === 'pie'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                Круговая
-              </button>
+          {/* Отображаем переключатель только если не передан внешний режим отображения */}
+          {!externalViewMode && (
+            <div className="flex justify-between items-center mb-2">
+              <p className="font-medium">Распределение ответов:</p>
+              <div className="flex space-x-2 text-sm">
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`px-2 py-1 rounded ${
+                    currentViewMode === 'table'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Таблица
+                </button>
+                <button
+                  onClick={() => setViewMode('bar')}
+                  className={`px-2 py-1 rounded ${
+                    currentViewMode === 'bar'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Столбчатая
+                </button>
+                <button
+                  onClick={() => setViewMode('pie')}
+                  className={`px-2 py-1 rounded ${
+                    currentViewMode === 'pie'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Круговая
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
-          {viewMode === 'table' &&
+          {currentViewMode === 'table' &&
             renderContingencyTable(question.contingencyTable, group1Name, group2Name)}
-          {viewMode === 'bar' && (
+          {currentViewMode === 'bar' && (
             <BarChartView
               table={question.contingencyTable}
               group1Name={group1Name}
               group2Name={group2Name}
             />
           )}
-          {viewMode === 'pie' && (
+          {currentViewMode === 'pie' && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-center font-medium mb-2">{group1Name}</p>
@@ -685,6 +708,123 @@ function CompareGroups() {
     );
   };
 
+  /**
+   * Компонент для отображения детальных результатов сохраненного сравнения
+   */
+  const SavedResultDetails = ({ result }) => {
+    const [expanded, setExpanded] = useState(false);
+    const [viewMode, setViewMode] = useState('table'); // 'table' или 'chart'
+    const [chartType, setChartType] = useState('bar'); // 'bar' или 'pie'
+
+    // Проверяем, есть ли детальные результаты
+    const hasDetails = result.questionResults && result.questionResults.length > 0;
+
+    // Определяем текущий режим отображения для передачи в QuestionDetails
+    const currentViewMode = viewMode === 'chart' ? chartType : viewMode;
+
+    return (
+      <div>
+        {hasDetails ? (
+          <>
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="px-3 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-md transition-colors mt-2"
+            >
+              {expanded ? 'Свернуть детали' : 'Показать детальные результаты'}
+            </button>
+
+            {expanded && (
+              <div className="mt-4 border-t pt-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-medium text-lg">Детальные результаты сравнения</h3>
+
+                  {/* Переключатель режима отображения */}
+                  <div className="flex bg-gray-100 rounded-lg p-1">
+                    <button
+                      onClick={() => setViewMode('table')}
+                      className={`px-3 py-1 rounded-md text-sm ${
+                        viewMode === 'table'
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      Таблица
+                    </button>
+                    <button
+                      onClick={() => setViewMode('chart')}
+                      className={`px-3 py-1 rounded-md text-sm ${
+                        viewMode === 'chart'
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      Графики
+                    </button>
+                  </div>
+                </div>
+
+                {/* Переключатель типа графика, если выбран режим графиков */}
+                {viewMode === 'chart' && (
+                  <div className="flex justify-end mb-3">
+                    <div className="flex bg-gray-100 rounded-lg p-1">
+                      <button
+                        onClick={() => setChartType('bar')}
+                        className={`px-3 py-1 rounded-md text-sm ${
+                          chartType === 'bar'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        Столбчатая
+                      </button>
+                      <button
+                        onClick={() => setChartType('pie')}
+                        className={`px-3 py-1 rounded-md text-sm ${
+                          chartType === 'pie'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        Круговая
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Топ вопросов по значению хи-квадрат */}
+                <div className="mb-6">
+                  <h4 className="font-medium mb-2">
+                    Топ-10 вопросов с наибольшей статистической разницей:
+                  </h4>
+                  <ChiSquareChartView questionResults={result.questionResults} />
+                </div>
+
+                {/* Результаты по каждому вопросу */}
+                <div className="space-y-6">
+                  {result.questionResults.map((questionResult, index) => (
+                    <div key={index} className="border rounded-lg p-4">
+                      <QuestionDetails
+                        question={questionResult}
+                        group1Name={result.group1Name}
+                        group2Name={result.group2Name}
+                        viewMode={currentViewMode}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-gray-500 mt-2">
+            Подробные результаты не сохранены для этого сравнения. Выполните сравнение
+            снова для детального анализа.
+          </p>
+        )}
+      </div>
+    );
+  };
+
   // Если пользователь не авторизован, перенаправляем на страницу входа
   if (!isAuthenticated && !loading) {
     return <Navigate to="/login" />;
@@ -710,7 +850,7 @@ function CompareGroups() {
         <h1 className="text-2xl font-bold text-gray-900">Сравнение групп</h1>
         <div className="flex space-x-3">
           <button
-            onClick={() => fetchComparisonResults()}
+            onClick={() => fetchComparisonResults(true)}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
             Результаты
@@ -846,42 +986,6 @@ function CompareGroups() {
                     <p className="font-medium">Тест:</p>
                     <p>{result.testName}</p>
                   </div>
-                  <div className="mb-3">
-                    <p className="font-medium">Результат:</p>
-                    <p
-                      className={result.isSignificant ? 'text-red-600' : 'text-green-600'}
-                    >
-                      {result.isSignificant
-                        ? 'Обнаружены статистически значимые различия между группами'
-                        : 'Статистически значимых различий между группами не обнаружено'}
-                    </p>
-                  </div>
-                  <div className="mb-3">
-                    <p className="font-medium">Значение хи-квадрат (среднее):</p>
-                    <p>{result.chiSquareValue.toFixed(2)}</p>
-                  </div>
-                  <div className="mb-3">
-                    <p className="font-medium">Уровень значимости:</p>
-                    <p>
-                      {result.pValue
-                        ? `p = ${result.pValue}`
-                        : result.isSignificant
-                        ? 'p < 0.05'
-                        : 'p > 0.05'}
-                    </p>
-                  </div>
-                  {result.significantQuestions !== undefined && (
-                    <div className="mb-3">
-                      <p className="font-medium">Значимые вопросы:</p>
-                      <p>{`${result.significantQuestions || 0} из ${
-                        result.totalQuestions || 0
-                      } (${
-                        result.significantPercentage !== undefined
-                          ? result.significantPercentage
-                          : ((result.significantRatio || 0) * 100).toFixed(1)
-                      }%)`}</p>
-                    </div>
-                  )}
 
                   {/* Отображение информации о малых выборках в списке результатов */}
                   {result.isSmallSample && (
@@ -895,9 +999,13 @@ function CompareGroups() {
                       </p>
                     </div>
                   )}
-                  <div className="text-xs text-gray-500 mt-2">
+
+                  <div className="text-xs text-gray-500 mt-2 mb-3">
                     Дата сравнения: {new Date(result.createdAt).toLocaleString()}
                   </div>
+
+                  {/* Кнопка для развертывания детальных результатов */}
+                  <SavedResultDetails result={result} />
                 </div>
               ))}
             </div>
@@ -1117,6 +1225,9 @@ function CompareGroups() {
                           question={question}
                           group1Name={currentResult.group1Name}
                           group2Name={currentResult.group2Name}
+                          viewMode={
+                            currentResult.questionResults.length > 10 ? 'chart' : null
+                          }
                         />
                       ))}
                   </div>
