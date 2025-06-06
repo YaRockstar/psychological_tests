@@ -818,9 +818,6 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
     console.log(`[GroupService] Найдено ${questions.length} вопросов для сравнения`);
 
     // Вычисляем хи-квадрат для каждого вопроса
-    let totalChiSquare = 0;
-    let totalDegreesOfFreedom = 0;
-    let significantQuestions = 0;
     const questionResults = [];
     let validQuestionCount = 0;
 
@@ -829,7 +826,8 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
     // 2. Категории с ожидаемой частотой менее 5 пропускаются (классическое требование критерия хи-квадрат)
     // 3. Для малых выборок категории автоматически группируются, чтобы увеличить ожидаемые частоты
     // 4. Результаты объединяются с учетом нормализации (во избежание зависимости от порядка групп)
-    for (const question of questions) {
+    for (let questionIndex = 0; questionIndex < questions.length; questionIndex++) {
+      const question = questions[questionIndex];
       try {
         // Проверяем наличие ID вопроса
         if (!question || !question._id) {
@@ -851,11 +849,29 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
           group2Attempts
         );
 
-        // Если таблица пуста или недостаточно данных, пропускаем вопрос
+        // Если таблица пуста или недостаточно данных, добавляем вопрос с флагом "недостаточно данных"
         if (!contingencyTable || Object.keys(contingencyTable).length <= 1) {
           console.log(
-            `[GroupService] Пропуск вопроса ${questionId}: недостаточно данных для сравнения`
+            `[GroupService] Вопрос ${questionId}: недостаточно данных для полноценного статистического анализа`
           );
+
+          // Добавляем вопрос с пустыми статистическими данными
+          questionResults.push({
+            questionId: question._id,
+            questionText: question.text || 'Текст вопроса отсутствует',
+            chiSquare: 0,
+            degreesOfFreedom: 0,
+            isSignificant: false,
+            criticalValue: null,
+            pValue: null,
+            contingencyTable: contingencyTable || {},
+            questionType: question.type || 'unknown',
+            insufficientData: true, // Добавляем флаг о недостаточности данных
+            message: 'Недостаточно данных для статистического анализа',
+            questionIndex: questionIndex, // Сохраняем индекс вопроса для сортировки
+          });
+
+          validQuestionCount++;
           continue;
         }
 
@@ -871,11 +887,38 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
           console.log(
             `[GroupService] Расчет хи-квадрат не вернул результат для вопроса ${questionId}`
           );
+
+          // Добавляем вопрос с пустыми статистическими данными
+          questionResults.push({
+            questionId: question._id,
+            questionText: question.text || 'Текст вопроса отсутствует',
+            chiSquare: 0,
+            degreesOfFreedom: 0,
+            isSignificant: false,
+            criticalValue: null,
+            pValue: null,
+            contingencyTable: contingencyTable,
+            questionType: question.type || 'unknown',
+            insufficientData: true,
+            message: 'Ошибка при статистическом анализе',
+            questionIndex: questionIndex, // Сохраняем индекс вопроса для сортировки
+          });
+
+          validQuestionCount++;
           continue;
         }
 
-        const { chiSquare, degreesOfFreedom, isSignificant, criticalValue, pValue } =
-          result;
+        const {
+          chiSquare,
+          degreesOfFreedom,
+          isSignificant,
+          criticalValue,
+          pValue,
+          error,
+        } = result;
+
+        // Проверяем, есть ли ошибка в результате
+        const hasError = !!error;
 
         // Добавляем результат вопроса
         questionResults.push({
@@ -886,16 +929,17 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
           isSignificant,
           criticalValue: criticalValue ? criticalValue.toFixed(3) : null,
           pValue: pValue || null,
+          // Добавляем таблицу сопряженности для отображения в интерфейсе
+          contingencyTable: contingencyTable,
+          // Добавляем тип вопроса для правильного отображения
+          questionType: question.type || 'unknown',
+          // Добавляем информацию об ошибке, если она есть
+          insufficientData: hasError,
+          message: error || null,
+          questionIndex: questionIndex, // Сохраняем индекс вопроса для сортировки
         });
 
-        // Увеличиваем общие значения
-        totalChiSquare += chiSquare;
-        totalDegreesOfFreedom += degreesOfFreedom;
         validQuestionCount++;
-
-        if (isSignificant) {
-          significantQuestions++;
-        }
 
         console.log(
           `[GroupService] Вопрос ${questionId}: хи-квадрат=${chiSquare.toFixed(2)}, ` +
@@ -917,117 +961,16 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
       throw new Error('Не удалось выполнить статистический анализ: недостаточно данных');
     }
 
-    // Рассчитываем долю значимых вопросов (более типичный подход к оценке общего результата)
-    const significantRatio =
-      validQuestionCount > 0 ? significantQuestions / validQuestionCount : 0;
-    const significantPercentage = parseFloat((significantRatio * 100).toFixed(1));
+    // Сортируем результаты по индексу вопроса, чтобы сохранить порядок вопросов в тесте
+    questionResults.sort((a, b) => a.questionIndex - b.questionIndex);
 
-    // ПРИМЕЧАНИЕ: Для упрощения интерпретации результатов вычисляем среднее значение χ²
-    // Это нестандартный статистический прием, используемый в данном случае для:
-    // 1. Обеспечения стабильности результатов независимо от порядка сравниваемых групп
-    // 2. Получения общего показателя различия между группами в интуитивно понятной форме
-    // 3. Стандартизации результатов при разном количестве вопросов
-    // В классическом подходе общий результат оценивается по доле значимых вопросов (significantRatio)
-    if (validQuestionCount > 0) {
-      totalChiSquare = totalChiSquare / validQuestionCount;
-      // Округляем до двух знаков после запятой для стабильности
-      totalChiSquare = parseFloat(totalChiSquare.toFixed(2));
-
-      // Для средних значений хи-квадрат используем средние степени свободы
-      totalDegreesOfFreedom = Math.round(totalDegreesOfFreedom / validQuestionCount);
-      if (totalDegreesOfFreedom < 1) totalDegreesOfFreedom = 1;
-    }
-
-    console.log(
-      `[GroupService] Общие результаты: хи-квадрат (среднее)=${totalChiSquare}, ` +
-        `степени свободы=${totalDegreesOfFreedom}, ` +
-        `значимых вопросов=${significantQuestions}/${validQuestionCount} (${significantPercentage}%)`
-    );
-
-    // Определяем критическое значение для уровня значимости 0.05
-    // Для разных степеней свободы есть разные критические значения
-    const criticalValues = {
-      1: 3.841,
-      2: 5.991,
-      3: 7.815,
-      4: 9.488,
-      5: 11.07,
-      6: 12.592,
-      7: 14.067,
-      8: 15.507,
-      9: 16.919,
-      10: 18.307,
-    };
-
-    // Используем степень свободы для определения критического значения
-    const criticalValue =
-      criticalValues[totalDegreesOfFreedom] ||
-      // Приближенная формула для больших степеней свободы
-      Math.sqrt(2 * totalDegreesOfFreedom) * 1.96 + totalDegreesOfFreedom;
-
-    // Определяем статистическую значимость, сравнивая с критическим значением
-    const isSignificant = totalChiSquare > criticalValue;
-
-    // Рассчитываем p-значение с использованием библиотеки jstat
-    // jStat.pchisq вычисляет кумулятивную функцию распределения хи-квадрат,
-    // поэтому вычитаем из 1, чтобы получить правостороннюю вероятность (p-value)
-    let pValue;
-    try {
-      // Для хи-квадрат распределения с totalDegreesOfFreedom степенями свободы
-      pValue = 1 - jStat.pchisq(totalChiSquare, totalDegreesOfFreedom);
-
-      // Округляем для удобства отображения
-      pValue = parseFloat(pValue.toFixed(4));
-
-      // Защита от очень маленьких значений (вычислительная погрешность)
-      if (pValue < 0.0001) {
-        pValue = 0.0001;
-      }
-    } catch (error) {
-      console.error(`[GroupService] Ошибка при расчете p-value с jstat:`, error);
-
-      // Резервный вариант - приближенный расчет
-      if (totalChiSquare < criticalValue) {
-        pValue = 0.1; // p > 0.05
-      } else {
-        // Приближенное значение для p < 0.05
-        const ratio = totalChiSquare / criticalValue;
-        if (ratio > 1.5) {
-          pValue = 0.01; // p < 0.01
-        } else {
-          pValue = 0.03; // 0.01 < p < 0.05
-        }
-      }
-    }
-
-    console.log(
-      `[GroupService] Итоговый результат: хи-квадрат=${totalChiSquare}, ` +
-        `степени свободы=${totalDegreesOfFreedom}, ` +
-        `критическое значение=${criticalValue.toFixed(2)}, ` +
-        `статистически значимо=${isSignificant ? 'да' : 'нет'}, ` +
-        `p-значение=${pValue}`
-    );
-
-    // Сохраняем результат сравнения в базу данных
-    const comparisonResult = await GroupComparisonResultModel.create({
-      group1Id: group1._id,
-      group1Name: group1.name,
-      group2Id: group2._id,
-      group2Name: group2.name,
-      testId: test._id,
-      testName: test.title,
-      authorId: userId,
-      chiSquareValue: totalChiSquare,
-      degreesOfFreedom: totalDegreesOfFreedom,
-      isSignificant,
-      pValue,
-      significantQuestions,
-      totalQuestions: validQuestionCount,
-      significantRatio,
-      createdAt: new Date(),
-    });
-
-    console.log(`[GroupService] Результат сравнения сохранен: ${comparisonResult._id}`);
+    // Определяем наличие малой выборки для информационных целей
+    const group1Size = group1Attempts.length;
+    const group2Size = group2Attempts.length;
+    const isSmallSample = group1Size < 10 || group2Size < 10;
+    const adaptedMethod = isSmallSample
+      ? 'Автоматическое объединение редких категорий для повышения надежности анализа'
+      : null;
 
     // Результат для возврата, в исходном порядке групп, как запрашивал пользователь
     let result = {
@@ -1037,16 +980,11 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
       group2Name: group2.name,
       testId: test._id,
       testName: test.title,
-      chiSquareValue: totalChiSquare,
-      degreesOfFreedom: totalDegreesOfFreedom,
-      isSignificant,
-      pValue,
-      significantQuestions,
+      authorId: userId,
       totalQuestions: validQuestionCount,
-      significantRatio,
-      significantPercentage,
       questionResults,
-      _id: comparisonResult._id,
+      isSmallSample,
+      adaptedMethod,
       // Добавляем флаг, указывающий что порядок групп был нормализован
       groupsNormalized: groupsSwapped,
     };
@@ -1337,12 +1275,11 @@ function calculateChiSquare(contingencyTable) {
     const isSignificant = chiSquare > criticalValue;
 
     // Рассчитываем p-значение с использованием библиотеки jstat
-    // jStat.pchisq вычисляет кумулятивную функцию распределения, поэтому
-    // нам нужно вычесть из 1, чтобы получить правостороннюю вероятность (p-value)
+    // jStat.pchisq вычисляет кумулятивную функцию распределения хи-квадрат,
+    // поэтому вычитаем из 1, чтобы получить правостороннюю вероятность (p-value)
     let pValue;
     try {
       // Для хи-квадрат распределения с degreesOfFreedom степенями свободы
-      // 1 - jStat.pchisq(chiSquare, degreesOfFreedom) даст точное p-значение
       pValue = 1 - jStat.pchisq(chiSquare, degreesOfFreedom);
 
       // Округляем для удобства отображения
@@ -1407,6 +1344,33 @@ function calculateChiSquare(contingencyTable) {
  */
 export async function saveComparisonResult(resultData) {
   console.log(`[GroupService] Сохранение результата сравнения групп`);
+
+  // Убедимся, что questionResults является массивом
+  if (resultData.questionResults && !Array.isArray(resultData.questionResults)) {
+    console.warn(
+      `[GroupService] questionResults не является массивом, преобразуем в пустой массив`
+    );
+    resultData.questionResults = [];
+  }
+
+  // Проверяем наличие всех необходимых полей
+  const requiredFields = [
+    'group1Id',
+    'group1Name',
+    'group2Id',
+    'group2Name',
+    'testId',
+    'testName',
+    'authorId',
+  ];
+  for (const field of requiredFields) {
+    if (!resultData[field]) {
+      console.error(
+        `[GroupService] Отсутствует обязательное поле ${field} в данных для сохранения`
+      );
+      throw new Error(`Отсутствует обязательное поле ${field} для сохранения результата`);
+    }
+  }
 
   // Создаем и сохраняем новый результат
   const newResult = new GroupComparisonResultModel(resultData);

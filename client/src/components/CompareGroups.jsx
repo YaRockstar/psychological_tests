@@ -1,6 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { groupAPI, userAPI } from '../utils/api';
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+} from 'chart.js';
+import { Pie, Bar } from 'react-chartjs-2';
+
+// Регистрируем необходимые компоненты Chart.js
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title
+);
 
 function CompareGroups() {
   const [groups, setGroups] = useState([]);
@@ -16,6 +38,8 @@ function CompareGroups() {
   const [showResults, setShowResults] = useState(false);
   const [currentResult, setCurrentResult] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [showQuestionDetails, setShowQuestionDetails] = useState(false);
+  const [showAllQuestions, setShowAllQuestions] = useState(false);
 
   useEffect(() => {
     const checkAuthAndLoadData = async () => {
@@ -63,12 +87,14 @@ function CompareGroups() {
   }, []);
 
   // Загружаем сохраненные результаты сравнений
-  const fetchComparisonResults = async () => {
+  const fetchComparisonResults = async (showResultsPage = true) => {
     try {
       setLoading(true);
       const response = await groupAPI.getGroupComparisonResults();
       setComparisonResults(response.data);
-      setShowResults(true);
+      if (showResultsPage) {
+        setShowResults(true);
+      }
       setLoading(false);
     } catch (error) {
       console.error('Ошибка при загрузке результатов сравнений:', error);
@@ -163,10 +189,14 @@ function CompareGroups() {
         return;
       }
 
-      if (!response.data.chiSquareValue && response.data.chiSquareValue !== 0) {
+      if (
+        !response.data.questionResults ||
+        !Array.isArray(response.data.questionResults) ||
+        !response.data.totalQuestions
+      ) {
         console.error('Получены некорректные данные:', response.data);
         setError(
-          'Получены некорректные данные от сервера. Отсутствует значение хи-квадрат. Пожалуйста, повторите попытку.'
+          'Получены некорректные данные от сервера. Отсутствуют результаты по вопросам. Пожалуйста, повторите попытку.'
         );
         setComparing(false);
         return;
@@ -175,8 +205,14 @@ function CompareGroups() {
       setCurrentResult(response.data);
       setSuccessMessage('Сравнение групп успешно выполнено');
 
-      // Обновляем список результатов сравнений
-      fetchComparisonResults();
+      // Обновляем список результатов сравнений в фоновом режиме без переключения на них
+      try {
+        const resultsResponse = await groupAPI.getGroupComparisonResults();
+        setComparisonResults(resultsResponse.data);
+      } catch (error) {
+        console.error('Ошибка при обновлении списка результатов:', error);
+        // Не показываем ошибку пользователю, так как основная операция сравнения успешна
+      }
 
       setComparing(false);
     } catch (error) {
@@ -253,6 +289,593 @@ function CompareGroups() {
     return groups.find(g => g._id === groupId) || {};
   };
 
+  // Вспомогательная функция для определения цвета в зависимости от значимости
+  const getSignificanceColor = isSignificant => {
+    return isSignificant ? 'text-red-600' : 'text-green-600';
+  };
+
+  // Компонент для отображения круговой диаграммы
+  const PieChartView = ({ table, group1Name, group2Name, groupIndex }) => {
+    if (!table || Object.keys(table).length === 0) {
+      return <p className="text-gray-500 italic">Нет данных для диаграммы</p>;
+    }
+
+    // Формируем данные для диаграммы
+    const labels = Object.keys(table);
+    const data = {
+      labels,
+      datasets: [
+        {
+          label: groupIndex === 0 ? group1Name : group2Name,
+          data: labels.map(key => table[key][groupIndex]),
+          backgroundColor: [
+            'rgba(255, 99, 132, 0.6)',
+            'rgba(54, 162, 235, 0.6)',
+            'rgba(255, 206, 86, 0.6)',
+            'rgba(75, 192, 192, 0.6)',
+            'rgba(153, 102, 255, 0.6)',
+            'rgba(255, 159, 64, 0.6)',
+            'rgba(199, 199, 199, 0.6)',
+            'rgba(83, 102, 255, 0.6)',
+            'rgba(40, 159, 64, 0.6)',
+            'rgba(210, 199, 199, 0.6)',
+          ],
+          borderColor: [
+            'rgba(255, 99, 132, 1)',
+            'rgba(54, 162, 235, 1)',
+            'rgba(255, 206, 86, 1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(153, 102, 255, 1)',
+            'rgba(255, 159, 64, 1)',
+            'rgba(199, 199, 199, 1)',
+            'rgba(83, 102, 255, 1)',
+            'rgba(40, 159, 64, 1)',
+            'rgba(210, 199, 199, 1)',
+          ],
+          borderWidth: 1,
+        },
+      ],
+    };
+
+    const options = {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'bottom',
+        },
+        title: {
+          display: true,
+          text: `Распределение ответов в группе "${
+            groupIndex === 0 ? group1Name : group2Name
+          }"`,
+        },
+      },
+    };
+
+    return (
+      <div className="w-full h-64">
+        <Pie data={data} options={options} />
+      </div>
+    );
+  };
+
+  // Компонент для отображения столбчатой диаграммы сравнения
+  const BarChartView = ({ table, group1Name, group2Name }) => {
+    if (!table || Object.keys(table).length === 0) {
+      return <p className="text-gray-500 italic">Нет данных для диаграммы</p>;
+    }
+
+    // Формируем данные для диаграммы
+    const labels = Object.keys(table);
+    const data = {
+      labels,
+      datasets: [
+        {
+          label: group1Name,
+          data: labels.map(key => table[key][0]),
+          backgroundColor: 'rgba(54, 162, 235, 0.6)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 1,
+        },
+        {
+          label: group2Name,
+          data: labels.map(key => table[key][1]),
+          backgroundColor: 'rgba(255, 99, 132, 0.6)',
+          borderColor: 'rgba(255, 99, 132, 1)',
+          borderWidth: 1,
+        },
+      ],
+    };
+
+    const options = {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: true,
+          text: 'Сравнение распределения ответов между группами',
+        },
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Количество ответов',
+          },
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Варианты ответов',
+          },
+        },
+      },
+    };
+
+    return (
+      <div className="w-full h-80">
+        <Bar data={data} options={options} />
+      </div>
+    );
+  };
+
+  // Вспомогательная функция для отображения таблицы сопряженности
+  const renderContingencyTable = (table, group1Name, group2Name) => {
+    if (!table || Object.keys(table).length === 0) {
+      return <p className="text-gray-500 italic">Нет данных для отображения</p>;
+    }
+
+    return (
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Вариант ответа
+              </th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {group1Name}
+              </th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {group2Name}
+              </th>
+              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Всего
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {Object.entries(table).map(([answerValue, counts], index) => {
+              const total = (counts[0] || 0) + (counts[1] || 0);
+              return (
+                <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                    {answerValue}
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                    {counts[0] || 0}
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                    {counts[1] || 0}
+                  </td>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+                    {total}
+                  </td>
+                </tr>
+              );
+            })}
+            {/* Строка с итогами */}
+            <tr className="bg-gray-100">
+              <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                Всего
+              </td>
+              <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                {Object.values(table).reduce((sum, counts) => sum + (counts[0] || 0), 0)}
+              </td>
+              <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                {Object.values(table).reduce((sum, counts) => sum + (counts[1] || 0), 0)}
+              </td>
+              <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
+                {Object.values(table).reduce(
+                  (sum, counts) => sum + (counts[0] || 0) + (counts[1] || 0),
+                  0
+                )}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
+  // Компонент для отображения подробной информации о вопросе
+  const QuestionDetails = ({
+    question,
+    group1Name,
+    group2Name,
+    viewMode: externalViewMode,
+  }) => {
+    const [internalViewMode, setViewMode] = useState('table'); // 'table', 'pie', 'bar'
+
+    // Используем внешний режим отображения, если он предоставлен, иначе используем внутренний
+    const currentViewMode = externalViewMode || internalViewMode;
+
+    return (
+      <div className="border border-gray-200 rounded-md p-4 mb-4">
+        <h3 className="font-medium text-lg mb-2">{question.questionText}</h3>
+
+        {/* Показываем уведомление, если недостаточно данных для анализа */}
+        {question.insufficientData && (
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-100 rounded-md text-yellow-700">
+            <div className="flex items-start">
+              <svg
+                className="h-5 w-5 mr-2 mt-0.5 text-yellow-500"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-8.414l2.707-2.707a1 1 0 00-1.414-1.414L10 7.586 7.707 5.293a1 1 0 00-1.414 1.414L8.586 9l-2.293 2.293a1 1 0 101.414 1.414L10 10.414l2.293 2.293a1 1 0 001.414-1.414L11.414 9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <div>
+                <p className="font-medium">Недостаточно данных</p>
+                <p className="text-sm">
+                  {question.message ||
+                    'Невозможно провести статистический анализ для этого вопроса из-за недостаточного количества данных или несбалансированных ответов.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="mb-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="font-medium">Тип вопроса:</p>
+            <p className="text-gray-700">
+              {(() => {
+                switch (question.questionType) {
+                  case 'single':
+                    return 'Одиночный выбор';
+                  case 'multiple':
+                    return 'Множественный выбор';
+                  case 'scale':
+                    return 'Шкала';
+                  case 'text':
+                    return 'Текстовый ответ';
+                  default:
+                    return question.questionType || 'Неизвестно';
+                }
+              })()}
+            </p>
+          </div>
+          <div>
+            <p className="font-medium">Статистическая значимость:</p>
+            {question.insufficientData ? (
+              <p className="text-yellow-600">Анализ невозможен</p>
+            ) : (
+              <p className={getSignificanceColor(question.isSignificant)}>
+                {question.isSignificant
+                  ? `Значимые различия (p = ${
+                      question.pValue ? question.pValue : '< 0.05'
+                    })`
+                  : `Нет значимых различий (p = ${
+                      question.pValue ? question.pValue : '> 0.05'
+                    })`}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="mb-3">
+          {/* Отображаем переключатель только если не передан внешний режим отображения */}
+          {!externalViewMode && (
+            <div className="flex justify-between items-center mb-2">
+              <p className="font-medium">Распределение ответов:</p>
+              <div className="flex space-x-2 text-sm">
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`px-2 py-1 rounded ${
+                    currentViewMode === 'table'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Таблица
+                </button>
+                <button
+                  onClick={() => setViewMode('bar')}
+                  className={`px-2 py-1 rounded ${
+                    currentViewMode === 'bar'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Столбчатая
+                </button>
+                <button
+                  onClick={() => setViewMode('pie')}
+                  className={`px-2 py-1 rounded ${
+                    currentViewMode === 'pie'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Круговая
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Отображаем распределение ответов, даже если недостаточно данных для статистического анализа */}
+          {currentViewMode === 'table' &&
+            renderContingencyTable(question.contingencyTable, group1Name, group2Name)}
+          {currentViewMode === 'bar' && (
+            <BarChartView
+              table={question.contingencyTable}
+              group1Name={group1Name}
+              group2Name={group2Name}
+            />
+          )}
+          {currentViewMode === 'pie' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-center font-medium mb-2">{group1Name}</p>
+                <PieChartView
+                  table={question.contingencyTable}
+                  group1Name={group1Name}
+                  group2Name={group2Name}
+                  groupIndex={0}
+                />
+              </div>
+              <div>
+                <p className="text-center font-medium mb-2">{group2Name}</p>
+                <PieChartView
+                  table={question.contingencyTable}
+                  group1Name={group1Name}
+                  group2Name={group2Name}
+                  groupIndex={1}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+        {!question.insufficientData && (
+          <div className="mb-3 text-sm text-gray-600">
+            <p className="font-medium">Статистические показатели:</p>
+            <p>Значение хи-квадрат: {question.chiSquare.toFixed(2)}</p>
+            <p>Степени свободы: {question.degreesOfFreedom}</p>
+            {question.criticalValue && (
+              <p>Критическое значение (α=0.05): {question.criticalValue}</p>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Компонент для отображения значений хи-квадрат по вопросам
+  const ChiSquareChartView = ({ questionResults }) => {
+    // Фильтруем вопросы с недостаточными данными
+    const validQuestions = questionResults.filter(q => !q.insufficientData);
+
+    // Если нет вопросов с достаточными данными для анализа, показываем сообщение
+    if (validQuestions.length === 0) {
+      return (
+        <div className="bg-yellow-50 border border-yellow-100 rounded-md p-4 text-yellow-700">
+          <h3 className="font-medium mb-2">Невозможно построить график</h3>
+          <p>Недостаточно данных для статистического анализа ни по одному из вопросов.</p>
+        </div>
+      );
+    }
+
+    // Создаем копию массива и сортируем по значению хи-квадрат
+    const sortedQuestions = [...validQuestions].sort((a, b) => b.chiSquare - a.chiSquare);
+
+    // Возьмем только топ-10 вопросов для лучшей читаемости
+    const topQuestions = sortedQuestions.slice(0, 10);
+
+    // Сократим длинные тексты вопросов
+    const shortenText = (text, maxLength = 30) => {
+      if (text.length <= maxLength) return text;
+      return text.substring(0, maxLength) + '...';
+    };
+
+    const data = {
+      labels: topQuestions.map(
+        (q, index) => `#${index + 1}: ${shortenText(q.questionText)}`
+      ),
+      datasets: [
+        {
+          label: 'Значение хи-квадрат',
+          data: topQuestions.map(q => q.chiSquare),
+          backgroundColor: topQuestions.map(q =>
+            q.isSignificant ? 'rgba(255, 99, 132, 0.6)' : 'rgba(54, 162, 235, 0.6)'
+          ),
+          borderColor: topQuestions.map(q =>
+            q.isSignificant ? 'rgba(255, 99, 132, 1)' : 'rgba(54, 162, 235, 1)'
+          ),
+          borderWidth: 1,
+        },
+      ],
+    };
+
+    const options = {
+      indexAxis: 'y', // Горизонтальная диаграмма для лучшей читаемости
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: true,
+          text: 'Топ-10 вопросов по значению хи-квадрат',
+        },
+        tooltip: {
+          callbacks: {
+            title: function (tooltipItems) {
+              const index = tooltipItems[0].dataIndex;
+              return topQuestions[index].questionText;
+            },
+            label: function (context) {
+              const index = context.dataIndex;
+              const question = topQuestions[index];
+              return [
+                `Хи-квадрат: ${question.chiSquare.toFixed(2)}`,
+                `p-value: ${
+                  question.pValue || (question.isSignificant ? '< 0.05' : '> 0.05')
+                }`,
+                `Значимо: ${question.isSignificant ? 'Да' : 'Нет'}`,
+              ];
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Значение хи-квадрат',
+          },
+        },
+      },
+    };
+
+    return (
+      <div className="w-full h-96">
+        <Bar data={data} options={options} />
+      </div>
+    );
+  };
+
+  /**
+   * Компонент для отображения детальных результатов сохраненного сравнения
+   */
+  const SavedResultDetails = ({ result }) => {
+    const [expanded, setExpanded] = useState(false);
+    const [viewMode, setViewMode] = useState('table'); // 'table' или 'chart'
+    const [chartType, setChartType] = useState('bar'); // 'bar' или 'pie'
+
+    // Проверяем, есть ли детальные результаты
+    const hasDetails = result.questionResults && result.questionResults.length > 0;
+
+    // Определяем текущий режим отображения для передачи в QuestionDetails
+    const currentViewMode = viewMode === 'chart' ? chartType : viewMode;
+
+    return (
+      <div>
+        {hasDetails ? (
+          <>
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="px-3 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-md transition-colors mt-2"
+            >
+              {expanded ? 'Свернуть детали' : 'Показать детальные результаты'}
+            </button>
+
+            {expanded && (
+              <div className="mt-4 border-t pt-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-medium text-lg">Детальные результаты сравнения</h3>
+
+                  {/* Переключатель режима отображения */}
+                  <div className="flex bg-gray-100 rounded-lg p-1">
+                    <button
+                      onClick={() => setViewMode('table')}
+                      className={`px-3 py-1 rounded-md text-sm ${
+                        viewMode === 'table'
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      Таблица
+                    </button>
+                    <button
+                      onClick={() => setViewMode('chart')}
+                      className={`px-3 py-1 rounded-md text-sm ${
+                        viewMode === 'chart'
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      Графики
+                    </button>
+                  </div>
+                </div>
+
+                {/* Переключатель типа графика, если выбран режим графиков */}
+                {viewMode === 'chart' && (
+                  <div className="flex justify-end mb-3">
+                    <div className="flex bg-gray-100 rounded-lg p-1">
+                      <button
+                        onClick={() => setChartType('bar')}
+                        className={`px-3 py-1 rounded-md text-sm ${
+                          chartType === 'bar'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        Столбчатая
+                      </button>
+                      <button
+                        onClick={() => setChartType('pie')}
+                        className={`px-3 py-1 rounded-md text-sm ${
+                          chartType === 'pie'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        Круговая
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Топ вопросов по значению хи-квадрат */}
+                <div className="mb-6">
+                  <h4 className="font-medium mb-2">
+                    {result.questionResults.filter(q => !q.insufficientData).length > 0
+                      ? 'Топ-10 вопросов с наибольшей статистической разницей:'
+                      : 'Статистический анализ вопросов:'}
+                  </h4>
+                  <ChiSquareChartView questionResults={result.questionResults} />
+                </div>
+
+                {/* Результаты по каждому вопросу */}
+                <div className="space-y-6">
+                  <h4 className="font-medium mb-2">
+                    Результаты по всем вопросам ({result.questionResults.length}) в
+                    порядке теста:
+                  </h4>
+                  {result.questionResults.map((questionResult, index) => (
+                    <div key={index} className="border rounded-lg p-4">
+                      <QuestionDetails
+                        question={questionResult}
+                        group1Name={result.group1Name}
+                        group2Name={result.group2Name}
+                        viewMode={currentViewMode}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <p className="text-sm text-gray-500 mt-2">
+            Подробные результаты не сохранены для этого сравнения. Выполните сравнение
+            снова для детального анализа.
+          </p>
+        )}
+      </div>
+    );
+  };
+
   // Если пользователь не авторизован, перенаправляем на страницу входа
   if (!isAuthenticated && !loading) {
     return <Navigate to="/login" />;
@@ -278,7 +901,7 @@ function CompareGroups() {
         <h1 className="text-2xl font-bold text-gray-900">Сравнение групп</h1>
         <div className="flex space-x-3">
           <button
-            onClick={() => fetchComparisonResults()}
+            onClick={() => fetchComparisonResults(true)}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
             Результаты
@@ -414,42 +1037,6 @@ function CompareGroups() {
                     <p className="font-medium">Тест:</p>
                     <p>{result.testName}</p>
                   </div>
-                  <div className="mb-3">
-                    <p className="font-medium">Результат:</p>
-                    <p
-                      className={result.isSignificant ? 'text-red-600' : 'text-green-600'}
-                    >
-                      {result.isSignificant
-                        ? 'Обнаружены статистически значимые различия между группами'
-                        : 'Статистически значимых различий между группами не обнаружено'}
-                    </p>
-                  </div>
-                  <div className="mb-3">
-                    <p className="font-medium">Значение хи-квадрат (среднее):</p>
-                    <p>{result.chiSquareValue.toFixed(2)}</p>
-                  </div>
-                  <div className="mb-3">
-                    <p className="font-medium">Уровень значимости:</p>
-                    <p>
-                      {result.pValue
-                        ? `p = ${result.pValue}`
-                        : result.isSignificant
-                        ? 'p < 0.05'
-                        : 'p > 0.05'}
-                    </p>
-                  </div>
-                  {result.significantQuestions !== undefined && (
-                    <div className="mb-3">
-                      <p className="font-medium">Значимые вопросы:</p>
-                      <p>{`${result.significantQuestions || 0} из ${
-                        result.totalQuestions || 0
-                      } (${
-                        result.significantPercentage !== undefined
-                          ? result.significantPercentage
-                          : ((result.significantRatio || 0) * 100).toFixed(1)
-                      }%)`}</p>
-                    </div>
-                  )}
 
                   {/* Отображение информации о малых выборках в списке результатов */}
                   {result.isSmallSample && (
@@ -463,9 +1050,13 @@ function CompareGroups() {
                       </p>
                     </div>
                   )}
-                  <div className="text-xs text-gray-500 mt-2">
+
+                  <div className="text-xs text-gray-500 mt-2 mb-3">
                     Дата сравнения: {new Date(result.createdAt).toLocaleString()}
                   </div>
+
+                  {/* Кнопка для развертывания детальных результатов */}
+                  <SavedResultDetails result={result} />
                 </div>
               ))}
             </div>
@@ -582,40 +1173,12 @@ function CompareGroups() {
                   backgroundColor: currentResult.isSignificant ? '#FEE2E2' : '#DCFCE7',
                 }}
               >
-                <p className="font-medium mb-1">Результат сравнения:</p>
-                <p
-                  className={
-                    currentResult.isSignificant ? 'text-red-700' : 'text-green-700'
-                  }
-                >
-                  {currentResult.isSignificant
-                    ? 'Обнаружены статистически значимые различия между группами'
-                    : 'Статистически значимых различий между группами не обнаружено'}
+                <p className="font-medium mb-1">Примечание о статистическом анализе:</p>
+                <p className="text-gray-700">
+                  Анализ проведен с использованием критерия хи-квадрат для каждого вопроса
+                  отдельно. Пожалуйста, изучите результаты по каждому вопросу в разделе
+                  "Детальный анализ вопросов" ниже.
                 </p>
-                <p className="mt-2">
-                  <span className="font-medium">Значение хи-квадрат (среднее):</span>{' '}
-                  {currentResult.chiSquareValue.toFixed(2)}
-                </p>
-                <p className="mt-1">
-                  <span className="font-medium">Уровень значимости:</span>{' '}
-                  {currentResult.pValue
-                    ? `p = ${currentResult.pValue}`
-                    : currentResult.isSignificant
-                    ? 'p < 0.05'
-                    : 'p > 0.05'}
-                </p>
-                {currentResult.significantQuestions !== undefined && (
-                  <p className="mt-1">
-                    <span className="font-medium">Значимые вопросы:</span>{' '}
-                    {`${currentResult.significantQuestions || 0} из ${
-                      currentResult.totalQuestions || 0
-                    } (${
-                      currentResult.significantPercentage !== undefined
-                        ? currentResult.significantPercentage
-                        : ((currentResult.significantRatio || 0) * 100).toFixed(1)
-                    }%)`}
-                  </p>
-                )}
 
                 {/* Отображение информации о малых выборках */}
                 {currentResult.isSmallSample && (
@@ -627,19 +1190,99 @@ function CompareGroups() {
                 )}
               </div>
 
+              {/* Удаляем визуализацию общего результата и общую диаграмму, оставляем только ChiSquareChartView */}
+              {currentResult.questionResults &&
+                currentResult.questionResults.length > 0 && (
+                  <div className="mb-4">
+                    <h3 className="font-medium text-lg mb-3">
+                      Визуализация значений хи-квадрат
+                    </h3>
+                    <div className="grid grid-cols-1 gap-6">
+                      <div>
+                        <p className="font-medium mb-2">
+                          Сравнение значений хи-квадрат по вопросам:
+                        </p>
+                        <ChiSquareChartView
+                          questionResults={currentResult.questionResults}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
               <div className="text-sm text-gray-600 space-y-2">
                 <p>
-                  {currentResult.isSignificant
-                    ? 'Выявленные различия указывают на то, что ответы участников в этих группах статистически значимо отличаются друг от друга.'
-                    : 'Отсутствие статистически значимых различий указывает на то, что ответы участников в обеих группах статистически схожи.'}
+                  Статистический критерий хи-квадрат позволяет выявить различия в
+                  распределении ответов между группами для каждого отдельного вопроса.
+                  Значимый результат (p &lt; 0.05) указывает на то, что распределение
+                  ответов в группах существенно отличается.
                 </p>
                 <p>
-                  <span className="font-medium">Примечание:</span> В дополнение к среднему
-                  значению хи-квадрат, доля значимых вопросов дает более точное
-                  представление о различиях между группами. Высокий процент значимых
-                  вопросов указывает на существенные различия в ответах по большинству
-                  вопросов теста.
+                  <span className="font-medium">Примечание:</span> При интерпретации
+                  результатов важно учитывать конкретный контекст вопросов и
+                  психологический смысл выявленных различий.
                 </p>
+              </div>
+
+              {/* Добавляем новую секцию для детального анализа вопросов */}
+              <div className="mt-6 border-t pt-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-semibold text-lg">Детальный анализ вопросов</h3>
+                  <button
+                    onClick={() => setShowQuestionDetails(!showQuestionDetails)}
+                    className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md transition-colors"
+                  >
+                    {showQuestionDetails ? 'Скрыть детали' : 'Показать детали'}
+                  </button>
+                </div>
+
+                {showQuestionDetails && currentResult.questionResults && (
+                  <div>
+                    <div className="flex justify-between items-center mb-3">
+                      <p className="text-sm text-gray-600">
+                        Показаны{' '}
+                        {showAllQuestions
+                          ? 'все вопросы'
+                          : `только вопросы со значимыми различиями (${
+                              currentResult.questionResults.filter(q => q.isSignificant)
+                                .length
+                            })`}
+                      </p>
+                      <button
+                        onClick={() => setShowAllQuestions(!showAllQuestions)}
+                        className="text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        {showAllQuestions
+                          ? 'Показать только значимые'
+                          : 'Показать все вопросы'}
+                      </button>
+                    </div>
+
+                    {currentResult.questionResults.filter(
+                      q => showAllQuestions || q.isSignificant
+                    ).length === 0 && (
+                      <p className="text-center py-4 text-gray-500">
+                        {showAllQuestions
+                          ? 'Нет данных для отображения'
+                          : 'Нет вопросов со статистически значимыми различиями'}
+                      </p>
+                    )}
+
+                    {currentResult.questionResults
+                      .filter(q => showAllQuestions || q.isSignificant)
+                      .map((question, index) => (
+                        <QuestionDetails
+                          key={index}
+                          question={question}
+                          group1Name={currentResult.group1Name}
+                          group2Name={currentResult.group2Name}
+                          viewMode={
+                            currentResult.questionResults.length > 10 ? 'chart' : null
+                          }
+                        />
+                      ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
