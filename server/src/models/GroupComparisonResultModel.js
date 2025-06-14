@@ -1,8 +1,6 @@
 import mongoose from 'mongoose';
 
-// Схема для хранения результатов сравнения групп
 const GroupComparisonResultSchema = new mongoose.Schema({
-  // Идентификаторы и названия сравниваемых групп
   group1Id: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
@@ -22,7 +20,6 @@ const GroupComparisonResultSchema = new mongoose.Schema({
     required: true,
   },
 
-  // Информация о тесте
   testId: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
@@ -33,26 +30,22 @@ const GroupComparisonResultSchema = new mongoose.Schema({
     required: true,
   },
 
-  // Автор сравнения (автор обеих групп)
   authorId: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
     ref: 'User',
   },
 
-  // Информация о количестве вопросов
   totalQuestions: {
     type: Number,
     default: 0,
   },
 
-  // Детальные результаты по каждому вопросу
   questionResults: {
     type: Array,
     default: [],
   },
 
-  // Информация о малых выборках
   isSmallSample: {
     type: Boolean,
     default: false,
@@ -62,7 +55,6 @@ const GroupComparisonResultSchema = new mongoose.Schema({
     default: null,
   },
 
-  // Дополнительные данные
   createdAt: {
     type: Date,
     default: Date.now,

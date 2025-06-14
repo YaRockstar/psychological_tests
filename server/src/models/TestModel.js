@@ -29,7 +29,7 @@ const TestSchema = new mongoose.Schema(
         ref: 'Question',
       },
     ],
-    attempts: { type: Number, default: 0 }, // Количество прохождений теста
+    attempts: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

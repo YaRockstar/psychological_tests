@@ -37,11 +37,10 @@ app.use('/api/group-comparisons', groupComparisonRouter);
 /**
  * Запуск сервера и подключение к базе данных.
  */
-async function startServer() {
+const startServer = async () => {
   try {
     await mongoose.connect(config.dbConnection);
     logger.info('Connected to MongoDB');
-
     app.listen(config.port, () => {
       logger.info(`Server is running on port ${config.port}`);
     });
@@ -49,6 +48,6 @@ async function startServer() {
     logger.error(`Ошибка при запуске сервера: ${error.message}`);
     process.exit(1);
   }
-}
+};
 
 startServer();

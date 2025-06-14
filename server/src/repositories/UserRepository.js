@@ -5,7 +5,7 @@ import UserModel from '../models/UserModel.js';
  * @param {Object} document - MongoDB документ.
  * @returns {Object} - Объект с данными пользователя.
  */
-function transformDocument(document) {
+const transformDocument = document => {
   if (!document) return null;
 
   const userObject = document.toObject ? document.toObject() : document;
@@ -14,37 +14,37 @@ function transformDocument(document) {
     ...rest,
     _id: _id.toString(),
   };
-}
+};
 
 /**
  * Создание нового пользователя.
  * @param {Object} userData - Данные пользователя.
  * @returns {Promise<Object>} - Созданный пользователь.
  */
-export async function createUser(userData) {
+export const createUser = async userData => {
   const created = await UserModel.create(userData);
   return transformDocument(created);
-}
+};
 
 /**
  * Поиск пользователя по email.
  * @param {string} email - Email пользователя.
  * @returns {Promise<Object|null>} - Найденный пользователь или null.
  */
-export async function findUserByEmail(email) {
+export const findUserByEmail = async email => {
   const user = await UserModel.findOne({ email }).exec();
   return transformDocument(user);
-}
+};
 
 /**
  * Поиск пользователя по ID.
  * @param {string} id - ID пользователя.
  * @returns {Promise<Object|null>} - Найденный пользователь или null.
  */
-export async function findUserById(id) {
+export const findUserById = async id => {
   const user = await UserModel.findById(id).exec();
   return transformDocument(user);
-}
+};
 
 /**
  * Обновление пользователя.
@@ -52,17 +52,17 @@ export async function findUserById(id) {
  * @param {Object} userData - Данные для обновления.
  * @returns {Promise<Object|null>} - Обновленный пользователь или null.
  */
-export async function updateUser(id, userData) {
+export const updateUser = async (id, userData) => {
   const user = await UserModel.findByIdAndUpdate(id, userData, { new: true }).exec();
   return transformDocument(user);
-}
+};
 
 /**
  * Удаление пользователя.
  * @param {string} id - ID пользователя.
  * @returns {Promise<boolean>} - Результат удаления.
  */
-export async function deleteUser(id) {
+export const deleteUser = async id => {
   const result = await UserModel.findByIdAndDelete(id).exec();
   return Boolean(result);
-}
+};

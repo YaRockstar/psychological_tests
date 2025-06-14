@@ -55,7 +55,6 @@ export const getTestAttemptById = async (req, res) => {
       `[TestAttemptController] Запрос попытки ID=${id} пользователем ${userId}`
     );
 
-    // Получаем данные попытки с популяцией теста для получения полных данных
     const attempt = await TestAttemptService.getTestAttemptWithDetails(id);
 
     if (!attempt) {
@@ -69,22 +68,14 @@ export const getTestAttemptById = async (req, res) => {
       )}`
     );
 
-    // Проверяем, есть ли у текущего пользователя право на просмотр этой попытки
-    // Три варианта доступа:
-    // 1. Пользователь является автором теста
-    // 2. Пользователь является автором группы, к которой относится попытка
-    // 3. Пользователь является владельцем попытки (сам проходил тест)
-
     const isTestAuthor =
       attempt.test &&
       attempt.test.authorId &&
       attempt.test.authorId.toString() === userId.toString();
 
-    // Проверяем, является ли пользователь автором группы
     let isGroupAuthor = false;
 
     if (attempt.groupId) {
-      // Получаем группу по ID попытки
       const group = await GroupService.getGroupByTestAttemptId(id);
 
       if (group && group.authorId.toString() === userId.toString()) {
@@ -95,7 +86,6 @@ export const getTestAttemptById = async (req, res) => {
       }
     }
 
-    // Проверяем, является ли пользователь владельцем попытки
     const isAttemptOwner =
       attempt.user &&
       (typeof attempt.user === 'string'
@@ -115,10 +105,8 @@ export const getTestAttemptById = async (req, res) => {
       throw new ForbiddenError('У вас нет доступа к этой попытке прохождения теста');
     }
 
-    // Получаем полные ответы пользователя
     const answers = await TestAttemptService.getAttemptAnswersWithDetails(id);
 
-    // Получаем информацию о результате, если он есть
     let resultInfo = null;
     if (attempt.result) {
       if (typeof attempt.result === 'object' && attempt.result.title) {
@@ -132,7 +120,6 @@ export const getTestAttemptById = async (req, res) => {
           resultInfo
         );
       } else {
-        // Если result есть, но это не объект с title, пробуем получить его из базы
         try {
           const resultId =
             typeof attempt.result === 'object' ? attempt.result._id : attempt.result;
@@ -158,7 +145,6 @@ export const getTestAttemptById = async (req, res) => {
       }
     }
 
-    // Формируем полный ответ
     const detailedAttempt = {
       ...attempt.toObject(),
       answers: answers,
@@ -186,15 +172,12 @@ export const saveTestAnswer = async (req, res) => {
     const userId = req.user._id;
     const answerData = req.body;
 
-    // Проверяем данные ответа
     if (!answerData.question || !answerData.answer) {
       throw new NotValidError('Требуются поля question и answer');
     }
 
-    // Получаем данные попытки для проверки доступа
     const attempt = await TestAttemptService.getTestAttemptById(id);
 
-    // Проверяем, принадлежит ли попытка текущему пользователю
     const isAttemptOwner =
       attempt.user &&
       (typeof attempt.user === 'string'
@@ -205,7 +188,6 @@ export const saveTestAnswer = async (req, res) => {
       throw new ForbiddenError('У вас нет доступа к этой попытке прохождения теста');
     }
 
-    // Проверяем статус попытки - теперь всегда 'completed'
     if (attempt.status !== 'completed') {
       return res.status(410).json({
         message: 'Попытка уже завершена. Требуется создать новую попытку.',
@@ -215,8 +197,6 @@ export const saveTestAnswer = async (req, res) => {
       });
     }
 
-    // Преобразуем формат данных с клиента в формат для базы данных
-    // Клиент отправляет answer, а модель ожидает selectedOptions
     const formattedAnswerData = {
       question: answerData.question,
       selectedOptions: answerData.answer,
@@ -226,7 +206,6 @@ export const saveTestAnswer = async (req, res) => {
       `[TestAttemptController] Сохранение ответа: ${JSON.stringify(formattedAnswerData)}`
     );
 
-    // Сохраняем ответ
     const updatedAttempt = await TestAttemptService.addAnswerToAttempt(
       id,
       formattedAnswerData
@@ -249,14 +228,12 @@ export const completeTestAttempt = async (req, res) => {
     const userId = req.user._id;
     const { timeSpent: clientTimeSpent } = req.body;
 
-    // Получаем данные попытки для проверки доступа
     const attempt = await TestAttemptService.getTestAttemptById(id);
 
     console.log(
       `[TestAttemptController] Попытка завершения теста ID=${id}, текущий статус: ${attempt.status}`
     );
 
-    // Проверяем, принадлежит ли попытка текущему пользователю
     const isAttemptOwner =
       attempt.user &&
       (typeof attempt.user === 'string'
@@ -267,7 +244,6 @@ export const completeTestAttempt = async (req, res) => {
       throw new ForbiddenError('У вас нет доступа к этой попытке прохождения теста');
     }
 
-    // Проверяем статус попытки - теперь всегда 'completed'
     if (attempt.status !== 'completed') {
       return res.status(410).json({
         message: 'Попытка уже завершена. Требуется создать новую попытку.',
@@ -279,20 +255,17 @@ export const completeTestAttempt = async (req, res) => {
 
     console.log(`[TestAttemptController] Завершение попытки теста ID=${id}`);
 
-    // Получаем время прохождения теста
     let timeSpent;
 
-    // Если клиент передал время прохождения, используем его
     if (clientTimeSpent !== undefined) {
       timeSpent = clientTimeSpent;
       console.log(
         `[TestAttemptController] Используем время прохождения от клиента: ${timeSpent} секунд`
       );
     } else {
-      // Иначе рассчитываем время по стандартной схеме
       const now = new Date();
       const startTime = new Date(attempt.startedAt);
-      timeSpent = Math.floor((now - startTime) / 1000); // в секундах
+      timeSpent = Math.floor((now - startTime) / 1000);
       console.log(
         `[TestAttemptController] Рассчитанное на сервере время прохождения: ${timeSpent} секунд`
       );
@@ -300,21 +273,18 @@ export const completeTestAttempt = async (req, res) => {
 
     const now = new Date();
 
-    // Завершаем попытку, передавая время прохождения
     const completedAttempt = await TestAttemptService.completeTestAttempt(id, {
       timeSpent,
-      status: 'completed', // Статус всегда 'completed'
-      completedAt: now, // Явно указываем дату завершения
+      status: 'completed',
+      completedAt: now,
     });
 
     console.log(
       `[TestAttemptController] Попытка обновлена, статус: ${completedAttempt.status}, время: ${completedAttempt.timeSpent} секунд, завершена: ${completedAttempt.completedAt}`
     );
 
-    // Рассчитываем результат, если есть ответы
     if (completedAttempt.answers && completedAttempt.answers.length > 0) {
       try {
-        // Создаем новый результат
         const resultData = {
           test: completedAttempt.test,
           user: completedAttempt.user,
@@ -326,7 +296,6 @@ export const completeTestAttempt = async (req, res) => {
         const result = await ResultService.calculateTestResult(resultData);
         console.log(`[TestAttemptController] Результат рассчитан:`, result);
 
-        // Добавляем результат к ответу
         const responseData = {
           ...(completedAttempt.toObject ? completedAttempt.toObject() : completedAttempt),
           resultInfo: result,
@@ -337,12 +306,10 @@ export const completeTestAttempt = async (req, res) => {
         console.error(
           `[TestAttemptController] Ошибка при расчете результата: ${error.message}`
         );
-        // В случае ошибки при расчете результата, просто возвращаем завершенную попытку
         return res.status(200).json(completedAttempt);
       }
     }
 
-    // Если нет ответов или возникла ошибка, просто возвращаем завершенную попытку
     return res.status(200).json(completedAttempt);
   } catch (error) {
     handleServiceError(error, res);
@@ -359,10 +326,8 @@ export const abandonTestAttempt = async (req, res) => {
     const { id } = req.params;
     const userId = req.user._id;
 
-    // Получаем данные попытки для проверки доступа
     const attempt = await TestAttemptService.getTestAttemptById(id);
 
-    // Проверяем, принадлежит ли попытка текущему пользователю
     const isAttemptOwner =
       attempt.user &&
       (typeof attempt.user === 'string'
@@ -373,7 +338,6 @@ export const abandonTestAttempt = async (req, res) => {
       throw new ForbiddenError('У вас нет доступа к этой попытке прохождения теста');
     }
 
-    // Проверяем статус попытки - теперь всегда 'completed'
     if (attempt.status !== 'completed') {
       return res.status(410).json({
         message: 'Попытка уже завершена. Требуется создать новую попытку.',
@@ -383,7 +347,6 @@ export const abandonTestAttempt = async (req, res) => {
       });
     }
 
-    // Завершаем попытку (не прекращаем, так как статус всегда 'completed')
     const completedAttempt = await TestAttemptService.completeTestAttempt(id, {
       status: 'completed',
       completedAt: new Date(),
@@ -405,10 +368,8 @@ export const deleteTestAttempt = async (req, res) => {
     const { id } = req.params;
     const userId = req.user._id;
 
-    // Получаем данные попытки для проверки доступа
     const attempt = await TestAttemptService.getTestAttemptById(id);
 
-    // Проверяем, принадлежит ли попытка текущему пользователю
     const isAttemptOwner =
       attempt.user &&
       (typeof attempt.user === 'string'
@@ -419,7 +380,6 @@ export const deleteTestAttempt = async (req, res) => {
       throw new ForbiddenError('У вас нет доступа к этой попытке прохождения теста');
     }
 
-    // Удаляем попытку
     await TestAttemptService.deleteTestAttempt(id);
 
     res.status(204).send();
@@ -438,10 +398,8 @@ export const deleteTestAttemptWithAnswers = async (req, res) => {
     const { id } = req.params;
     const userId = req.user._id;
 
-    // Получаем данные попытки для проверки доступа
     const attempt = await TestAttemptService.getTestAttemptById(id);
 
-    // Проверяем, принадлежит ли попытка текущему пользователю
     const isAttemptOwner =
       attempt.user &&
       (typeof attempt.user === 'string'
@@ -456,7 +414,6 @@ export const deleteTestAttemptWithAnswers = async (req, res) => {
       `[TestAttemptController] Полное удаление попытки ${id} с ответами пользователем ${userId}`
     );
 
-    // Полностью удаляем попытку с ответами
     await TestAttemptService.deleteTestAttemptWithAnswers(id);
 
     res.status(204).send();
@@ -507,7 +464,6 @@ export const getTestAttemptDetailsForAuthor = async (req, res) => {
       `[TestAttemptController] Запрос детальной информации о попытке ID=${id} автором ${userId}`
     );
 
-    // Получаем данные попытки с полной информацией
     const attempt = await TestAttemptService.getTestAttemptWithDetails(id);
 
     if (!attempt) {
@@ -515,22 +471,14 @@ export const getTestAttemptDetailsForAuthor = async (req, res) => {
       throw new NotFoundError('Попытка прохождения теста не найдена');
     }
 
-    // Проверяем, есть ли у текущего пользователя право на просмотр этой попытки
-    // Три варианта доступа:
-    // 1. Пользователь является автором теста
-    // 2. Пользователь является автором группы, к которой относится попытка
-    // 3. Пользователь является владельцем попытки (сам проходил тест)
-
     const isTestAuthor =
       attempt.test &&
       attempt.test.authorId &&
       attempt.test.authorId.toString() === userId.toString();
 
-    // Проверяем, является ли пользователь автором группы
     let isGroupAuthor = false;
 
     if (attempt.groupId) {
-      // Получаем группу по ID попытки
       const group = await GroupService.getGroupByTestAttemptId(id);
 
       if (group && group.authorId.toString() === userId.toString()) {
@@ -541,7 +489,6 @@ export const getTestAttemptDetailsForAuthor = async (req, res) => {
       }
     }
 
-    // Проверяем, является ли пользователь владельцем попытки
     const isAttemptOwner =
       attempt.user &&
       (typeof attempt.user === 'string'
@@ -561,10 +508,8 @@ export const getTestAttemptDetailsForAuthor = async (req, res) => {
       throw new ForbiddenError('У вас нет доступа к этой попытке прохождения теста');
     }
 
-    // Получаем полные ответы пользователя
     const answers = await TestAttemptService.getAttemptAnswersWithDetails(id);
 
-    // Получаем информацию о результате, если он есть
     let resultInfo = null;
     if (attempt.result) {
       if (typeof attempt.result === 'object' && attempt.result.title) {
@@ -578,7 +523,6 @@ export const getTestAttemptDetailsForAuthor = async (req, res) => {
           resultInfo
         );
       } else {
-        // Если result есть, но это не объект с title, пробуем получить его из базы
         try {
           const resultId =
             typeof attempt.result === 'object' ? attempt.result._id : attempt.result;
@@ -604,7 +548,6 @@ export const getTestAttemptDetailsForAuthor = async (req, res) => {
       }
     }
 
-    // Формируем полный ответ
     const detailedAttempt = {
       ...attempt.toObject(),
       answers: answers,
@@ -635,7 +578,6 @@ export const checkUserAttemptInGroup = async (req, res) => {
       `[TestAttemptController] Проверка попытки пользователя ${userId} для теста ${testId} в группе ${groupId}`
     );
 
-    // Проверяем, есть ли у пользователя завершенная попытка в данной группе
     const attempt = await TestAttemptService.getUserCompletedAttemptInGroup(
       userId,
       testId,

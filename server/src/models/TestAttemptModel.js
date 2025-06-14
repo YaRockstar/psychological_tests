@@ -13,11 +13,11 @@ const TestAttemptSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-    }, // Может быть null, если тест пройден анонимно
+    },
     groupId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Group',
-    }, // ID группы, если тест проходится в рамках группы
+    },
     startedAt: {
       type: Date,
       default: Date.now,
@@ -32,7 +32,7 @@ const TestAttemptSchema = new mongoose.Schema(
     },
     timeSpent: {
       type: Number,
-    }, // Время в секундах, затраченное на прохождение теста
+    },
     answers: [
       {
         question: {
@@ -45,45 +45,44 @@ const TestAttemptSchema = new mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Option',
           },
-        ], // Для вопросов с одним или множественным выбором
+        ],
         textAnswer: {
           type: String,
-        }, // Для вопросов с открытым ответом
+        },
         scaleValue: {
           type: Number,
-        }, // Для вопросов со шкалой
+        },
       },
     ],
     score: {
       type: Number,
-    }, // Общий балл за тест (если применимо)
+    },
     result: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Result',
-    }, // Итоговый результат теста
+    },
     resultDetails: {
       type: Map,
       of: Number,
-    }, // Детализация результатов по категориям (если применимо)
+    },
     ip: {
       type: String,
-    }, // IP-адрес пользователя для анонимных попыток
+    },
     userAgent: {
       type: String,
-    }, // User-Agent браузера для анонимных попыток
+    },
     rating: {
       type: Number,
       min: 1,
       max: 5,
-    }, // Оценка теста пользователем
+    },
     feedback: {
       type: String,
-    }, // Отзыв пользователя о тесте
+    },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
 
-// Виртуальное поле для получения названия теста
 TestAttemptSchema.virtual('testTitle').get(function () {
   if (this.test && typeof this.test === 'object' && this.test.title) {
     return this.test.title;

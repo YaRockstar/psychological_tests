@@ -14,7 +14,7 @@ import jStat from 'jstat';
  * @returns {Promise<Object>} Созданная группа
  * @throws {NotValidError} Если данные группы не валидны
  */
-export async function createGroup(groupData, authorId) {
+export const createGroup = async (groupData, authorId) => {
   if (!groupData.name) {
     throw new NotValidError('Название группы обязательно');
   }
@@ -27,14 +27,13 @@ export async function createGroup(groupData, authorId) {
     throw new NotValidError('ID теста обязателен');
   }
 
-  // Создаем объект с данными группы
   const newGroupData = {
     ...groupData,
     authorId,
   };
 
   return await GroupRepository.createGroup(newGroupData);
-}
+};
 
 /**
  * Получение всех групп автора
@@ -42,13 +41,13 @@ export async function createGroup(groupData, authorId) {
  * @returns {Promise<Array>} Массив групп
  * @throws {NotValidError} Если ID автора не указан
  */
-export async function getAuthorGroups(authorId) {
+export const getAuthorGroups = async authorId => {
   if (!authorId) {
     throw new NotValidError('ID автора не указан');
   }
 
   return await GroupRepository.getGroupsByAuthorId(authorId);
-}
+};
 
 /**
  * Получение группы по ID
@@ -57,7 +56,7 @@ export async function getAuthorGroups(authorId) {
  * @throws {NotValidError} Если ID группы не указан
  * @throws {NotFoundError} Если группа не найдена
  */
-export async function getGroupById(groupId) {
+export const getGroupById = async groupId => {
   console.log(`[GroupService] Получение группы по ID: ${groupId}`);
 
   if (!groupId) {
@@ -88,7 +87,7 @@ export async function getGroupById(groupId) {
     console.error(`[GroupService] Ошибка при получении группы ${groupId}:`, error);
     throw new Error(`Ошибка при получении группы: ${error.message}`);
   }
-}
+};
 
 /**
  * Получение группы по коду приглашения
@@ -97,7 +96,7 @@ export async function getGroupById(groupId) {
  * @throws {NotValidError} Если код приглашения не указан
  * @throws {NotFoundError} Если группа не найдена
  */
-export async function getGroupByInviteCode(inviteCode) {
+export const getGroupByInviteCode = async inviteCode => {
   if (!inviteCode) {
     throw new NotValidError('Код приглашения не указан');
   }
@@ -108,7 +107,7 @@ export async function getGroupByInviteCode(inviteCode) {
   }
 
   return group;
-}
+};
 
 /**
  * Обновление группы
@@ -119,24 +118,22 @@ export async function getGroupByInviteCode(inviteCode) {
  * @throws {NotValidError} Если ID группы не указан или пользователь не является автором
  * @throws {NotFoundError} Если группа не найдена
  */
-export async function updateGroup(groupId, updateData, currentUserId) {
+export const updateGroup = async (groupId, updateData, currentUserId) => {
   if (!groupId) {
     throw new NotValidError('ID группы не указан');
   }
 
-  // Проверяем существование группы
   const existingGroup = await GroupRepository.getGroupById(groupId);
   if (!existingGroup) {
     throw new NotFoundError('Группа не найдена');
   }
 
-  // Проверяем, что пользователь является автором группы
   if (existingGroup.authorId.toString() !== currentUserId.toString()) {
     throw new NotValidError('Вы не являетесь автором этой группы');
   }
 
   return await GroupRepository.updateGroup(groupId, updateData);
-}
+};
 
 /**
  * Добавление пользователя в группу
@@ -146,7 +143,7 @@ export async function updateGroup(groupId, updateData, currentUserId) {
  * @throws {NotValidError} Если ID группы или пользователя не указаны
  * @throws {NotFoundError} Если группа не найдена
  */
-export async function addUserToGroup(groupId, userId) {
+export const addUserToGroup = async (groupId, userId) => {
   if (!groupId) {
     throw new NotValidError('ID группы не указан');
   }
@@ -155,14 +152,13 @@ export async function addUserToGroup(groupId, userId) {
     throw new NotValidError('ID пользователя не указан');
   }
 
-  // Проверяем существование группы
   const existingGroup = await GroupRepository.getGroupById(groupId);
   if (!existingGroup) {
     throw new NotFoundError('Группа не найдена');
   }
 
   return await GroupRepository.addUserToGroup(groupId, userId);
-}
+};
 
 /**
  * Удаление пользователя из группы
@@ -173,7 +169,7 @@ export async function addUserToGroup(groupId, userId) {
  * @throws {NotValidError} Если ID не указаны или пользователь не является автором
  * @throws {NotFoundError} Если группа не найдена
  */
-export async function removeUserFromGroup(groupId, userId, currentUserId) {
+export const removeUserFromGroup = async (groupId, userId, currentUserId) => {
   if (!groupId) {
     throw new NotValidError('ID группы не указан');
   }
@@ -182,19 +178,17 @@ export async function removeUserFromGroup(groupId, userId, currentUserId) {
     throw new NotValidError('ID пользователя не указан');
   }
 
-  // Проверяем существование группы
   const existingGroup = await GroupRepository.getGroupById(groupId);
   if (!existingGroup) {
     throw new NotFoundError('Группа не найдена');
   }
 
-  // Проверяем, что текущий пользователь является автором группы
   if (existingGroup.authorId.toString() !== currentUserId.toString()) {
     throw new NotValidError('Вы не являетесь автором этой группы');
   }
 
   return await GroupRepository.removeUserFromGroup(groupId, userId);
-}
+};
 
 /**
  * Обновление кода приглашения
@@ -204,24 +198,22 @@ export async function removeUserFromGroup(groupId, userId, currentUserId) {
  * @throws {NotValidError} Если ID группы не указан или пользователь не является автором
  * @throws {NotFoundError} Если группа не найдена
  */
-export async function regenerateInviteCode(groupId, currentUserId) {
+export const regenerateInviteCode = async (groupId, currentUserId) => {
   if (!groupId) {
     throw new NotValidError('ID группы не указан');
   }
 
-  // Проверяем существование группы
   const existingGroup = await GroupRepository.getGroupById(groupId);
   if (!existingGroup) {
     throw new NotFoundError('Группа не найдена');
   }
 
-  // Проверяем, что пользователь является автором группы
   if (existingGroup.authorId.toString() !== currentUserId.toString()) {
     throw new NotValidError('Вы не являетесь автором этой группы');
   }
 
   return await GroupRepository.regenerateInviteCode(groupId);
-}
+};
 
 /**
  * Удаление группы
@@ -231,25 +223,23 @@ export async function regenerateInviteCode(groupId, currentUserId) {
  * @throws {NotValidError} Если ID группы не указан или пользователь не является автором
  * @throws {NotFoundError} Если группа не найдена
  */
-export async function deleteGroup(groupId, currentUserId) {
+export const deleteGroup = async (groupId, currentUserId) => {
   if (!groupId) {
     throw new NotValidError('ID группы не указан');
   }
 
-  // Проверяем существование группы
   const existingGroup = await GroupRepository.getGroupById(groupId);
   if (!existingGroup) {
     throw new NotFoundError('Группа не найдена');
   }
 
-  // Проверяем, что пользователь является автором группы
   if (existingGroup.authorId.toString() !== currentUserId.toString()) {
     throw new NotValidError('Вы не являетесь автором этой группы');
   }
 
   const result = await GroupRepository.deleteGroup(groupId);
   return !!result;
-}
+};
 
 /**
  * Получение групп, в которых состоит пользователь
@@ -257,13 +247,13 @@ export async function deleteGroup(groupId, currentUserId) {
  * @returns {Promise<Array>} Массив групп
  * @throws {NotValidError} Если ID пользователя не указан
  */
-export async function getUserGroups(userId) {
+export const getUserGroups = async userId => {
   if (!userId) {
     throw new NotValidError('ID пользователя не указан');
   }
 
   return await GroupRepository.getUserGroups(userId);
-}
+};
 
 /**
  * Получение группы по ID попытки прохождения теста
@@ -271,13 +261,12 @@ export async function getUserGroups(userId) {
  * @returns {Promise<Object|null>} Группа или null, если группа не найдена
  * @throws {NotValidError} Если ID попытки не указан
  */
-export async function getGroupByTestAttemptId(attemptId) {
+export const getGroupByTestAttemptId = async attemptId => {
   if (!attemptId) {
     throw new NotValidError('ID попытки теста не указан');
   }
 
   try {
-    // Получаем попытку прохождения теста
     const TestAttemptModel = mongoose.model('TestAttempt');
     const attempt = await TestAttemptModel.findById(attemptId);
 
@@ -285,7 +274,6 @@ export async function getGroupByTestAttemptId(attemptId) {
       return null;
     }
 
-    // Получаем группу по ID
     return await getGroupById(attempt.groupId);
   } catch (error) {
     console.error(
@@ -293,7 +281,7 @@ export async function getGroupByTestAttemptId(attemptId) {
     );
     return null;
   }
-}
+};
 
 /**
  * Создает таблицу сопряженности для ответов на вопрос
@@ -302,10 +290,9 @@ export async function getGroupByTestAttemptId(attemptId) {
  * @param {Array} group2Attempts Попытки второй группы
  * @returns {Object} Таблица сопряженности
  */
-function createContingencyTable(questionId, group1Attempts, group2Attempts) {
+const createContingencyTable = (questionId, group1Attempts, group2Attempts) => {
   console.log(`[GroupService] Создание таблицы сопряженности для вопроса ${questionId}`);
 
-  // Проверяем входные данные
   if (!questionId) {
     console.error(`[GroupService] Ошибка: ID вопроса не указан`);
     return null;
@@ -332,8 +319,6 @@ function createContingencyTable(questionId, group1Attempts, group2Attempts) {
     return null;
   }
 
-  // Сортируем попытки по их ID для обеспечения инвариантности
-  // Это важно, когда мы сравниваем группы в разном порядке
   const sortedGroup1Attempts = [...group1Attempts].sort((a, b) =>
     a._id.toString().localeCompare(b._id.toString())
   );
@@ -347,24 +332,18 @@ function createContingencyTable(questionId, group1Attempts, group2Attempts) {
   );
 
   const table = {};
-  const responseMap = new Map(); // Для объединения схожих ответов
 
-  // Вспомогательная функция для нормализации ответа (упрощает и стандартизирует ответы)
   const normalizeAnswer = value => {
     if (value === undefined || value === null) return 'нет_ответа';
 
-    // Преобразуем к строке и удаляем лишние пробелы
     const strValue = String(value).trim().toLowerCase();
 
-    // Если пустая строка, возвращаем "нет_ответа"
     if (strValue === '') return 'нет_ответа';
 
     return strValue;
   };
 
-  // Вспомогательная функция для получения категории ответа
   const getCategoryFromValue = value => {
-    // Для числовых значений создаем более крупные категории
     if (!isNaN(value)) {
       const num = parseFloat(value);
       if (num <= 2) return 'низкое_значение';
@@ -375,7 +354,6 @@ function createContingencyTable(questionId, group1Attempts, group2Attempts) {
     return value;
   };
 
-  // Вспомогательная функция для обработки одной попытки
   const processAttempt = (attempt, groupIndex) => {
     if (!attempt || !attempt.answers || !Array.isArray(attempt.answers)) {
       console.log(
@@ -386,9 +364,7 @@ function createContingencyTable(questionId, group1Attempts, group2Attempts) {
       return false;
     }
 
-    // Поиск ответа на нужный вопрос среди всех ответов попытки
     const answer = attempt.answers.find(a => {
-      // Проверяем различные форматы хранения questionId
       if (!a || !a.question) return false;
 
       let answerQuestionId;
@@ -398,16 +374,13 @@ function createContingencyTable(questionId, group1Attempts, group2Attempts) {
       } else if (typeof a.question === 'string') {
         answerQuestionId = a.question;
       } else if (typeof a.question === 'object' && a.question) {
-        // Убедимся, что a.question существует перед вызовом toString()
         answerQuestionId = a.question.toString();
       } else if (a.questionId) {
-        // Альтернативный формат
         if (typeof a.questionId === 'object' && a.questionId && a.questionId._id) {
           answerQuestionId = a.questionId._id.toString();
         } else if (typeof a.questionId === 'string') {
           answerQuestionId = a.questionId;
         } else if (a.questionId) {
-          // Убедимся, что a.questionId существует перед вызовом toString()
           answerQuestionId = a.questionId.toString();
         }
       }
@@ -422,7 +395,6 @@ function createContingencyTable(questionId, group1Attempts, group2Attempts) {
       return false;
     }
 
-    // Получаем тип вопроса для правильной обработки ответа
     const questionType =
       answer.question && answer.question.type ? answer.question.type : 'unknown';
 
@@ -430,16 +402,13 @@ function createContingencyTable(questionId, group1Attempts, group2Attempts) {
       `[GroupService] Обработка ответа типа '${questionType}' на вопрос ${questionId} из попытки ${attempt._id}`
     );
 
-    // Обработка разных типов вопросов
     let answerValue = '';
 
     try {
       switch (questionType) {
         case 'single':
-          // Ответ с одним выбранным вариантом
           if (answer.selectedOptions && answer.selectedOptions.length > 0) {
             const option = answer.selectedOptions[0];
-            // Проверяем, что option существует и не равен undefined или null
             if (option) {
               answerValue =
                 option.text ||
@@ -455,12 +424,10 @@ function createContingencyTable(questionId, group1Attempts, group2Attempts) {
           break;
 
         case 'multiple':
-          // Ответ с несколькими выбранными вариантами
           if (answer.selectedOptions && answer.selectedOptions.length > 0) {
-            // Сортируем и объединяем ID всех выбранных вариантов
             try {
               const options = answer.selectedOptions
-                .filter(opt => opt !== undefined && opt !== null) // Исключаем undefined и null
+                .filter(opt => opt !== undefined && opt !== null)
                 .map(opt => {
                   if (!opt) return 'неизвестно';
                   return (
@@ -481,7 +448,6 @@ function createContingencyTable(questionId, group1Attempts, group2Attempts) {
               answerValue = 'ошибка_ответа';
             }
 
-            // Для малых выборок упрощаем - берем только количество выбранных вариантов
             if (group1Attempts.length < 10 || group2Attempts.length < 10) {
               answerValue = `выбрано_${answer.selectedOptions.length}_вариантов`;
             }
@@ -491,11 +457,9 @@ function createContingencyTable(questionId, group1Attempts, group2Attempts) {
           break;
 
         case 'scale':
-          // Ответ со шкалой
           if (answer.scaleValue !== undefined && answer.scaleValue !== null) {
             const scaleValue = parseInt(answer.scaleValue);
 
-            // Для малых выборок группируем значения шкалы
             if (group1Attempts.length < 10 || group2Attempts.length < 10) {
               if (scaleValue <= 3) answerValue = 'низкое_значение';
               else if (scaleValue <= 7) answerValue = 'среднее_значение';
@@ -509,12 +473,10 @@ function createContingencyTable(questionId, group1Attempts, group2Attempts) {
           break;
 
         case 'text':
-          // Текстовый ответ (для текстовых ответов обычно используем упрощенные категории)
           answerValue = answer.textAnswer ? 'с_ответом' : 'без_ответа';
           break;
 
         default:
-          // Для неизвестных типов пытаемся извлечь любое значение
           if (answer.selectedOptions && answer.selectedOptions.length > 0) {
             const option = answer.selectedOptions[0];
             if (option) {
@@ -535,7 +497,6 @@ function createContingencyTable(questionId, group1Attempts, group2Attempts) {
           }
       }
 
-      // Нормализуем ответ
       answerValue = normalizeAnswer(answerValue);
 
       if (group1Attempts.length < 10 || group2Attempts.length < 10) {
@@ -548,12 +509,10 @@ function createContingencyTable(questionId, group1Attempts, group2Attempts) {
         }`
       );
 
-      // Инициализируем счетчики для этого ответа, если они еще не существуют
       if (!table[answerValue]) {
         table[answerValue] = [0, 0];
       }
 
-      // Увеличиваем счетчик для соответствующей группы
       table[answerValue][groupIndex]++;
       return true;
     } catch (error) {
@@ -565,7 +524,6 @@ function createContingencyTable(questionId, group1Attempts, group2Attempts) {
     }
   };
 
-  // Обрабатываем ответы из первой группы (используем отсортированные попытки)
   let group1Processed = 0;
   for (const attempt of sortedGroup1Attempts) {
     if (processAttempt(attempt, 0)) {
@@ -573,7 +531,6 @@ function createContingencyTable(questionId, group1Attempts, group2Attempts) {
     }
   }
 
-  // Обрабатываем ответы из второй группы (используем отсортированные попытки)
   let group2Processed = 0;
   for (const attempt of sortedGroup2Attempts) {
     if (processAttempt(attempt, 1)) {
@@ -585,33 +542,27 @@ function createContingencyTable(questionId, group1Attempts, group2Attempts) {
     `[GroupService] Обработано ${group1Processed} ответов из группы 1 и ${group2Processed} ответов из группы 2`
   );
 
-  // Упрощаем таблицу сопряженности для малых выборок, если категорий слишком много
   const categoryCount = Object.keys(table).length;
   if ((group1Processed < 10 || group2Processed < 10) && categoryCount > 3) {
     console.log(
       `[GroupService] Слишком много категорий (${categoryCount}) для малой выборки, упрощаем таблицу`
     );
 
-    // Создаем упрощенную таблицу с не более чем 3 категориями
     const simplifiedTable = {};
 
-    // Сортируем категории по общему количеству ответов независимо от группы
-    // Это обеспечит одинаковый порядок независимо от того, какая группа идет первой
     const sortedCategories = Object.entries(table).sort(([, counts1], [, counts2]) => {
       const total1 = counts1[0] + counts1[1];
       const total2 = counts2[0] + counts2[1];
-      return total2 - total1; // Сортировка по общему количеству (по убыванию)
+      return total2 - total1;
     });
 
     console.log(`[GroupService] Отсортированные категории:`, sortedCategories);
 
-    // Берем две самые популярные категории
     for (let i = 0; i < Math.min(2, sortedCategories.length); i++) {
       const [category, counts] = sortedCategories[i];
       simplifiedTable[category] = [...counts];
     }
 
-    // Объединяем остальные категории в "другие"
     if (sortedCategories.length > 2) {
       simplifiedTable['другие'] = [0, 0];
       for (let i = 2; i < sortedCategories.length; i++) {
@@ -627,7 +578,7 @@ function createContingencyTable(questionId, group1Attempts, group2Attempts) {
 
   console.log(`[GroupService] Создана таблица сопряженности:`, table);
   return table;
-}
+};
 
 /**
  * Сравнивает две группы с использованием критерия хи-квадрат
@@ -640,15 +591,11 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
   try {
     console.log(`[GroupService] Сравнение групп ${group1Id} и ${group2Id}`);
 
-    // Получаем группы
     let group1 = await getGroupById(group1Id);
     let group2 = await getGroupById(group2Id);
 
-    // Сортируем группы по ID для обеспечения инвариантности результатов
-    // независимо от порядка передачи групп в функцию
     let groupsSwapped = false;
     if (group1Id > group2Id) {
-      // Меняем группы местами, если ID первой группы больше ID второй
       console.log(
         `[GroupService] Сортировка групп для обеспечения инвариантности результатов`
       );
@@ -661,7 +608,6 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
       throw new Error('Одна или обе группы не найдены');
     }
 
-    // Проверка на наличие необходимых полей
     if (!group1.authorId || !group2.authorId) {
       console.error(
         `[GroupService] Отсутствует authorId в одной из групп. Group1: ${group1._id}, Group2: ${group2._id}`
@@ -683,7 +629,6 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
       throw new Error('Некорректные данные групп: отсутствует информация об участниках');
     }
 
-    // Логирование информации для отладки
     console.log(
       `[GroupService] Group1 authorId: ${typeof group1.authorId}, ${group1.authorId}`
     );
@@ -692,7 +637,6 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
     );
     console.log(`[GroupService] UserId: ${typeof userId}, ${userId}`);
 
-    // Безопасное преобразование к строке
     const safeToString = value => {
       if (value === undefined || value === null) {
         return '';
@@ -703,7 +647,6 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
       return String(value);
     };
 
-    // Проверяем, что обе группы принадлежат одному и тому же автору
     const author1 = safeToString(group1.authorId);
     const author2 = safeToString(group2.authorId);
     const userIdStr = safeToString(userId);
@@ -716,12 +659,10 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
       throw new Error('Сравнивать можно только группы, созданные одним автором');
     }
 
-    // Проверяем, что автор групп совпадает с пользователем, запросившим сравнение
     if (author1 !== userIdStr) {
       throw new Error('Вы можете сравнивать только свои группы');
     }
 
-    // Проверяем, что обе группы используют один и тот же тест
     const testId1 = safeToString(group1.testId);
     const testId2 = safeToString(group2.testId);
 
@@ -733,13 +674,11 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
       throw new Error('Группы должны использовать один и тот же тест для сравнения');
     }
 
-    // Получаем информацию о тесте
     const test = await TestService.getTestById(group1.testId);
     if (!test) {
       throw new Error('Тест не найден');
     }
 
-    // Получаем все завершенные попытки прохождения теста для обеих групп
     const group1Attempts = await TestAttemptService.getCompletedAttemptsByTestAndGroup(
       group1.testId,
       group1._id
@@ -754,7 +693,6 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
       `[GroupService] Найдено ${group1Attempts.length} попыток в группе 1 и ${group2Attempts.length} попыток в группе 2`
     );
 
-    // Проверяем наличие завершенных попыток в обеих группах
     if (group1Attempts.length === 0 || group2Attempts.length === 0) {
       throw new Error(
         'Невозможно сравнить группы: одна или обе группы не имеют завершенных тестов'
@@ -770,13 +708,11 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
         `Ответов: ${firstAttempt.answers ? firstAttempt.answers.length : 0}`
       );
 
-      // Проверяем наличие ответов и их структуру
       if (!firstAttempt.answers || firstAttempt.answers.length === 0) {
         console.log(
           `[GroupService] Предупреждение: попытка ${firstAttempt._id} не содержит ответов`
         );
       } else {
-        // Проверяем структуру первого ответа
         const firstAnswer = firstAttempt.answers[0];
         console.log(
           `[GroupService] Пример ответа:`,
@@ -807,7 +743,6 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
       }
     }
 
-    // Получаем все вопросы теста для сравнения
     const questions = await QuestionService.getQuestionsWithOptionsByTestId(
       group1.testId
     );
@@ -817,19 +752,12 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
 
     console.log(`[GroupService] Найдено ${questions.length} вопросов для сравнения`);
 
-    // Вычисляем хи-квадрат для каждого вопроса
     const questionResults = [];
     let validQuestionCount = 0;
 
-    // Обработка категорий и статистический анализ:
-    // 1. Для каждого вопроса создается таблица сопряженности
-    // 2. Категории с ожидаемой частотой менее 5 пропускаются (классическое требование критерия хи-квадрат)
-    // 3. Для малых выборок категории автоматически группируются, чтобы увеличить ожидаемые частоты
-    // 4. Результаты объединяются с учетом нормализации (во избежание зависимости от порядка групп)
     for (let questionIndex = 0; questionIndex < questions.length; questionIndex++) {
       const question = questions[questionIndex];
       try {
-        // Проверяем наличие ID вопроса
         if (!question || !question._id) {
           console.log(`[GroupService] Пропуск вопроса без ID`);
           continue;
@@ -841,21 +769,17 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
           continue;
         }
 
-        // Создаем таблицу сопряженности для ответов на вопрос
-        // Всегда передаем группы в отсортированном порядке для обеспечения инвариантности
         const contingencyTable = createContingencyTable(
           questionId,
           group1Attempts,
           group2Attempts
         );
 
-        // Если таблица пуста или недостаточно данных, добавляем вопрос с флагом "недостаточно данных"
         if (!contingencyTable || Object.keys(contingencyTable).length <= 1) {
           console.log(
             `[GroupService] Вопрос ${questionId}: недостаточно данных для полноценного статистического анализа`
           );
 
-          // Добавляем вопрос с пустыми статистическими данными
           questionResults.push({
             questionId: question._id,
             questionText: question.text || 'Текст вопроса отсутствует',
@@ -866,9 +790,9 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
             pValue: null,
             contingencyTable: contingencyTable || {},
             questionType: question.type || 'unknown',
-            insufficientData: true, // Добавляем флаг о недостаточности данных
+            insufficientData: true,
             message: 'Недостаточно данных для статистического анализа',
-            questionIndex: questionIndex, // Сохраняем индекс вопроса для сортировки
+            questionIndex: questionIndex,
           });
 
           validQuestionCount++;
@@ -880,7 +804,6 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
           contingencyTable
         );
 
-        // Вычисляем хи-квадрат для вопроса
         const result = calculateChiSquare(contingencyTable);
 
         if (!result) {
@@ -888,7 +811,6 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
             `[GroupService] Расчет хи-квадрат не вернул результат для вопроса ${questionId}`
           );
 
-          // Добавляем вопрос с пустыми статистическими данными
           questionResults.push({
             questionId: question._id,
             questionText: question.text || 'Текст вопроса отсутствует',
@@ -901,7 +823,7 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
             questionType: question.type || 'unknown',
             insufficientData: true,
             message: 'Ошибка при статистическом анализе',
-            questionIndex: questionIndex, // Сохраняем индекс вопроса для сортировки
+            questionIndex: questionIndex,
           });
 
           validQuestionCount++;
@@ -917,10 +839,8 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
           error,
         } = result;
 
-        // Проверяем, есть ли ошибка в результате
         const hasError = !!error;
 
-        // Добавляем результат вопроса
         questionResults.push({
           questionId: question._id,
           questionText: question.text || 'Текст вопроса отсутствует',
@@ -929,14 +849,11 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
           isSignificant,
           criticalValue: criticalValue ? criticalValue.toFixed(3) : null,
           pValue: pValue || null,
-          // Добавляем таблицу сопряженности для отображения в интерфейсе
           contingencyTable: contingencyTable,
-          // Добавляем тип вопроса для правильного отображения
           questionType: question.type || 'unknown',
-          // Добавляем информацию об ошибке, если она есть
           insufficientData: hasError,
           message: error || null,
-          questionIndex: questionIndex, // Сохраняем индекс вопроса для сортировки
+          questionIndex: questionIndex,
         });
 
         validQuestionCount++;
@@ -953,7 +870,6 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
           `[GroupService] Ошибка при обработке вопроса ${question?._id || 'неизвестно'}:`,
           error
         );
-        // Продолжаем с следующим вопросом вместо остановки всего процесса
       }
     }
 
@@ -961,10 +877,8 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
       throw new Error('Не удалось выполнить статистический анализ: недостаточно данных');
     }
 
-    // Сортируем результаты по индексу вопроса, чтобы сохранить порядок вопросов в тесте
     questionResults.sort((a, b) => a.questionIndex - b.questionIndex);
 
-    // Определяем наличие малой выборки для информационных целей
     const group1Size = group1Attempts.length;
     const group2Size = group2Attempts.length;
     const isSmallSample = group1Size < 10 || group2Size < 10;
@@ -972,7 +886,6 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
       ? 'Автоматическое объединение редких категорий для повышения надежности анализа'
       : null;
 
-    // Результат для возврата, в исходном порядке групп, как запрашивал пользователь
     let result = {
       group1Id: group1._id,
       group1Name: group1.name,
@@ -985,11 +898,9 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
       questionResults,
       isSmallSample,
       adaptedMethod,
-      // Добавляем флаг, указывающий что порядок групп был нормализован
       groupsNormalized: groupsSwapped,
     };
 
-    // Восстанавливаем исходный порядок групп в результате, если они были поменяны местами
     if (groupsSwapped) {
       console.log(`[GroupService] Восстанавливаем исходный порядок групп для результата`);
       result = {
@@ -1009,25 +920,20 @@ export const compareGroupsChiSquare = async (group1Id, group2Id, userId) => {
 };
 
 /**
- * Вычисляет значение хи-квадрат для таблицы сопряженности
- * @param {Object} contingencyTable Таблица сопряженности
- * @returns {Object} Значение хи-квадрат, степени свободы и статистическую значимость
+ * Вычисляет значение хи-квадрат для таблицы сопряженности.
+ * @param {Object} contingencyTable - Таблица сопряженности.
+ * @returns {Object} - Значение хи-квадрат, степени свободы и статистическую значимость.
  */
-function calculateChiSquare(contingencyTable) {
+const calculateChiSquare = contingencyTable => {
   console.log(`[GroupService] Вычисление хи-квадрат для таблицы:`, contingencyTable);
 
-  // Проверка на наличие данных в таблице
   if (!contingencyTable || Object.keys(contingencyTable).length === 0) {
     console.log(`[GroupService] Пустая таблица сопряженности`);
     return { chiSquare: 0, degreesOfFreedom: 0, isSignificant: false };
   }
 
-  // Делаем глубокую копию таблицы, чтобы не изменять оригинал
   const table = JSON.parse(JSON.stringify(contingencyTable));
 
-  // Нормализуем таблицу: всегда сортируем категории по алфавиту
-  // Это гарантирует, что порядок категорий будет одинаковым независимо
-  // от порядка их появления в данных
   const normalizedTable = {};
   Object.keys(table)
     .sort()
@@ -1038,13 +944,10 @@ function calculateChiSquare(contingencyTable) {
   console.log(`[GroupService] Нормализованная таблица для расчетов:`, normalizedTable);
 
   try {
-    // Подсчитываем общее количество наблюдений в каждой группе
-    // Используем нормализованную таблицу
     let group1Total = 0;
     let group2Total = 0;
 
     Object.values(normalizedTable).forEach(row => {
-      // Проверяем, что row существует и является массивом
       if (!row || !Array.isArray(row)) {
         console.log(`[GroupService] Некорректная строка в таблице сопряженности:`, row);
         return;
@@ -1059,7 +962,6 @@ function calculateChiSquare(contingencyTable) {
       `[GroupService] Общее количество наблюдений: ${totalObservations} (группа 1: ${group1Total}, группа 2: ${group2Total})`
     );
 
-    // Проверка на минимальное количество наблюдений
     if (group1Total === 0 || group2Total === 0) {
       console.log(
         `[GroupService] Недостаточно данных для расчета хи-квадрат (нет наблюдений в одной из групп)`
@@ -1067,7 +969,6 @@ function calculateChiSquare(contingencyTable) {
       return { chiSquare: 0, degreesOfFreedom: 0, isSignificant: false };
     }
 
-    // Для очень малых выборок возвращаем 'недостаточно данных'
     if (totalObservations < 5) {
       console.log(
         `[GroupService] Общее количество наблюдений (${totalObservations}) слишком мало для анализа`
@@ -1081,7 +982,6 @@ function calculateChiSquare(contingencyTable) {
       };
     }
 
-    // Количество различных вариантов ответов определяет степени свободы
     const answersCount = Object.keys(contingencyTable).length;
     const degreesOfFreedom = answersCount - 1;
 
@@ -1090,27 +990,21 @@ function calculateChiSquare(contingencyTable) {
       return { chiSquare: 0, degreesOfFreedom: 0, isSignificant: false };
     }
 
-    // Расчет хи-квадрат - используем симметричный подход
     let chiSquare = 0;
     let validCells = 0;
 
-    // Используем уже нормализованную таблицу (категории отсортированы по алфавиту)
-    // для обеспечения одинаковой последовательности обработки независимо от порядка групп
     const sortedAnswers = Object.entries(normalizedTable);
 
-    // Для малых выборок (< 10 в группе) объединяем редкие категории
     const isSmallSample = group1Total < 10 || group2Total < 10;
 
-    // Создаем агрегированную таблицу, если это малая выборка
     let aggregatedTable = {};
-    let otherCategoryTotal = [0, 0]; // Счетчики для объединенной категории "другое"
+    let otherCategoryTotal = [0, 0];
 
     if (isSmallSample) {
       console.log(
         `[GroupService] Малая выборка обнаружена, применяем объединение редких категорий`
       );
 
-      // Определяем редкие категории (с общим количеством ответов менее 3)
       const categoriesToAggregate = [];
 
       for (const [answerValue, row] of sortedAnswers) {
@@ -1120,7 +1014,6 @@ function calculateChiSquare(contingencyTable) {
         if (totalInCategory < 3) {
           categoriesToAggregate.push(answerValue);
         } else {
-          // Сохраняем категории с достаточным количеством в агрегированную таблицу
           aggregatedTable[answerValue] = row;
         }
       }
@@ -1132,7 +1025,6 @@ function calculateChiSquare(contingencyTable) {
           )}`
         );
 
-        // Агрегируем редкие категории
         for (const category of categoriesToAggregate) {
           const row = contingencyTable[category];
           if (!row || !Array.isArray(row)) continue;
@@ -1141,14 +1033,12 @@ function calculateChiSquare(contingencyTable) {
           otherCategoryTotal[1] += row[1] || 0;
         }
 
-        // Добавляем агрегированную категорию, если в ней есть данные
         if (otherCategoryTotal[0] > 0 || otherCategoryTotal[1] > 0) {
           aggregatedTable['другие_варианты'] = otherCategoryTotal;
         }
       }
     }
 
-    // Используем агрегированную таблицу для малых выборок или оригинальную таблицу
     const tableToProcess =
       isSmallSample && Object.keys(aggregatedTable).length > 0
         ? Object.entries(aggregatedTable)
@@ -1163,7 +1053,6 @@ function calculateChiSquare(contingencyTable) {
     }
 
     for (const [answerValue, row] of tableToProcess) {
-      // Проверяем валидность строки
       if (!row || !Array.isArray(row) || row.length < 2) {
         console.log(
           `[GroupService] Пропуск невалидной строки для ответа "${answerValue}":`,
@@ -1172,12 +1061,10 @@ function calculateChiSquare(contingencyTable) {
         continue;
       }
 
-      // Получаем количество ответов каждого типа в обеих группах
       const group1Count = row[0] || 0;
       const group2Count = row[1] || 0;
       const rowTotal = group1Count + group2Count;
 
-      // Проверка деления на ноль
       if (totalObservations === 0) {
         console.log(
           `[GroupService] Общее количество наблюдений равно нулю, пропуск расчета`
@@ -1185,21 +1072,15 @@ function calculateChiSquare(contingencyTable) {
         continue;
       }
 
-      // Рассчитываем ожидаемые частоты
       const expectedGroup1 = (group1Total * rowTotal) / totalObservations;
       const expectedGroup2 = (group2Total * rowTotal) / totalObservations;
 
-      // Проверка на нулевые ожидаемые частоты для избежания деления на ноль
       if (expectedGroup1 > 0 && expectedGroup2 > 0) {
-        // Адаптивное требование для критерия хи-квадрат:
-        // Для больших выборок: ожидаемая частота не менее 5 (классическое требование)
-        // Для малых выборок (< 10 в группе): снижаем порог до 3
         const minExpectedCount = group1Total < 10 || group2Total < 10 ? 3 : 5;
 
         if (expectedGroup1 >= minExpectedCount && expectedGroup2 >= minExpectedCount) {
           validCells++;
 
-          // Рассчитываем вклад в хи-квадрат для каждой ячейки
           const group1Contribution =
             Math.pow(group1Count - expectedGroup1, 2) / expectedGroup1;
           const group2Contribution =
@@ -1229,10 +1110,8 @@ function calculateChiSquare(contingencyTable) {
       }
     }
 
-    // Округляем значение хи-квадрат до двух знаков после запятой для стабильности
     chiSquare = parseFloat(chiSquare.toFixed(2));
 
-    // Проверяем, что у нас есть хотя бы одна действительная ячейка
     if (validCells === 0) {
       console.log(
         `[GroupService] Нет достаточных данных для расчета хи-квадрат (все ожидаемые частоты < ${
@@ -1250,8 +1129,6 @@ function calculateChiSquare(contingencyTable) {
       };
     }
 
-    // Определяем критическое значение для уровня значимости 0.05
-    // Для разных степеней свободы есть разные критические значения
     const criticalValues = {
       1: 3.841,
       2: 5.991,
@@ -1265,43 +1142,32 @@ function calculateChiSquare(contingencyTable) {
       10: 18.307,
     };
 
-    // Используем степень свободы для определения критического значения
     const criticalValue =
       criticalValues[degreesOfFreedom] ||
-      // Приближенная формула для больших степеней свободы
       Math.sqrt(2 * degreesOfFreedom) * 1.96 + degreesOfFreedom;
 
-    // Определяем статистическую значимость, сравнивая с критическим значением
     const isSignificant = chiSquare > criticalValue;
-
-    // Рассчитываем p-значение с использованием библиотеки jstat
-    // jStat.pchisq вычисляет кумулятивную функцию распределения хи-квадрат,
-    // поэтому вычитаем из 1, чтобы получить правостороннюю вероятность (p-value)
     let pValue;
+
     try {
-      // Для хи-квадрат распределения с degreesOfFreedom степенями свободы
       pValue = 1 - jStat.pchisq(chiSquare, degreesOfFreedom);
 
-      // Округляем для удобства отображения
       pValue = parseFloat(pValue.toFixed(4));
 
-      // Защита от очень маленьких значений (вычислительная погрешность)
       if (pValue < 0.0001) {
         pValue = 0.0001;
       }
     } catch (error) {
       console.error(`[GroupService] Ошибка при расчете p-value с jstat:`, error);
 
-      // Резервный вариант - приближенный расчет
       if (chiSquare < criticalValue) {
-        pValue = 0.1; // p > 0.05
+        pValue = 0.1;
       } else {
-        // Приближенное значение для p < 0.05
         const ratio = chiSquare / criticalValue;
         if (ratio > 1.5) {
-          pValue = 0.01; // p < 0.01
+          pValue = 0.01;
         } else {
-          pValue = 0.03; // 0.01 < p < 0.05
+          pValue = 0.03;
         }
       }
     }
@@ -1335,17 +1201,16 @@ function calculateChiSquare(contingencyTable) {
       error: `Ошибка при статистическом анализе: ${error.message}`,
     };
   }
-}
+};
 
 /**
  * Сохраняет результат сравнения групп
  * @param {Object} resultData Данные результата сравнения
  * @returns {Promise<Object>} Сохраненный результат
  */
-export async function saveComparisonResult(resultData) {
+export const saveComparisonResult = async resultData => {
   console.log(`[GroupService] Сохранение результата сравнения групп`);
 
-  // Убедимся, что questionResults является массивом
   if (resultData.questionResults && !Array.isArray(resultData.questionResults)) {
     console.warn(
       `[GroupService] questionResults не является массивом, преобразуем в пустой массив`
@@ -1353,7 +1218,6 @@ export async function saveComparisonResult(resultData) {
     resultData.questionResults = [];
   }
 
-  // Проверяем наличие всех необходимых полей
   const requiredFields = [
     'group1Id',
     'group1Name',
@@ -1363,6 +1227,7 @@ export async function saveComparisonResult(resultData) {
     'testName',
     'authorId',
   ];
+
   for (const field of requiredFields) {
     if (!resultData[field]) {
       console.error(
@@ -1372,23 +1237,22 @@ export async function saveComparisonResult(resultData) {
     }
   }
 
-  // Создаем и сохраняем новый результат
   const newResult = new GroupComparisonResultModel(resultData);
   return await newResult.save();
-}
+};
 
 /**
  * Получает результаты сравнения групп для автора
  * @param {string} authorId ID автора
  * @returns {Promise<Array>} Массив результатов сравнения
  */
-export async function getComparisonResultsByAuthor(authorId) {
+export const getComparisonResultsByAuthor = async authorId => {
   console.log(`[GroupService] Получение результатов сравнения для автора ${authorId}`);
 
   return await GroupComparisonResultModel.find({ authorId })
     .sort({ createdAt: -1 })
     .exec();
-}
+};
 
 /**
  * Удаляет результат сравнения групп по ID
@@ -1396,39 +1260,36 @@ export async function getComparisonResultsByAuthor(authorId) {
  * @param {string} userId ID пользователя, запросившего удаление
  * @returns {Promise<Object>} Результат операции
  */
-export async function deleteComparisonResult(resultId, userId) {
+export const deleteComparisonResult = async (resultId, userId) => {
   console.log(`[GroupService] Удаление результата сравнения ${resultId}`);
 
   if (!resultId) {
     throw new Error('ID результата не указан');
   }
 
-  // Проверяем существование результата
   const result = await GroupComparisonResultModel.findById(resultId);
   if (!result) {
     throw new Error('Результат сравнения не найден');
   }
 
-  // Проверяем права доступа (только автор может удалить результат)
   if (result.authorId.toString() !== userId) {
     throw new Error('У вас нет прав на удаление этого результата');
   }
 
-  // Удаляем результат
   await GroupComparisonResultModel.findByIdAndDelete(resultId);
 
   return {
     success: true,
     message: 'Результат сравнения успешно удален',
   };
-}
+};
 
 /**
  * Удаляет все результаты сравнения групп автора
  * @param {string} authorId ID автора
  * @returns {Promise<Object>} Результат операции
  */
-export async function deleteAllComparisonResults(authorId) {
+export const deleteAllComparisonResults = async authorId => {
   console.log(
     `[GroupService] Удаление всех результатов сравнения для автора ${authorId}`
   );
@@ -1437,7 +1298,6 @@ export async function deleteAllComparisonResults(authorId) {
     throw new Error('ID автора не указан');
   }
 
-  // Удаляем все результаты автора
   const result = await GroupComparisonResultModel.deleteMany({ authorId });
 
   return {
@@ -1445,4 +1305,4 @@ export async function deleteAllComparisonResults(authorId) {
     deletedCount: result.deletedCount,
     message: `Удалено ${result.deletedCount} результатов сравнения`,
   };
-}
+};

@@ -26,10 +26,10 @@ const QuestionSchema = new mongoose.Schema(
       enum: ['single', 'multiple', 'scale', 'text'],
       required: true,
       default: 'single',
-    }, // single - один ответ, multiple - множественный выбор, scale - шкала, text - свободный ответ
+    },
     imageUrl: {
       type: String,
-    }, // URL изображения к вопросу (если есть)
+    },
     options: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -43,15 +43,15 @@ const QuestionSchema = new mongoose.Schema(
     order: {
       type: Number,
       required: true,
-    }, // Порядок вопроса в тесте
+    },
     scaleMin: {
       type: Number,
       default: 1,
-    }, // Минимальное значение для вопросов типа 'scale'
+    },
     scaleMax: {
       type: Number,
       default: 5,
-    }, // Максимальное значение для вопросов типа 'scale'
+    },
     scaleLabels: {
       min: { type: String, default: 'Не согласен' },
       max: { type: String, default: 'Полностью согласен' },
@@ -59,12 +59,11 @@ const QuestionSchema = new mongoose.Schema(
     weight: {
       type: Number,
       default: 1,
-    }, // Вес вопроса при подсчете результатов
+    },
   },
   { timestamps: true }
 );
 
-// Виртуальное свойство для совместимости test и testId
 QuestionSchema.virtual('virtualTestId').get(function () {
   return this.testId || this.test;
 });

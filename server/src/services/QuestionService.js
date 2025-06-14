@@ -10,7 +10,7 @@ import { NotFoundError } from '../errors/NotFoundError.js';
  * @param {boolean} isCreation - Флаг создания нового вопроса.
  * @throws {NotValidError} - Если данные вопроса не валидны.
  */
-function validateQuestion(questionData, isCreation = true) {
+const validateQuestion = (questionData, isCreation = true) => {
   if (isCreation && !questionData.test) {
     throw new NotValidError('ID теста обязателен');
   }
@@ -59,29 +59,26 @@ function validateQuestion(questionData, isCreation = true) {
       'Максимальное значение шкалы должно быть больше минимального'
     );
   }
-}
+};
 
 /**
  * Создание нового вопроса.
  * @param {Object} questionData - Данные вопроса.
  * @returns {Promise<Object>} - Созданный вопрос.
  */
-export async function createQuestion(questionData) {
+export const createQuestion = async questionData => {
   validateQuestion(questionData);
 
-  // Проверяем существование теста
   const test = await TestRepository.getTestById(questionData.test);
   if (!test) {
     throw new NotFoundError('Тест не найден');
   }
 
   const createdQuestion = await QuestionRepository.createQuestion(questionData);
-
-  // Добавляем вопрос в тест
   await TestRepository.addQuestionToTest(questionData.test, createdQuestion._id);
 
   return createdQuestion;
-}
+};
 
 /**
  * Получение вопроса по ID.
@@ -89,7 +86,7 @@ export async function createQuestion(questionData) {
  * @returns {Promise<Object>} - Найденный вопрос.
  * @throws {NotFoundError} - Если вопрос не найден.
  */
-export async function getQuestionById(id) {
+export const getQuestionById = async id => {
   if (!id) {
     throw new NotValidError('ID вопроса не указан');
   }
@@ -100,7 +97,7 @@ export async function getQuestionById(id) {
   }
 
   return question;
-}
+};
 
 /**
  * Получение вопроса с вариантами ответов.
@@ -108,7 +105,7 @@ export async function getQuestionById(id) {
  * @returns {Promise<Object>} - Вопрос с вариантами ответов.
  * @throws {NotFoundError} - Если вопрос не найден.
  */
-export async function getQuestionWithOptions(id) {
+export const getQuestionWithOptions = async id => {
   if (!id) {
     throw new NotValidError('ID вопроса не указан');
   }
@@ -119,33 +116,33 @@ export async function getQuestionWithOptions(id) {
   }
 
   return question;
-}
+};
 
 /**
  * Получение вопросов теста.
  * @param {string} testId - ID теста.
  * @returns {Promise<Array<Object>>} - Список вопросов.
  */
-export async function getQuestionsByTestId(testId) {
+export const getQuestionsByTestId = async testId => {
   if (!testId) {
     throw new NotValidError('ID теста не указан');
   }
 
   return await QuestionRepository.getQuestionsByTestId(testId);
-}
+};
 
 /**
  * Получение вопросов теста с вариантами ответов.
  * @param {string} testId - ID теста.
  * @returns {Promise<Array<Object>>} - Список вопросов с вариантами ответов.
  */
-export async function getQuestionsWithOptionsByTestId(testId) {
+export const getQuestionsWithOptionsByTestId = async testId => {
   if (!testId) {
     throw new NotValidError('ID теста не указан');
   }
 
   return await QuestionRepository.getQuestionsWithOptionsByTestId(testId);
-}
+};
 
 /**
  * Обновление вопроса.
@@ -154,7 +151,7 @@ export async function getQuestionsWithOptionsByTestId(testId) {
  * @returns {Promise<Object>} - Обновленный вопрос.
  * @throws {NotFoundError} - Если вопрос не найден.
  */
-export async function updateQuestion(id, questionData) {
+export const updateQuestion = async (id, questionData) => {
   if (!id) {
     throw new NotValidError('ID вопроса не указан');
   }
@@ -167,14 +164,14 @@ export async function updateQuestion(id, questionData) {
   }
 
   return updatedQuestion;
-}
+};
 
 /**
  * Обновление порядка вопросов.
  * @param {Array<{id: string, order: number}>} questionsOrder - Массив с ID вопросов и их новым порядком.
  * @returns {Promise<boolean>} - Результат операции.
  */
-export async function updateQuestionsOrder(questionsOrder) {
+export const updateQuestionsOrder = async questionsOrder => {
   if (!questionsOrder || !Array.isArray(questionsOrder) || questionsOrder.length === 0) {
     throw new NotValidError('Необходимо указать порядок вопросов');
   }
@@ -186,7 +183,7 @@ export async function updateQuestionsOrder(questionsOrder) {
   }
 
   return await QuestionRepository.updateQuestionsOrder(questionsOrder);
-}
+};
 
 /**
  * Удаление вопроса.
@@ -194,7 +191,7 @@ export async function updateQuestionsOrder(questionsOrder) {
  * @returns {Promise<boolean>} - Результат удаления.
  * @throws {NotFoundError} - Если вопрос не найден.
  */
-export async function deleteQuestion(id) {
+export const deleteQuestion = async id => {
   if (!id) {
     throw new NotValidError('ID вопроса не указан');
   }
@@ -204,12 +201,8 @@ export async function deleteQuestion(id) {
     throw new NotFoundError('Вопрос не найден');
   }
 
-  // Удаляем варианты ответов для вопроса
   await OptionRepository.deleteOptionsByQuestionId(id);
-
-  // Удаляем вопрос из теста
   await TestRepository.removeQuestionFromTest(question.test, id);
 
-  // Удаляем сам вопрос
   return await QuestionRepository.deleteQuestion(id);
-}
+};

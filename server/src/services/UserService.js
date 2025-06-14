@@ -9,11 +9,11 @@ import { normalizeUserData, validateUser } from '../utils/UserUtils.js';
  * @param {Object} userData - Данные пользователя.
  * @returns {Promise<Object>} - Созданный пользователь.
  */
-export async function createUser(userData) {
+export const createUser = async userData => {
   const normalizedUserData = normalizeUserData(userData);
   const createdUser = await UserRepository.createUser(normalizedUserData);
   return createdUser;
-}
+};
 
 /**
  * Получение пользователя по email.
@@ -21,7 +21,7 @@ export async function createUser(userData) {
  * @param {boolean} includePassword - Флаг включения пароля в результат.
  * @returns {Promise<Object|null>} - Найденный пользователь или null.
  */
-export async function getUserByEmail(email, includePassword = false) {
+export const getUserByEmail = async (email, includePassword = false) => {
   if (!email) {
     throw new NotValidError('Email не указан');
   }
@@ -33,7 +33,7 @@ export async function getUserByEmail(email, includePassword = false) {
   }
 
   return user;
-}
+};
 
 /**
  * Получение пользователя по ID.
@@ -41,7 +41,7 @@ export async function getUserByEmail(email, includePassword = false) {
  * @param {boolean} includePassword - Флаг включения пароля в результат.
  * @returns {Promise<Object|null>} - Найденный пользователь или null.
  */
-export async function getUserById(id, includePassword = false) {
+export const getUserById = async (id, includePassword = false) => {
   if (!id) {
     throw new NotValidError('ID не указан');
   }
@@ -53,7 +53,7 @@ export async function getUserById(id, includePassword = false) {
   }
 
   return user;
-}
+};
 
 /**
  * Обновление данных пользователя.
@@ -61,7 +61,7 @@ export async function getUserById(id, includePassword = false) {
  * @param {Object} userData - Данные для обновления.
  * @returns {Promise<Object|null>} - Обновленный пользователь или null.
  */
-export async function updateUser(id, userData) {
+export const updateUser = async (id, userData) => {
   if (!id) {
     throw new NotValidError('ID не указан');
   }
@@ -76,7 +76,7 @@ export async function updateUser(id, userData) {
   }
 
   return updatedUser;
-}
+};
 
 /**
  * Обновление пароля пользователя
@@ -86,7 +86,7 @@ export async function updateUser(id, userData) {
  * @throws {NotValidError} - Если не указан ID или пароль
  * @throws {NotFoundError} - Если пользователь не найден
  */
-export async function updatePassword(id, newPassword) {
+export const updatePassword = async (id, newPassword) => {
   if (!id) {
     throw new NotValidError('ID не указан');
   }
@@ -95,16 +95,13 @@ export async function updatePassword(id, newPassword) {
     throw new NotValidError('Новый пароль не указан');
   }
 
-  // Валидация нового пароля
   if (newPassword.length < 8) {
     throw new NotValidError('Пароль должен содержать не менее 8 символов');
   }
 
-  // Хеширование нового пароля
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-  // Обновление пароля
   const updatedUser = await UserRepository.updateUser(id, {
     password: hashedPassword,
   });
@@ -114,17 +111,17 @@ export async function updatePassword(id, newPassword) {
   }
 
   return updatedUser;
-}
+};
 
 /**
  * Удаление пользователя.
  * @param {string} id - ID пользователя.
  * @returns {Promise<boolean>} - Результат операции удаления.
  */
-export async function deleteUser(id) {
+export const deleteUser = async id => {
   if (!id) {
     throw new NotValidError('ID не указан');
   }
 
   return await UserRepository.deleteUser(id);
-}
+};

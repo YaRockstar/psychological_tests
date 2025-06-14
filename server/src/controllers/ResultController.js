@@ -33,7 +33,7 @@ const handleServiceError = (error, res) => {
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function getResultsByTestId(req, res) {
+export const getResultsByTestId = async (req, res) => {
   const testId = req.params.testId;
   logger.debug(`Запрос на получение результатов теста по ID: ${testId}`);
 
@@ -45,14 +45,14 @@ export async function getResultsByTestId(req, res) {
   } catch (error) {
     handleServiceError(error, res);
   }
-}
+};
 
 /**
  * Получение результата по ID.
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function getResultById(req, res) {
+export const getResultById = async (req, res) => {
   const resultId = req.params.id;
   logger.debug(`Запрос на получение результата по ID: ${resultId}`);
 
@@ -64,14 +64,14 @@ export async function getResultById(req, res) {
   } catch (error) {
     handleServiceError(error, res);
   }
-}
+};
 
 /**
  * Создание нового результата.
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function createResult(req, res) {
+export const createResult = async (req, res) => {
   logger.debug('Запрос на создание нового результата');
 
   try {
@@ -89,14 +89,14 @@ export async function createResult(req, res) {
   } catch (error) {
     handleServiceError(error, res);
   }
-}
+};
 
 /**
  * Обновление результата.
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function updateResult(req, res) {
+export const updateResult = async (req, res) => {
   const resultId = req.params.id;
   logger.debug(`Запрос на обновление результата по ID: ${resultId}`);
 
@@ -117,14 +117,14 @@ export async function updateResult(req, res) {
   } catch (error) {
     handleServiceError(error, res);
   }
-}
+};
 
 /**
  * Удаление результата.
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function deleteResult(req, res) {
+export const deleteResult = async (req, res) => {
   const resultId = req.params.id;
   logger.debug(`Запрос на удаление результата по ID: ${resultId}`);
 
@@ -142,4 +142,4 @@ export async function deleteResult(req, res) {
   } catch (error) {
     handleServiceError(error, res);
   }
-}
+};

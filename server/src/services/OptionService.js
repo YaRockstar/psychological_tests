@@ -9,7 +9,7 @@ import { NotFoundError } from '../errors/NotFoundError.js';
  * @param {boolean} isCreation - Флаг создания нового варианта ответа.
  * @throws {NotValidError} - Если данные варианта ответа не валидны.
  */
-function validateOption(optionData, isCreation = true) {
+const validateOption = (optionData, isCreation = true) => {
   if (isCreation && !optionData.question) {
     throw new NotValidError('ID вопроса обязателен');
   }
@@ -36,55 +36,48 @@ function validateOption(optionData, isCreation = true) {
   if (optionData.value !== undefined && isNaN(optionData.value)) {
     throw new NotValidError('Значение варианта ответа должно быть числом');
   }
-}
+};
 
 /**
  * Создание нового варианта ответа.
  * @param {Object} optionData - Данные варианта ответа.
  * @returns {Promise<Object>} - Созданный вариант ответа.
  */
-export async function createOption(optionData) {
+export const createOption = async optionData => {
   validateOption(optionData);
 
-  // Проверяем существование вопроса
   const question = await QuestionRepository.getQuestionById(optionData.question);
   if (!question) {
     throw new NotFoundError('Вопрос не найден');
   }
 
   const createdOption = await OptionRepository.createOption(optionData);
-
-  // Добавляем вариант ответа в вопрос
   await QuestionRepository.addOptionToQuestion(optionData.question, createdOption._id);
 
   return createdOption;
-}
+};
 
 /**
  * Создание нескольких вариантов ответа.
  * @param {Array<Object>} optionsData - Данные вариантов ответа.
  * @returns {Promise<Array<Object>>} - Созданные варианты ответа.
  */
-export async function createMultipleOptions(optionsData) {
+export const createMultipleOptions = async optionsData => {
   if (!Array.isArray(optionsData) || optionsData.length === 0) {
     throw new NotValidError('Необходимо указать массив вариантов ответа');
   }
 
-  // Валидируем все варианты ответа
   for (const optionData of optionsData) {
     validateOption(optionData);
 
-    // Проверяем существование вопроса
     const question = await QuestionRepository.getQuestionById(optionData.question);
     if (!question) {
       throw new NotFoundError(`Вопрос с ID ${optionData.question} не найден`);
     }
   }
 
-  // Создаем варианты ответа
   const createdOptions = await OptionRepository.createMultipleOptions(optionsData);
 
-  // Добавляем варианты ответа в вопросы
   const questionOptionsMap = {};
   createdOptions.forEach(option => {
     if (!questionOptionsMap[option.question]) {
@@ -93,7 +86,6 @@ export async function createMultipleOptions(optionsData) {
     questionOptionsMap[option.question].push(option._id);
   });
 
-  // Обновляем вопросы
   for (const [questionId, optionIds] of Object.entries(questionOptionsMap)) {
     for (const optionId of optionIds) {
       await QuestionRepository.addOptionToQuestion(questionId, optionId);
@@ -101,7 +93,7 @@ export async function createMultipleOptions(optionsData) {
   }
 
   return createdOptions;
-}
+};
 
 /**
  * Получение варианта ответа по ID.
@@ -109,7 +101,7 @@ export async function createMultipleOptions(optionsData) {
  * @returns {Promise<Object>} - Найденный вариант ответа.
  * @throws {NotFoundError} - Если вариант ответа не найден.
  */
-export async function getOptionById(id) {
+export const getOptionById = async id => {
   if (!id) {
     throw new NotValidError('ID варианта ответа не указан');
   }
@@ -120,20 +112,20 @@ export async function getOptionById(id) {
   }
 
   return option;
-}
+};
 
 /**
  * Получение вариантов ответа вопроса.
  * @param {string} questionId - ID вопроса.
  * @returns {Promise<Array<Object>>} - Список вариантов ответа.
  */
-export async function getOptionsByQuestionId(questionId) {
+export const getOptionsByQuestionId = async questionId => {
   if (!questionId) {
     throw new NotValidError('ID вопроса не указан');
   }
 
   return await OptionRepository.getOptionsByQuestionId(questionId);
-}
+};
 
 /**
  * Обновление варианта ответа.
@@ -142,7 +134,7 @@ export async function getOptionsByQuestionId(questionId) {
  * @returns {Promise<Object>} - Обновленный вариант ответа.
  * @throws {NotFoundError} - Если вариант ответа не найден.
  */
-export async function updateOption(id, optionData) {
+export const updateOption = async (id, optionData) => {
   if (!id) {
     throw new NotValidError('ID варианта ответа не указан');
   }
@@ -155,14 +147,14 @@ export async function updateOption(id, optionData) {
   }
 
   return updatedOption;
-}
+};
 
 /**
  * Обновление порядка вариантов ответа.
  * @param {Array<{id: string, order: number}>} optionsOrder - Массив с ID вариантов ответа и их новым порядком.
  * @returns {Promise<boolean>} - Результат операции.
  */
-export async function updateOptionsOrder(optionsOrder) {
+export const updateOptionsOrder = async optionsOrder => {
   if (!optionsOrder || !Array.isArray(optionsOrder) || optionsOrder.length === 0) {
     throw new NotValidError('Необходимо указать порядок вариантов ответа');
   }
@@ -176,7 +168,7 @@ export async function updateOptionsOrder(optionsOrder) {
   }
 
   return await OptionRepository.updateOptionsOrder(optionsOrder);
-}
+};
 
 /**
  * Удаление варианта ответа.
@@ -184,7 +176,7 @@ export async function updateOptionsOrder(optionsOrder) {
  * @returns {Promise<boolean>} - Результат удаления.
  * @throws {NotFoundError} - Если вариант ответа не найден.
  */
-export async function deleteOption(id) {
+export const deleteOption = async id => {
   if (!id) {
     throw new NotValidError('ID варианта ответа не указан');
   }
@@ -194,9 +186,7 @@ export async function deleteOption(id) {
     throw new NotFoundError('Вариант ответа не найден');
   }
 
-  // Удаляем вариант ответа из вопроса
   await QuestionRepository.removeOptionFromQuestion(option.question, id);
 
-  // Удаляем сам вариант ответа
   return await OptionRepository.deleteOption(id);
-}
+};

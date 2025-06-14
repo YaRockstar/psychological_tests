@@ -8,7 +8,7 @@ import config from '../config/config.js';
  * @param {Object} res - HTTP ответ.
  * @param {Function} next - Функция для перехода к следующему middleware.
  */
-export function authenticate(req, res, next) {
+export const authenticate = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
@@ -26,14 +26,14 @@ export function authenticate(req, res, next) {
   } catch (error) {
     res.status(HttpStatusCode.UNAUTHORIZED).json({ message: 'Недействительный токен' });
   }
-}
+};
 
 /**
  * Middleware для проверки роли пользователя.
  * @param {string[]} roles - Массив допустимых ролей.
  * @returns {Function} - Middleware функция.
  */
-export function authorize(roles = []) {
+export const authorize = (roles = []) => {
   return (req, res, next) => {
     if (!req.user) {
       return res
@@ -47,4 +47,4 @@ export function authorize(roles = []) {
 
     next();
   };
-}
+};

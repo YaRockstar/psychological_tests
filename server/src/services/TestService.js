@@ -10,7 +10,7 @@ import { NotFoundError } from '../errors/NotFoundError.js';
  * @param {Object} testData - Данные теста для валидации.
  * @throws {NotValidError} - Если данные теста некорректны.
  */
-export function validateTest(testData) {
+export const validateTest = testData => {
   if (!testData.title || testData.title.trim() === '') {
     throw new NotValidError('Название теста обязательно');
   }
@@ -39,14 +39,14 @@ export function validateTest(testData) {
   if (testData.tags && !Array.isArray(testData.tags)) {
     throw new NotValidError('Теги должны быть массивом');
   }
-}
+};
 
 /**
  * Нормализация данных теста.
  * @param {Object} testData - Данные теста.
  * @returns {Object} - Нормализованные данные теста.
  */
-export function normalizeTestData(testData) {
+export const normalizeTestData = testData => {
   return {
     title: testData.title,
     description: testData.description,
@@ -58,7 +58,7 @@ export function normalizeTestData(testData) {
     authorId: testData.authorId,
     questions: Array.isArray(testData.questions) ? testData.questions : [],
   };
-}
+};
 
 /**
  * Создание нового теста.
@@ -67,39 +67,34 @@ export function normalizeTestData(testData) {
  * @returns {Promise<Object>} - Созданный тест.
  * @throws {NotValidError} - Если данные теста некорректны.
  */
-export async function createTest(testData, authorId) {
-  // Добавляем ID автора к данным теста
+export const createTest = async (testData, authorId) => {
   const testWithAuthor = {
     ...testData,
     authorId,
   };
 
-  // Валидация данных
   validateTest(testWithAuthor);
-
-  // Нормализация данных
   const normalizedTest = normalizeTestData(testWithAuthor);
 
-  // Создание теста в базе данных
   return await TestRepository.createTest(normalizedTest);
-}
+};
 
 /**
  * Получение всех тестов.
  * @returns {Promise<Array>} - Массив всех тестов.
  */
-export async function getAllTests() {
+export const getAllTests = async () => {
   return await TestRepository.getTests();
-}
+};
 
 /**
  * Получение публичных тестов.
  * @param {Object} options - Параметры запроса.
  * @returns {Promise<Array>} - Массив публичных тестов.
  */
-export async function getPublicTests(options = {}) {
+export const getPublicTests = async options => {
   return await TestRepository.getPublicTests(options);
-}
+};
 
 /**
  * Получение тестов по ID автора.
@@ -107,13 +102,13 @@ export async function getPublicTests(options = {}) {
  * @returns {Promise<Array>} - Массив тестов автора.
  * @throws {NotValidError} - Если ID автора не указан.
  */
-export async function getTestsByAuthorId(authorId) {
+export const getTestsByAuthorId = async authorId => {
   if (!authorId) {
     throw new NotValidError('ID автора не указан');
   }
 
   return await TestRepository.getTestsByAuthorId(authorId);
-}
+};
 
 /**
  * Получение теста по ID.
@@ -122,7 +117,7 @@ export async function getTestsByAuthorId(authorId) {
  * @throws {NotValidError} - Если ID теста не указан.
  * @throws {NotFoundError} - Если тест не найден.
  */
-export async function getTestById(id) {
+export const getTestById = async id => {
   if (!id) {
     throw new NotValidError('ID теста не указан');
   }
@@ -133,7 +128,7 @@ export async function getTestById(id) {
   }
 
   return test;
-}
+};
 
 /**
  * Получение детальной информации о тесте с вопросами.
@@ -141,7 +136,7 @@ export async function getTestById(id) {
  * @returns {Promise<Object>} - Тест с вопросами.
  * @throws {NotFoundError} - Если тест не найден.
  */
-export async function getTestWithQuestions(id) {
+export const getTestWithQuestions = async id => {
   if (!id) {
     throw new NotValidError('ID теста не указан');
   }
@@ -152,7 +147,7 @@ export async function getTestWithQuestions(id) {
   }
 
   return test;
-}
+};
 
 /**
  * Получение всех тестов автора.
@@ -160,22 +155,22 @@ export async function getTestWithQuestions(id) {
  * @param {Object} options - Опции запроса.
  * @returns {Promise<Array<Object>>} - Список тестов.
  */
-export async function getAuthorTests(authorId, options = {}) {
+export const getAuthorTests = async (authorId, options = {}) => {
   if (!authorId) {
     throw new NotValidError('ID автора не указан');
   }
 
   return await TestRepository.getAuthorTests(authorId, options);
-}
+};
 
 /**
  * Получение опубликованных тестов.
  * @param {Object} options - Опции запроса.
  * @returns {Promise<Array<Object>>} - Список опубликованных тестов.
  */
-export async function getPublishedTests(options = {}) {
+export const getPublishedTests = async options => {
   return await TestRepository.getPublishedTests(options);
-}
+};
 
 /**
  * Обновление теста.
@@ -186,33 +181,29 @@ export async function getPublishedTests(options = {}) {
  * @throws {NotValidError} - Если ID теста не указан.
  * @throws {NotFoundError} - Если тест не найден.
  */
-export async function updateTest(id, testData, currentUserId) {
+export const updateTest = async (id, testData, currentUserId) => {
   if (!id) {
     throw new NotValidError('ID теста не указан');
   }
 
-  // Проверяем существование теста
   const existingTest = await TestRepository.getTestById(id);
   if (!existingTest) {
     throw new NotFoundError('Тест не найден');
   }
 
-  // Проверяем, что пользователь является автором теста
   if (existingTest.authorId.toString() !== currentUserId.toString()) {
     throw new NotValidError('Вы не являетесь автором этого теста');
   }
 
-  // Валидация данных
   validateTest({ ...existingTest, ...testData });
 
-  // Обновление теста в базе данных
   const updatedTest = await TestRepository.updateTest(id, testData);
   if (!updatedTest) {
     throw new NotFoundError('Тест не найден при обновлении');
   }
 
   return updatedTest;
-}
+};
 
 /**
  * Публикация или снятие с публикации теста.
@@ -223,30 +214,27 @@ export async function updateTest(id, testData, currentUserId) {
  * @throws {NotValidError} - Если ID теста не указан.
  * @throws {NotFoundError} - Если тест не найден.
  */
-export async function updateTestPublishStatus(id, isPublic, currentUserId) {
+export const updateTestPublishStatus = async (id, isPublic, currentUserId) => {
   if (!id) {
     throw new NotValidError('ID теста не указан');
   }
 
-  // Проверяем существование теста
   const existingTest = await TestRepository.getTestById(id);
   if (!existingTest) {
     throw new NotFoundError('Тест не найден');
   }
 
-  // Проверяем, что пользователь является автором теста
   if (existingTest.authorId.toString() !== currentUserId.toString()) {
     throw new NotValidError('Вы не являетесь автором этого теста');
   }
 
-  // Обновление статуса публикации теста
   const updatedTest = await TestRepository.updateTestPublishStatus(id, isPublic);
   if (!updatedTest) {
     throw new NotFoundError('Тест не найден при обновлении');
   }
 
   return updatedTest;
-}
+};
 
 /**
  * Удаление теста.
@@ -256,30 +244,27 @@ export async function updateTestPublishStatus(id, isPublic, currentUserId) {
  * @throws {NotValidError} - Если ID теста не указан.
  * @throws {NotFoundError} - Если тест не найден.
  */
-export async function deleteTest(id, currentUserId) {
+export const deleteTest = async (id, currentUserId) => {
   if (!id) {
     throw new NotValidError('ID теста не указан');
   }
 
-  // Проверяем существование теста
   const existingTest = await TestRepository.getTestById(id);
   if (!existingTest) {
     throw new NotFoundError('Тест не найден');
   }
 
-  // Проверяем, что пользователь является автором теста
   if (existingTest.authorId.toString() !== currentUserId.toString()) {
     throw new NotValidError('Вы не являетесь автором этого теста');
   }
 
-  // Удаление теста из базы данных
   const result = await TestRepository.deleteTest(id);
   if (!result) {
     throw new NotFoundError('Тест не найден при удалении');
   }
 
   return true;
-}
+};
 
 /**
  * Поиск тестов по ключевым словам.
@@ -287,39 +272,39 @@ export async function deleteTest(id, currentUserId) {
  * @param {Object} options - Опции запроса.
  * @returns {Promise<Array<Object>>} - Список найденных тестов.
  */
-export async function searchTests(keyword, options = {}) {
+export const searchTests = async (keyword, options = {}) => {
   if (!keyword) {
     throw new NotValidError('Ключевое слово для поиска не указано');
   }
 
   return await TestRepository.searchTests(keyword, options);
-}
+};
 
 /**
  * Увеличение счетчика прохождений теста.
  * @param {string} id - ID теста.
  * @returns {Promise<Object>} - Обновленный тест.
  */
-export async function incrementTestAttempts(id) {
+export const incrementTestAttempts = async id => {
   if (!id) {
     throw new NotValidError('ID теста не указан');
   }
 
   return await TestRepository.incrementTestAttempts(id);
-}
+};
 
 /**
  * Увеличение счетчика популярности теста.
  * @param {string} id - ID теста.
  * @returns {Promise<Object>} - Обновленный тест.
  */
-export async function incrementTestPopularity(id) {
+export const incrementTestPopularity = async id => {
   if (!id) {
     throw new NotValidError('ID теста не указан');
   }
 
   return await TestRepository.incrementTestPopularity(id);
-}
+};
 
 /**
  * Обновление рейтинга теста.
@@ -328,7 +313,7 @@ export async function incrementTestPopularity(id) {
  * @returns {Promise<Object>} - Обновленный тест.
  * @throws {NotValidError} - Если рейтинг не валиден.
  */
-export async function updateTestRating(id, rating) {
+export const updateTestRating = async (id, rating) => {
   if (!id) {
     throw new NotValidError('ID теста не указан');
   }
@@ -338,7 +323,7 @@ export async function updateTestRating(id, rating) {
   }
 
   return await TestRepository.updateTestRating(id, rating);
-}
+};
 
 /**
  * Получение попыток прохождения теста для участников группы.
@@ -348,30 +333,27 @@ export async function updateTestRating(id, rating) {
  * @returns {Promise<Array>} - Массив попыток с детальной информацией.
  * @throws {NotValidError} - Если параметры не валидны.
  */
-export async function getGroupTestAttempts(testId, memberIds, groupId) {
+export const getGroupTestAttempts = async (testId, memberIds, groupId) => {
   if (!testId) {
     throw new NotValidError('ID теста не указан');
   }
 
   if (!Array.isArray(memberIds) || memberIds.length === 0) {
-    return []; // Если нет участников, возвращаем пустой массив
+    return [];
   }
 
   console.log(
     `[TestService] Получение попыток для группы ${groupId}, теста ${testId} и ${memberIds.length} участников`
   );
 
-  // Получаем только те завершенные попытки, которые были выполнены в рамках данной группы
-  // Передаем groupId для фильтрации только по попыткам из этой группы
   const attempts = await TestAttemptRepository.getCompletedAttemptsByTestAndUsers(
     testId,
     memberIds,
-    groupId // Передаем groupId для фильтрации
+    groupId
   );
 
   console.log(`[TestService] Найдено ${attempts.length} попыток для группы ${groupId}`);
 
-  // Получаем детальную информацию о каждой попытке, включая ответы на вопросы
   const detailedAttempts = await Promise.all(
     attempts.map(async attempt => {
       console.log(`[TestService] Обработка попытки ${attempt._id}:`, {
@@ -382,7 +364,6 @@ export async function getGroupTestAttempts(testId, memberIds, groupId) {
         groupId: attempt.groupId || 'не задана',
       });
 
-      // Информация о пользователе может быть уже в объекте attempt после populate
       let userData = null;
       if (attempt.user) {
         userData = {
@@ -425,10 +406,8 @@ export async function getGroupTestAttempts(testId, memberIds, groupId) {
         }
       }
 
-      // Получаем информацию о результате
       let resultData = null;
 
-      // Результат может быть уже в объекте attempt после populate
       if (attempt.result) {
         if (typeof attempt.result === 'object' && attempt.result.title) {
           resultData = {
@@ -438,7 +417,6 @@ export async function getGroupTestAttempts(testId, memberIds, groupId) {
           };
           console.log(`[TestService] Данные результата из попытки:`, resultData);
         } else {
-          // Если result есть, но это не объект с title, пробуем получить его из базы
           try {
             const resultId =
               typeof attempt.result === 'object' ? attempt.result._id : attempt.result;
@@ -469,12 +447,11 @@ export async function getGroupTestAttempts(testId, memberIds, groupId) {
         }
       }
 
-      // Преобразуем attempt в обычный объект, если это еще не сделано
       const attemptObj = attempt.toObject ? attempt.toObject() : attempt;
 
       const formattedCompletedAt = attempt.completedAt
         ? new Date(attempt.completedAt).toLocaleDateString()
-        : 'Invalid Date';
+        : 'Неизвестная дата';
 
       return {
         ...attemptObj,
@@ -489,4 +466,4 @@ export async function getGroupTestAttempts(testId, memberIds, groupId) {
   );
 
   return detailedAttempts;
-}
+};

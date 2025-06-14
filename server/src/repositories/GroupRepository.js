@@ -6,24 +6,21 @@ import mongoose from 'mongoose';
  * Генерация уникального кода приглашения
  * @returns {string} Уникальный код приглашения
  */
-export function generateInviteCode() {
-  // Генерация случайной строки длиной 8 символов
+export const generateInviteCode = () => {
   const randomBytes = crypto.randomBytes(6);
   return randomBytes.toString('hex').substring(0, 8);
-}
+};
 
 /**
  * Создание новой группы
  * @param {Object} groupData Данные группы
  * @returns {Promise<Object>} Созданная группа
  */
-export async function createGroup(groupData) {
-  // Генерация уникального кода приглашения, если он не предоставлен
+export const createGroup = async groupData => {
   if (!groupData.inviteCode) {
     let inviteCode;
     let isUnique = false;
 
-    // Пытаемся создать уникальный код, пока не получим уникальный
     while (!isUnique) {
       inviteCode = generateInviteCode();
       const existingGroup = await GroupModel.findOne({ inviteCode }).exec();
@@ -37,25 +34,25 @@ export async function createGroup(groupData) {
 
   const newGroup = new GroupModel(groupData);
   return await newGroup.save();
-}
+};
 
 /**
  * Получение всех групп по ID автора
  * @param {string} authorId ID автора
  * @returns {Promise<Array>} Массив групп
  */
-export async function getGroupsByAuthorId(authorId) {
+export const getGroupsByAuthorId = async authorId => {
   return await GroupModel.find({ authorId, isActive: true })
     .sort({ updatedAt: -1 })
     .exec();
-}
+};
 
 /**
  * Получение группы по ID
  * @param {string} groupId ID группы
  * @returns {Promise<Object|null>} Найденная группа или null
  */
-export async function getGroupById(groupId) {
+export const getGroupById = async groupId => {
   console.log(`[GroupRepository] Получение группы по ID: ${groupId}`);
 
   if (!groupId) {
@@ -63,7 +60,6 @@ export async function getGroupById(groupId) {
     return null;
   }
 
-  // Проверяем, является ли ID валидным ObjectId для MongoDB
   if (!mongoose.Types.ObjectId.isValid(groupId)) {
     console.log(`[GroupRepository] Ошибка: невалидный ID группы ${groupId}`);
     return null;
@@ -85,16 +81,16 @@ export async function getGroupById(groupId) {
     console.error(`[GroupRepository] Ошибка при получении группы ${groupId}:`, error);
     return null;
   }
-}
+};
 
 /**
  * Получение группы по коду приглашения
  * @param {string} inviteCode Код приглашения
  * @returns {Promise<Object|null>} Найденная группа или null
  */
-export async function getGroupByInviteCode(inviteCode) {
+export const getGroupByInviteCode = async inviteCode => {
   return await GroupModel.findOne({ inviteCode, isActive: true }).exec();
-}
+};
 
 /**
  * Обновление группы
@@ -102,13 +98,13 @@ export async function getGroupByInviteCode(inviteCode) {
  * @param {Object} updateData Данные для обновления
  * @returns {Promise<Object|null>} Обновленная группа или null
  */
-export async function updateGroup(groupId, updateData) {
+export const updateGroup = async (groupId, updateData) => {
   return await GroupModel.findByIdAndUpdate(
     groupId,
     { ...updateData, updatedAt: new Date() },
     { new: true }
   ).exec();
-}
+};
 
 /**
  * Добавление пользователя в группу
@@ -116,7 +112,7 @@ export async function updateGroup(groupId, updateData) {
  * @param {string} userId ID пользователя
  * @returns {Promise<Object|null>} Обновленная группа или null
  */
-export async function addUserToGroup(groupId, userId) {
+export const addUserToGroup = async (groupId, userId) => {
   return await GroupModel.findByIdAndUpdate(
     groupId,
     {
@@ -125,7 +121,7 @@ export async function addUserToGroup(groupId, userId) {
     },
     { new: true }
   ).exec();
-}
+};
 
 /**
  * Удаление пользователя из группы
@@ -133,7 +129,7 @@ export async function addUserToGroup(groupId, userId) {
  * @param {string} userId ID пользователя
  * @returns {Promise<Object|null>} Обновленная группа или null
  */
-export async function removeUserFromGroup(groupId, userId) {
+export const removeUserFromGroup = async (groupId, userId) => {
   return await GroupModel.findByIdAndUpdate(
     groupId,
     {
@@ -142,18 +138,17 @@ export async function removeUserFromGroup(groupId, userId) {
     },
     { new: true }
   ).exec();
-}
+};
 
 /**
  * Обновление кода приглашения
  * @param {string} groupId ID группы
  * @returns {Promise<Object>} Обновленная группа с новым кодом приглашения
  */
-export async function regenerateInviteCode(groupId) {
+export const regenerateInviteCode = async groupId => {
   let inviteCode;
   let isUnique = false;
 
-  // Пытаемся создать уникальный код, пока не получим уникальный
   while (!isUnique) {
     inviteCode = generateInviteCode();
     const existingGroup = await GroupModel.findOne({ inviteCode }).exec();
@@ -170,14 +165,14 @@ export async function regenerateInviteCode(groupId) {
     },
     { new: true }
   ).exec();
-}
+};
 
 /**
  * Удаление группы (мягкое удаление)
  * @param {string} groupId ID группы
  * @returns {Promise<Object|null>} Результат операции
  */
-export async function deleteGroup(groupId) {
+export const deleteGroup = async groupId => {
   return await GroupModel.findByIdAndUpdate(
     groupId,
     {
@@ -186,16 +181,16 @@ export async function deleteGroup(groupId) {
     },
     { new: true }
   ).exec();
-}
+};
 
 /**
  * Получение групп, в которых состоит пользователь
  * @param {string} userId ID пользователя
  * @returns {Promise<Array>} Массив групп
  */
-export async function getUserGroups(userId) {
+export const getUserGroups = async userId => {
   return await GroupModel.find({
     members: userId,
     isActive: true,
   }).exec();
-}
+};

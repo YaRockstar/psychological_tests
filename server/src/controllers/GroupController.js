@@ -1,9 +1,6 @@
 import * as GroupService from '../services/GroupService.js';
 import { HttpStatusCode } from '../utils/httpStatusCodes.js';
 import logger from '../utils/logger.js';
-import * as TestService from '../services/TestService.js';
-import * as TestAttemptService from '../services/TestAttemptService.js';
-import * as QuestionService from '../services/QuestionService.js';
 import mongoose from 'mongoose';
 
 /**
@@ -11,7 +8,7 @@ import mongoose from 'mongoose';
  * @param {Object} req - HTTP запрос
  * @param {Object} res - HTTP ответ
  */
-export async function createGroup(req, res) {
+export const createGroup = async (req, res) => {
   logger.debug('Запрос на создание новой группы');
 
   try {
@@ -37,14 +34,14 @@ export async function createGroup(req, res) {
       message: 'Ошибка при создании группы',
     });
   }
-}
+};
 
 /**
  * Получение всех групп автора
  * @param {Object} req - HTTP запрос
  * @param {Object} res - HTTP ответ
  */
-export async function getAuthorGroups(req, res) {
+export const getAuthorGroups = async (req, res) => {
   logger.debug('Запрос на получение групп автора');
 
   try {
@@ -68,14 +65,14 @@ export async function getAuthorGroups(req, res) {
       message: 'Ошибка при получении групп автора',
     });
   }
-}
+};
 
 /**
  * Получение группы по ID
  * @param {Object} req - HTTP запрос
  * @param {Object} res - HTTP ответ
  */
-export async function getGroupById(req, res) {
+export const getGroupById = async (req, res) => {
   const groupId = req.params.id;
   logger.debug(`Запрос на получение группы по ID: ${groupId}`);
 
@@ -103,14 +100,14 @@ export async function getGroupById(req, res) {
       message: 'Ошибка при получении группы',
     });
   }
-}
+};
 
 /**
  * Получение группы по коду приглашения
  * @param {Object} req - HTTP запрос
  * @param {Object} res - HTTP ответ
  */
-export async function getGroupByInviteCode(req, res) {
+export const getGroupByInviteCode = async (req, res) => {
   const { inviteCode } = req.params;
   logger.debug(`Запрос на получение группы по коду приглашения: ${inviteCode}`);
 
@@ -138,14 +135,14 @@ export async function getGroupByInviteCode(req, res) {
       message: 'Ошибка при получении группы по коду приглашения',
     });
   }
-}
+};
 
 /**
  * Обновление группы
  * @param {Object} req - HTTP запрос
  * @param {Object} res - HTTP ответ
  */
-export async function updateGroup(req, res) {
+export const updateGroup = async (req, res) => {
   const groupId = req.params.id;
   logger.debug(`Запрос на обновление группы по ID: ${groupId}`);
 
@@ -178,25 +175,23 @@ export async function updateGroup(req, res) {
       message: 'Ошибка при обновлении группы',
     });
   }
-}
+};
 
 /**
  * Добавление пользователя в группу через приглашение
  * @param {Object} req - HTTP запрос
  * @param {Object} res - HTTP ответ
  */
-export async function joinGroup(req, res) {
+export const joinGroup = async (req, res) => {
   const { inviteCode } = req.body;
   logger.debug(`Запрос на присоединение к группе по коду: ${inviteCode}`);
 
   try {
     const userId = req.user._id;
 
-    // Получаем группу по коду приглашения
     const group = await GroupService.getGroupByInviteCode(inviteCode);
     logger.debug(`Присоединение к группе: группа с кодом=${inviteCode} найдена`);
 
-    // Добавляем пользователя в группу
     const updatedGroup = await GroupService.addUserToGroup(group._id, userId);
     logger.debug(`Пользователь ${userId} добавлен в группу ${group._id}`);
 
@@ -223,14 +218,14 @@ export async function joinGroup(req, res) {
       message: 'Ошибка при присоединении к группе',
     });
   }
-}
+};
 
 /**
  * Удаление пользователя из группы
  * @param {Object} req - HTTP запрос
  * @param {Object} res - HTTP ответ
  */
-export async function removeUserFromGroup(req, res) {
+export const removeUserFromGroup = async (req, res) => {
   const { groupId, userId } = req.params;
   logger.debug(`Запрос на удаление пользователя ${userId} из группы ${groupId}`);
 
@@ -268,14 +263,14 @@ export async function removeUserFromGroup(req, res) {
       message: 'Ошибка при удалении пользователя из группы',
     });
   }
-}
+};
 
 /**
  * Обновление кода приглашения для группы
  * @param {Object} req - HTTP запрос
  * @param {Object} res - HTTP ответ
  */
-export async function regenerateInviteCode(req, res) {
+export const regenerateInviteCode = async (req, res) => {
   const groupId = req.params.id;
   logger.debug(`Запрос на обновление кода приглашения для группы ${groupId}`);
 
@@ -310,20 +305,19 @@ export async function regenerateInviteCode(req, res) {
       message: 'Ошибка при обновлении кода приглашения',
     });
   }
-}
+};
 
 /**
  * Удаление группы
  * @param {Object} req - HTTP запрос
  * @param {Object} res - HTTP ответ
  */
-export async function deleteGroup(req, res) {
+export const deleteGroup = async (req, res) => {
   const groupId = req.params.id;
   logger.debug(`Запрос на удаление группы ${groupId}`);
 
   try {
     const userId = req.user._id;
-
     logger.debug(`Удаление группы: группа=${groupId}, автор=${userId}`);
 
     const result = await GroupService.deleteGroup(groupId, userId);
@@ -352,14 +346,14 @@ export async function deleteGroup(req, res) {
       message: 'Ошибка при удалении группы',
     });
   }
-}
+};
 
 /**
  * Получение групп, в которых состоит пользователь
  * @param {Object} req - HTTP запрос
  * @param {Object} res - HTTP ответ
  */
-export async function getUserGroups(req, res) {
+export const getUserGroups = async (req, res) => {
   logger.debug('Запрос на получение групп пользователя');
 
   try {
@@ -383,14 +377,14 @@ export async function getUserGroups(req, res) {
       message: 'Ошибка при получении групп пользователя',
     });
   }
-}
+};
 
 /**
  * Выход пользователя из группы
  * @param {Object} req - HTTP запрос
  * @param {Object} res - HTTP ответ
  */
-export async function leaveGroup(req, res) {
+export const leaveGroup = async (req, res) => {
   const groupId = req.params.id;
   logger.debug(`Запрос на выход из группы ${groupId}`);
 
@@ -400,7 +394,6 @@ export async function leaveGroup(req, res) {
       `Выход из группы: данные получены, группа=${groupId}, пользователь=${userId}`
     );
 
-    // Удаляем пользователя из группы
     await GroupService.removeUserFromGroup(groupId, userId, userId);
     logger.debug(`Пользователь ${userId} вышел из группы ${groupId}`);
 
@@ -426,7 +419,7 @@ export async function leaveGroup(req, res) {
       message: 'Ошибка при выходе из группы',
     });
   }
-}
+};
 
 /**
  * Сравнивает результаты тестов двух групп с использованием критерия хи-квадрат.
@@ -435,7 +428,6 @@ export async function leaveGroup(req, res) {
  */
 export const compareGroups = async (req, res) => {
   try {
-    // Получаем ID групп из тела запроса
     const { group1Id, group2Id } = req.body;
     const userId = req.user._id;
 
@@ -443,7 +435,6 @@ export const compareGroups = async (req, res) => {
       `[GroupController] Запрос на сравнение групп ${group1Id} и ${group2Id} от пользователя ${userId}`
     );
 
-    // Проверяем наличие ID групп
     if (!group1Id || !group2Id) {
       console.log(`[GroupController] Ошибка: не указаны ID групп для сравнения`);
       return res
@@ -451,7 +442,6 @@ export const compareGroups = async (req, res) => {
         .json({ message: 'Необходимо указать обе группы для сравнения' });
     }
 
-    // Проверяем валидность ID групп
     if (
       !mongoose.Types.ObjectId.isValid(group1Id) ||
       !mongoose.Types.ObjectId.isValid(group2Id)
@@ -464,7 +454,6 @@ export const compareGroups = async (req, res) => {
         .json({ message: 'Указаны некорректные идентификаторы групп' });
     }
 
-    // Проверяем, что группы разные
     if (group1Id === group2Id) {
       console.log(`[GroupController] Ошибка: одинаковые ID групп ${group1Id}`);
       return res
@@ -473,16 +462,13 @@ export const compareGroups = async (req, res) => {
     }
 
     try {
-      // Вызываем сервис для сравнения групп
       const comparisonResult = await GroupService.compareGroupsChiSquare(
         group1Id,
         group2Id,
         userId
       );
 
-      // Сохраняем результат сравнения в базе данных
       try {
-        // Подготавливаем данные для сохранения, включая детальную информацию по вопросам
         const resultToSave = {
           group1Id: comparisonResult.group1Id,
           group1Name: comparisonResult.group1Name,
@@ -497,24 +483,19 @@ export const compareGroups = async (req, res) => {
           adaptedMethod: comparisonResult.adaptedMethod || null,
         };
 
-        // Сохраняем результат
         const savedResult = await GroupService.saveComparisonResult(resultToSave);
-
-        // Добавляем ID сохраненного результата к возвращаемым данным
         comparisonResult._id = savedResult._id;
 
         console.log(
           `[GroupController] Результат сравнения групп успешно сохранен с ID: ${savedResult._id}`
         );
       } catch (saveError) {
-        // Если произошла ошибка при сохранении, логируем её, но не прерываем выполнение
         console.error(
           `[GroupController] Ошибка при сохранении результата сравнения:`,
           saveError
         );
       }
 
-      // Отправляем результат
       console.log(`[GroupController] Успешное сравнение групп. Результат:`, {
         id: comparisonResult._id,
         totalQuestions: comparisonResult.totalQuestions,
@@ -527,12 +508,10 @@ export const compareGroups = async (req, res) => {
     } catch (error) {
       console.error(`[GroupController] Ошибка при анализе данных:`, error);
 
-      // Детальное логирование ошибки
       if (error.stack) {
         console.error(`[GroupController] Стек ошибки:`, error.stack);
       }
 
-      // Проверяем на ошибку с undefined
       if (
         error.message &&
         error.message.includes('Cannot read properties of undefined')
@@ -545,7 +524,6 @@ export const compareGroups = async (req, res) => {
         });
       }
 
-      // Обрабатываем конкретные типы ошибок
       if (error.name === 'NotFoundError') {
         return res.status(404).json({
           message: error.message,
@@ -560,7 +538,6 @@ export const compareGroups = async (req, res) => {
         });
       }
 
-      // Общая ошибка сервера
       return res.status(500).json({
         message: 'Произошла ошибка при сравнении групп',
         details: error.message,
@@ -590,7 +567,6 @@ export const getGroupComparisonResults = async (req, res) => {
       `[GroupController] Запрос на получение результатов сравнения групп для пользователя ${userId}`
     );
 
-    // Проверяем, что пользователь имеет права доступа (уже проверено middleware authorize)
     const results = await GroupService.getComparisonResultsByAuthor(userId);
     console.log(
       `[GroupController] Найдено ${results.length} результатов сравнения групп`
@@ -631,7 +607,6 @@ export const deleteComparisonResult = async (req, res) => {
       `[GroupController] Запрос на удаление результата сравнения ${resultId} от пользователя ${userId}`
     );
 
-    // Проверяем валидность ID
     if (!mongoose.Types.ObjectId.isValid(resultId)) {
       console.log(`[GroupController] Ошибка: невалидный ID результата ${resultId}`);
       return res
@@ -640,10 +615,8 @@ export const deleteComparisonResult = async (req, res) => {
     }
 
     try {
-      // Вызываем сервис для удаления результата
       const result = await GroupService.deleteComparisonResult(resultId, userId);
 
-      // Отправляем результат
       console.log(`[GroupController] Результат сравнения ${resultId} успешно удален`);
       return res.status(200).json(result);
     } catch (error) {
@@ -691,10 +664,8 @@ export const deleteAllComparisonResults = async (req, res) => {
     );
 
     try {
-      // Вызываем сервис для удаления всех результатов
       const result = await GroupService.deleteAllComparisonResults(userId);
 
-      // Отправляем результат
       console.log(
         `[GroupController] Удалено ${result.deletedCount} результатов сравнения`
       );

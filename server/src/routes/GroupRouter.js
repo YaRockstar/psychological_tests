@@ -19,7 +19,6 @@ import { authenticate, authorize } from '../middleware/auth.js';
  */
 const router = express.Router();
 
-// Маршруты для авторов (требуют роль автора)
 router.post('/', authenticate, authorize(['author']), createGroup);
 router.get('/my', authenticate, authorize(['author']), getAuthorGroups);
 router.put('/:id', authenticate, authorize(['author']), updateGroup);
@@ -37,7 +36,6 @@ router.delete(
   removeUserFromGroup
 );
 
-// Маршруты для пользователей
 router.get('/joined', authenticate, getUserGroups);
 router.get('/:id', authenticate, getGroupById);
 router.get('/by-code/:inviteCode', authenticate, getGroupByInviteCode);

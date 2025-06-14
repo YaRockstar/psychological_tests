@@ -12,7 +12,6 @@ import { authenticate, authorize } from '../middleware/auth.js';
  */
 const router = express.Router();
 
-// Маршруты для сравнения групп (требуют роль автора)
 router.post('/compare', authenticate, authorize(['author']), compareGroups);
 router.get(
   '/comparison-results',
@@ -21,7 +20,6 @@ router.get(
   getGroupComparisonResults
 );
 
-// Маршруты для удаления результатов сравнения
 router.delete(
   '/comparison-results/:id',
   authenticate,

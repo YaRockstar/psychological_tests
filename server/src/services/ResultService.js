@@ -10,7 +10,7 @@ import { NotFoundError } from '../utils/errors.js';
  * @param {boolean} isCreation - Флаг создания нового результата.
  * @throws {NotValidError} - Если данные результата не валидны.
  */
-function validateResult(resultData, isCreation = true) {
+const validateResult = (resultData, isCreation = true) => {
   if (isCreation && !resultData.test) {
     throw new NotValidError('ID теста обязателен');
   }
@@ -53,7 +53,7 @@ function validateResult(resultData, isCreation = true) {
   ) {
     throw new NotValidError('Порядок результата должен быть неотрицательным числом');
   }
-}
+};
 
 /**
  * Получение результатов по ID теста.
@@ -61,13 +61,13 @@ function validateResult(resultData, isCreation = true) {
  * @returns {Promise<Array<Object>>} - Список результатов.
  * @throws {NotValidError} - Если ID теста не указан.
  */
-export async function getResultsByTestId(testId) {
+export const getResultsByTestId = async testId => {
   if (!testId) {
     throw new NotValidError('ID теста не указан');
   }
 
   return await ResultRepository.getResultsByTestId(testId);
-}
+};
 
 /**
  * Получение результата по ID.
@@ -75,7 +75,7 @@ export async function getResultsByTestId(testId) {
  * @returns {Promise<Object>} - Найденный результат.
  * @throws {NotFoundError} - Если результат не найден.
  */
-export async function getResultById(id) {
+export const getResultById = async id => {
   if (!id) {
     throw new NotValidError('ID результата не указан');
   }
@@ -86,7 +86,7 @@ export async function getResultById(id) {
   }
 
   return result;
-}
+};
 
 /**
  * Создание нового результата.
@@ -95,27 +95,23 @@ export async function getResultById(id) {
  * @returns {Promise<Object>} - Созданный результат.
  * @throws {NotValidError} - Если данные результата не валидны.
  */
-export async function createResult(resultData, userId) {
+export const createResult = async (resultData, userId) => {
   validateResult(resultData);
 
-  // Проверяем существование теста
   const test = await TestRepository.getTestById(resultData.test);
   if (!test) {
     throw new NotFoundError('Тест не найден');
   }
 
-  // Проверяем права пользователя
   if (test.authorId.toString() !== userId.toString()) {
     throw new NotValidError('Вы не являетесь автором этого теста');
   }
 
   const createdResult = await ResultRepository.createResult(resultData);
-
-  // Добавляем результат к тесту
   await TestRepository.addResultToTest(resultData.test, createdResult._id);
 
   return createdResult;
-}
+};
 
 /**
  * Обновление результата.
@@ -125,18 +121,16 @@ export async function createResult(resultData, userId) {
  * @returns {Promise<Object>} - Обновленный результат.
  * @throws {NotFoundError} - Если результат не найден.
  */
-export async function updateResult(id, resultData, userId) {
+export const updateResult = async (id, resultData, userId) => {
   if (!id) {
     throw new NotValidError('ID результата не указан');
   }
 
-  // Проверяем существование результата
   const existingResult = await ResultRepository.getResultById(id);
   if (!existingResult) {
     throw new NotFoundError('Результат не найден');
   }
 
-  // Проверяем права пользователя
   const test = await TestRepository.getTestById(existingResult.test);
   if (!test) {
     throw new NotFoundError('Тест не найден');
@@ -148,14 +142,13 @@ export async function updateResult(id, resultData, userId) {
 
   validateResult(resultData, false);
 
-  // Обновление результата
   const updatedResult = await ResultRepository.updateResult(id, resultData);
   if (!updatedResult) {
     throw new NotFoundError('Результат не найден при обновлении');
   }
 
   return updatedResult;
-}
+};
 
 /**
  * Удаление результата.
@@ -164,18 +157,16 @@ export async function updateResult(id, resultData, userId) {
  * @returns {Promise<boolean>} - Результат удаления.
  * @throws {NotFoundError} - Если результат не найден.
  */
-export async function deleteResult(id, userId) {
+export const deleteResult = async (id, userId) => {
   if (!id) {
     throw new NotValidError('ID результата не указан');
   }
 
-  // Проверяем существование результата
   const existingResult = await ResultRepository.getResultById(id);
   if (!existingResult) {
     throw new NotFoundError('Результат не найден');
   }
 
-  // Проверяем права пользователя
   const test = await TestRepository.getTestById(existingResult.test);
   if (!test) {
     throw new NotFoundError('Тест не найден');
@@ -185,12 +176,10 @@ export async function deleteResult(id, userId) {
     throw new NotValidError('Вы не являетесь автором этого теста');
   }
 
-  // Удаляем результат из теста
   await TestRepository.removeResultFromTest(existingResult.test, id);
 
-  // Удаляем результат
   return await ResultRepository.deleteResult(id);
-}
+};
 
 /**
  * Расчет результата теста на основе данных попытки.
@@ -203,7 +192,7 @@ export async function deleteResult(id, userId) {
  * @throws {NotValidError} - Если данные не валидны.
  * @throws {NotFoundError} - Если тест или попытка не найдены.
  */
-export async function calculateTestResult(resultData) {
+export const calculateTestResult = async resultData => {
   if (!resultData.test) {
     throw new NotValidError('ID теста не указан');
   }
@@ -214,7 +203,6 @@ export async function calculateTestResult(resultData) {
 
   console.log(`[ResultService] Расчет результата для попытки: ${resultData.attempt}`);
 
-  // Получаем детали попытки, если не переданы
   let attempt;
   if (resultData.score === undefined) {
     attempt = await TestAttemptRepository.getTestAttemptWithDetails(resultData.attempt);
@@ -223,11 +211,9 @@ export async function calculateTestResult(resultData) {
     }
   }
 
-  // Определяем общий балл
   const score = resultData.score !== undefined ? resultData.score : attempt.score || 0;
   console.log(`[ResultService] Общий балл: ${score}`);
 
-  // Находим подходящий результат теста по баллам
   const testResult = await ResultRepository.getResultByScore(resultData.test, score);
 
   if (!testResult) {
@@ -248,4 +234,4 @@ export async function calculateTestResult(resultData) {
     description: testResult.description,
     imageUrl: testResult.imageUrl,
   };
-}
+};

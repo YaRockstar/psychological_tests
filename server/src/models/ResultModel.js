@@ -21,24 +21,24 @@ const ResultSchema = new mongoose.Schema(
     minScore: {
       type: Number,
       required: true,
-    }, // Минимальный балл для получения этого результата
+    },
     maxScore: {
       type: Number,
       required: true,
-    }, // Максимальный балл для получения этого результата
+    },
     imageUrl: {
       type: String,
-    }, // URL изображения для результата (если есть)
+    },
     recommendations: {
       type: String,
-    }, // Рекомендации пользователю на основе результата
+    },
     category: {
       type: String,
-    }, // Категория результата (если применимо)
+    },
     order: {
       type: Number,
       default: 0,
-    }, // Порядок результата (если применимо)
+    },
   },
   { timestamps: true }
 );

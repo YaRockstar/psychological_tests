@@ -53,13 +53,11 @@ const groupSchema = new mongoose.Schema(
   }
 );
 
-// Обновление updatedAt перед сохранением
 groupSchema.pre('save', function (next) {
   this.updatedAt = new Date();
   next();
 });
 
-// Индексы для повышения производительности запросов
 groupSchema.index({ authorId: 1 });
 groupSchema.index({ inviteCode: 1 }, { unique: true });
 groupSchema.index({ testId: 1 });

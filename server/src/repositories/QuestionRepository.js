@@ -5,7 +5,7 @@ import QuestionModel from '../models/QuestionModel.js';
  * @param {Object} document - MongoDB документ.
  * @returns {Object} - Объект с данными вопроса.
  */
-function transformDocument(document) {
+const transformDocument = document => {
   if (!document) return null;
 
   const questionObject = document.toObject ? document.toObject() : document;
@@ -14,34 +14,34 @@ function transformDocument(document) {
     ...rest,
     _id: _id.toString(),
   };
-}
+};
 
 /**
  * Создание нового вопроса.
  * @param {Object} questionData - Данные вопроса.
  * @returns {Promise<Object>} - Созданный вопрос.
  */
-export async function createQuestion(questionData) {
+export const createQuestion = async questionData => {
   const created = await QuestionModel.create(questionData);
   return transformDocument(created);
-}
+};
 
 /**
  * Получение вопроса по ID.
  * @param {string} id - ID вопроса.
  * @returns {Promise<Object|null>} - Найденный вопрос или null.
  */
-export async function getQuestionById(id) {
+export const getQuestionById = async id => {
   const question = await QuestionModel.findById(id).exec();
   return transformDocument(question);
-}
+};
 
 /**
  * Получение вопроса по ID с вариантами ответов.
  * @param {string} id - ID вопроса.
  * @returns {Promise<Object|null>} - Найденный вопрос с вариантами ответов или null.
  */
-export async function getQuestionWithOptions(id) {
+export const getQuestionWithOptions = async id => {
   const question = await QuestionModel.findById(id)
     .populate({
       path: 'options',
@@ -49,24 +49,24 @@ export async function getQuestionWithOptions(id) {
     })
     .exec();
   return transformDocument(question);
-}
+};
 
 /**
  * Получение вопросов по ID теста.
  * @param {string} testId - ID теста.
  * @returns {Promise<Array<Object>>} - Список вопросов.
  */
-export async function getQuestionsByTestId(testId) {
+export const getQuestionsByTestId = async testId => {
   const questions = await QuestionModel.find({ test: testId }).sort({ order: 1 }).exec();
   return questions.map(transformDocument);
-}
+};
 
 /**
  * Получение вопросов с вариантами ответов для теста.
  * @param {string} testId - ID теста.
  * @returns {Promise<Array<Object>>} - Список вопросов с вариантами ответов.
  */
-export async function getQuestionsWithOptionsByTestId(testId) {
+export const getQuestionsWithOptionsByTestId = async testId => {
   const questions = await QuestionModel.find({ test: testId })
     .sort({ order: 1 })
     .populate({
@@ -75,7 +75,7 @@ export async function getQuestionsWithOptionsByTestId(testId) {
     })
     .exec();
   return questions.map(transformDocument);
-}
+};
 
 /**
  * Обновление вопроса.
@@ -83,12 +83,12 @@ export async function getQuestionsWithOptionsByTestId(testId) {
  * @param {Object} questionData - Данные для обновления.
  * @returns {Promise<Object|null>} - Обновленный вопрос или null.
  */
-export async function updateQuestion(id, questionData) {
+export const updateQuestion = async (id, questionData) => {
   const question = await QuestionModel.findByIdAndUpdate(id, questionData, {
     new: true,
   }).exec();
   return transformDocument(question);
-}
+};
 
 /**
  * Добавление варианта ответа к вопросу.
@@ -96,14 +96,14 @@ export async function updateQuestion(id, questionData) {
  * @param {string} optionId - ID варианта ответа.
  * @returns {Promise<Object|null>} - Обновленный вопрос или null.
  */
-export async function addOptionToQuestion(questionId, optionId) {
+export const addOptionToQuestion = async (questionId, optionId) => {
   const question = await QuestionModel.findByIdAndUpdate(
     questionId,
     { $addToSet: { options: optionId } },
     { new: true }
   ).exec();
   return transformDocument(question);
-}
+};
 
 /**
  * Удаление варианта ответа из вопроса.
@@ -111,21 +111,21 @@ export async function addOptionToQuestion(questionId, optionId) {
  * @param {string} optionId - ID варианта ответа.
  * @returns {Promise<Object|null>} - Обновленный вопрос или null.
  */
-export async function removeOptionFromQuestion(questionId, optionId) {
+export const removeOptionFromQuestion = async (questionId, optionId) => {
   const question = await QuestionModel.findByIdAndUpdate(
     questionId,
     { $pull: { options: optionId } },
     { new: true }
   ).exec();
   return transformDocument(question);
-}
+};
 
 /**
  * Обновление порядка вопросов.
  * @param {Array<{id: string, order: number}>} questionsOrder - Массив с ID вопросов и их новым порядком.
  * @returns {Promise<boolean>} - Результат операции.
  */
-export async function updateQuestionsOrder(questionsOrder) {
+export const updateQuestionsOrder = async questionsOrder => {
   const bulkOps = questionsOrder.map(({ id, order }) => ({
     updateOne: {
       filter: { _id: id },
@@ -135,24 +135,24 @@ export async function updateQuestionsOrder(questionsOrder) {
 
   const result = await QuestionModel.bulkWrite(bulkOps);
   return result.modifiedCount === questionsOrder.length;
-}
+};
 
 /**
  * Удаление вопроса.
  * @param {string} id - ID вопроса.
  * @returns {Promise<boolean>} - Результат удаления.
  */
-export async function deleteQuestion(id) {
+export const deleteQuestion = async id => {
   const result = await QuestionModel.findByIdAndDelete(id).exec();
   return Boolean(result);
-}
+};
 
 /**
  * Удаление всех вопросов теста.
  * @param {string} testId - ID теста.
  * @returns {Promise<number>} - Количество удаленных вопросов.
  */
-export async function deleteQuestionsByTestId(testId) {
+export const deleteQuestionsByTestId = async testId => {
   const result = await QuestionModel.deleteMany({ test: testId }).exec();
   return result.deletedCount || 0;
-}
+};

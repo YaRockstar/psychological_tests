@@ -36,7 +36,7 @@ const handleServiceError = (error, res) => {
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function createTest(req, res) {
+export const createTest = async (req, res) => {
   logger.debug('Запрос на создание нового теста');
 
   try {
@@ -63,14 +63,14 @@ export async function createTest(req, res) {
       message: 'Ошибка при создании теста',
     });
   }
-}
+};
 
 /**
  * Получение всех тестов.
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function getAllTests(req, res) {
+export const getAllTests = async (req, res) => {
   logger.debug('Запрос на получение всех тестов');
 
   try {
@@ -85,14 +85,14 @@ export async function getAllTests(req, res) {
       message: 'Ошибка при получении тестов',
     });
   }
-}
+};
 
 /**
  * Получение публичных тестов.
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function getPublicTests(req, res) {
+export const getPublicTests = async (req, res) => {
   logger.debug('Запрос на получение публичных тестов');
 
   try {
@@ -110,14 +110,14 @@ export async function getPublicTests(req, res) {
       message: 'Ошибка при получении публичных тестов',
     });
   }
-}
+};
 
 /**
  * Получение тестов автора.
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function getAuthorTests(req, res) {
+export const getAuthorTests = async (req, res) => {
   logger.debug('Запрос на получение тестов автора');
 
   try {
@@ -141,14 +141,14 @@ export async function getAuthorTests(req, res) {
       message: 'Ошибка при получении тестов автора',
     });
   }
-}
+};
 
 /**
  * Получение теста по ID.
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function getTestById(req, res) {
+export const getTestById = async (req, res) => {
   const testId = req.params.id;
   logger.debug(`Запрос на получение теста по ID: ${testId}`);
 
@@ -176,14 +176,14 @@ export async function getTestById(req, res) {
       message: 'Ошибка при получении теста',
     });
   }
-}
+};
 
 /**
  * Обновление теста.
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function updateTest(req, res) {
+export const updateTest = async (req, res) => {
   const testId = req.params.id;
   logger.debug(`Запрос на обновление теста по ID: ${testId}`);
 
@@ -216,14 +216,14 @@ export async function updateTest(req, res) {
       message: 'Ошибка при обновлении теста',
     });
   }
-}
+};
 
 /**
  * Публикация теста.
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function publishTest(req, res) {
+export const publishTest = async (req, res) => {
   const testId = req.params.id;
   logger.debug(`Запрос на публикацию теста по ID: ${testId}`);
 
@@ -255,14 +255,14 @@ export async function publishTest(req, res) {
       message: 'Ошибка при публикации теста',
     });
   }
-}
+};
 
 /**
  * Снятие теста с публикации.
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function unpublishTest(req, res) {
+export const unpublishTest = async (req, res) => {
   const testId = req.params.id;
   logger.debug(`Запрос на снятие теста с публикации по ID: ${testId}`);
 
@@ -296,14 +296,14 @@ export async function unpublishTest(req, res) {
       message: 'Ошибка при снятии теста с публикации',
     });
   }
-}
+};
 
 /**
  * Удаление теста.
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function deleteTest(req, res) {
+export const deleteTest = async (req, res) => {
   const testId = req.params.id;
   logger.debug(`Запрос на удаление теста по ID: ${testId}`);
 
@@ -337,14 +337,14 @@ export async function deleteTest(req, res) {
       message: 'Ошибка при удалении теста',
     });
   }
-}
+};
 
 /**
  * Получение вопросов для теста.
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function getTestQuestions(req, res) {
+export const getTestQuestions = async (req, res) => {
   const testId = req.params.id;
   logger.debug(`Запрос на получение вопросов теста по ID: ${testId}`);
 
@@ -374,7 +374,7 @@ export async function getTestQuestions(req, res) {
       message: 'Ошибка при получении вопросов теста',
     });
   }
-}
+};
 
 /**
  * Получает тест с его вопросами и вариантами ответов.
@@ -387,7 +387,6 @@ export const getTestWithQuestions = async (req, res) => {
     const test = await TestService.getTestById(id);
     const questions = await QuestionService.getQuestionsByTestId(id);
 
-    // Формируем объект ответа с тестом и вопросами
     const testWithQuestions = {
       ...(test && typeof test.toObject === 'function' ? test.toObject() : test),
       questions: questions,
@@ -408,15 +407,13 @@ export const startTestAttempt = async (req, res) => {
   try {
     const { id: testId } = req.params;
     const userId = req.user._id;
-    const { groupId } = req.query; // Получаем ID группы, если пользователь проходит тест в рамках группы
+    const { groupId } = req.query;
 
-    // Если указан groupId, проверяем, проходил ли уже пользователь этот тест в рамках ЭТОЙ конкретной группы
     if (groupId) {
       logger.debug(
         `Проверка попыток для теста ${testId} пользователя ${userId} в группе ${groupId}`
       );
 
-      // Проверяем, есть ли уже завершенная попытка для этого теста в рамках данной группы
       const completedAttemptInGroup =
         await TestAttemptService.getUserCompletedAttemptInGroup(userId, testId, groupId);
 
@@ -431,7 +428,6 @@ export const startTestAttempt = async (req, res) => {
       }
     }
 
-    // Проверяем, есть ли уже активная попытка прохождения этого теста
     const userAttempts = await TestAttemptService.getUserTestAttempts(userId);
     const activeAttempt = userAttempts.find(
       attempt =>
@@ -440,20 +436,17 @@ export const startTestAttempt = async (req, res) => {
 
     let testAttempt;
     if (activeAttempt) {
-      // Если уже есть активная попытка, используем ее
       testAttempt = activeAttempt;
       logger.debug(
         `Найдена существующая попытка (id=${activeAttempt._id}) для теста ${testId} и пользователя ${userId}`
       );
     } else {
-      // Если нет активной попытки, создаем новую
       const attemptData = {
         test: testId,
         user: userId,
         startedAt: new Date(),
       };
 
-      // Если тест проходится в рамках группы, сохраняем groupId
       if (groupId) {
         attemptData.groupId = groupId;
         logger.debug(`Сохраняем groupId ${groupId} в попытке для пользователя ${userId}`);
@@ -461,7 +454,6 @@ export const startTestAttempt = async (req, res) => {
 
       testAttempt = await TestAttemptService.createTestAttempt(attemptData);
 
-      // Проверяем, сохранился ли groupId
       if (groupId && testAttempt) {
         logger.debug(
           `Проверка сохранения groupId: ${
@@ -470,7 +462,6 @@ export const startTestAttempt = async (req, res) => {
         );
       }
 
-      // Увеличиваем счетчик прохождений теста
       await TestService.incrementTestAttempts(testId);
 
       logger.debug(
@@ -489,14 +480,13 @@ export const startTestAttempt = async (req, res) => {
  * @param {Object} req - HTTP запрос.
  * @param {Object} res - HTTP ответ.
  */
-export async function getGroupTestResults(req, res) {
+export const getGroupTestResults = async (req, res) => {
   const { groupId } = req.params;
   logger.debug(`Запрос на получение результатов теста для группы ID: ${groupId}`);
 
   try {
     const userId = req.user._id;
 
-    // Проверяем, является ли пользователь автором группы
     const group = await GroupService.getGroupById(groupId);
 
     if (!group) {
@@ -511,13 +501,8 @@ export async function getGroupTestResults(req, res) {
       });
     }
 
-    // Получаем ID теста, связанного с группой
     const testId = group.testId;
-
-    // Получаем ID участников группы
     const memberIds = group.members;
-
-    // Получаем попытки прохождения теста для участников группы
     const attempts = await TestService.getGroupTestAttempts(testId, memberIds, groupId);
 
     logger.debug(`Получено ${attempts.length} результатов для группы ID: ${groupId}`);
@@ -542,4 +527,4 @@ export async function getGroupTestResults(req, res) {
       message: 'Ошибка при получении результатов теста для группы',
     });
   }
-}
+};

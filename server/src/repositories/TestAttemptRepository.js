@@ -115,11 +115,9 @@ export const getUserTestAttempts = async (userId, options = {}) => {
 
   const attempts = await query.exec();
 
-  // Трансформируем документы и добавляем название теста
   return attempts.map(attempt => {
     const transformedAttempt = transformDocument(attempt);
 
-    // Добавляем название теста напрямую в объект попытки для удобства использования на клиенте
     if (attempt.test && attempt.test.title) {
       transformedAttempt.testTitle = attempt.test.title;
     }
@@ -327,18 +325,16 @@ export const getCompletedAttemptsByTestAndUsers = async (
     )}]${groupId ? `, группы ${groupId}` : ''}`
   );
 
-  // Формируем условия запроса
   const query = {
     test: testId,
     user: { $in: userIds },
     status: 'completed',
-    result: { $exists: true }, // Должен быть установлен результат
-    completedAt: { $exists: true }, // Должно быть установлено время завершения
+    result: { $exists: true },
+    completedAt: { $exists: true },
   };
 
   console.log(`[TestAttemptRepository] Запрос в MongoDB:`, JSON.stringify(query));
 
-  // Ищем только полностью завершенные попытки с установленным результатом
   const attempts = await TestAttemptModel.find(query)
     .populate('user', 'firstName lastName email')
     .populate('result')
@@ -351,7 +347,7 @@ export const getCompletedAttemptsByTestAndUsers = async (
       },
     })
     .populate('answers.selectedOptions', 'text value')
-    .sort({ completedAt: -1 }) // Сортируем по времени завершения (новые сверху)
+    .sort({ completedAt: -1 })
     .exec();
 
   console.log(`[TestAttemptRepository] Найдено ${attempts.length} попыток`);
@@ -366,8 +362,6 @@ export const getCompletedAttemptsByTestAndUsers = async (
     });
   }
 
-  // Фильтруем попытки для групповых результатов:
-  // Берем только последнюю попытку каждого пользователя
   if (groupId) {
     const userLatestAttempts = new Map();
 
@@ -428,12 +422,10 @@ export const getAttemptAnswers = async attemptId => {
     return [];
   }
 
-  // Используем Map для отслеживания уникальных вопросов
   const uniqueQuestions = new Map();
 
   const processedAnswers = attempt.answers
     .map(answer => {
-      // Получаем тексты выбранных вариантов
       const selectedOptionsTexts = Array.isArray(answer.selectedOptions)
         ? answer.selectedOptions.map(opt => ({
             id: opt._id.toString(),
@@ -449,14 +441,12 @@ export const getAttemptAnswers = async attemptId => {
         questionText: questionText,
         questionType: answer.question?.type || 'unknown',
         selectedOptions:
-          selectedOptionsTexts.length > 0 ? selectedOptionsTexts : answer.selectedOptions, // Если не удалось получить тексты, оставляем ID
+          selectedOptionsTexts.length > 0 ? selectedOptionsTexts : answer.selectedOptions,
         textAnswer: answer.textAnswer,
         scaleValue: answer.scaleValue,
-        // Добавляем оригинальный текст вопроса для проверки дубликатов
         _originalQuestionText: questionText,
       };
     })
-    // Фильтруем только уникальные вопросы
     .filter(answer => {
       if (uniqueQuestions.has(answer._originalQuestionText)) {
         return false;
@@ -464,7 +454,6 @@ export const getAttemptAnswers = async attemptId => {
       uniqueQuestions.set(answer._originalQuestionText, true);
       return true;
     })
-    // Удаляем временное поле
     .map(answer => {
       const { _originalQuestionText, ...rest } = answer;
       return rest;
@@ -559,7 +548,6 @@ export const getCompletedAttemptsByTestUsersAndGroup = async (
 
     console.log(`[TestAttemptRepository] Найдено ${attempts.length} завершенных попыток`);
 
-    // Проверяем наличие ответов в первой попытке для диагностики
     if (attempts.length > 0) {
       const firstAttempt = attempts[0];
       console.log(
@@ -623,7 +611,6 @@ export const getCompletedAttemptsByTestAndGroup = async (testId, groupId) => {
 
     console.log(`[TestAttemptRepository] Найдено ${attempts.length} завершенных попыток`);
 
-    // Проверяем наличие ответов в первой попытке для диагностики
     if (attempts.length > 0) {
       const firstAttempt = attempts[0];
       console.log(

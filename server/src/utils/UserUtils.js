@@ -5,29 +5,25 @@ import { NotValidError } from '../errors/NotValidError.js';
  * @param {string} email - Email для проверки.
  * @returns {boolean} - Результат проверки.
  */
-export function isEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
+export const isEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 /**
  * Проверка валидности пароля.
  * @param {string} password - Пароль для проверки.
  * @returns {boolean} - Результат проверки.
  */
-export function isPassword(password) {
-  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_\-#^])[A-Za-z\d@$!%*?&_\-#^]{8,}$/.test(
+export const isPassword = password =>
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_\-#^])[A-Za-z\d@$!%*?&_\-#^]{8,}$/.test(
     password
   );
-}
 
 /**
  * Проверка, что поле не пустое.
  * @param {*} field - Поле для проверки.
  * @returns {boolean} - Результат проверки.
  */
-export function isNotEmptyField(field) {
-  return field !== undefined && field !== null && field !== '';
-}
+export const isNotEmptyField = field =>
+  field !== undefined && field !== null && field !== '';
 
 /**
  * Валидация данных пользователя.
@@ -35,7 +31,7 @@ export function isNotEmptyField(field) {
  * @param {boolean} requiresPassword - Требуется ли проверка пароля.
  * @throws {NotValidError} - Если данные невалидны.
  */
-export function validateUser(user, requiresPassword = false) {
+export const validateUser = (user, requiresPassword = false) => {
   if (requiresPassword || (user.email && user.email.trim() !== '')) {
     if (!isEmail(user.email)) {
       throw new NotValidError('Некорректный формат email');
@@ -61,14 +57,14 @@ export function validateUser(user, requiresPassword = false) {
   if (user.role && !validRoles.includes(user.role)) {
     throw new NotValidError('Некорректная роль пользователя');
   }
-}
+};
 
 /**
  * Нормализация данных пользователя от клиента для сохранения в базу.
  * @param {Object} userData - Данные пользователя от клиента.
  * @returns {Object} - Данные для сохранения в базу.
  */
-export function normalizeUserData(userData) {
+export const normalizeUserData = userData => {
   return {
     firstName: userData.firstName,
     email: userData.email,
@@ -79,7 +75,7 @@ export function normalizeUserData(userData) {
     description: userData.description || '',
     birthDate: userData.birthDate || null,
   };
-}
+};
 
 /**
  * Форматирование данных пользователя из базы для отправки клиенту.
@@ -87,7 +83,7 @@ export function normalizeUserData(userData) {
  * @param {boolean} includePassword - Включать ли пароль в ответ.
  * @returns {Object} - Данные для клиента.
  */
-export function formatUserResponse(user, includePassword = false) {
+export const formatUserResponse = (user, includePassword = false) => {
   const result = {
     id: user._id,
     firstName: user.firstName,
@@ -104,4 +100,4 @@ export function formatUserResponse(user, includePassword = false) {
   }
 
   return result;
-}
+};

@@ -12,12 +12,11 @@ import QuestionModel from '../models/QuestionModel.js';
  * @param {boolean} isCreation - Флаг создания новой попытки.
  * @throws {NotValidError} - Если данные попытки не валидны.
  */
-function validateTestAttempt(attemptData, isCreation = true) {
+const validateTestAttempt = (attemptData, isCreation = true) => {
   if (isCreation && !attemptData.test) {
     throw new NotValidError('ID теста обязателен');
   }
 
-  // Всегда используется статус 'completed'
   if (attemptData.status && attemptData.status !== 'completed') {
     throw new NotValidError('Статус должен быть "completed"');
   }
@@ -39,7 +38,7 @@ function validateTestAttempt(attemptData, isCreation = true) {
   ) {
     throw new NotValidError('Оценка должна быть числом от 1 до 5');
   }
-}
+};
 
 /**
  * Валидация ответа на вопрос.
@@ -50,11 +49,6 @@ function validateAnswer(answer) {
   if (!answer.question) {
     throw new NotValidError('ID вопроса обязателен');
   }
-
-  // В зависимости от типа вопроса может быть разная валидация
-  // Например, для вопросов типа "single" или "multiple" должны быть selectedOptions
-  // Для "scale" - scaleValue, для "text" - textAnswer
-  // Здесь можно добавить дополнительную валидацию при необходимости
 }
 
 /**
@@ -62,23 +56,20 @@ function validateAnswer(answer) {
  * @param {Object} attemptData - Данные попытки.
  * @returns {Promise<Object>} - Созданная попытка.
  */
-export async function createTestAttempt(attemptData) {
+export const createTestAttempt = async attemptData => {
   validateTestAttempt(attemptData);
 
-  // Проверяем существование теста
   const test = await TestRepository.getTestById(attemptData.test);
   if (!test) {
     throw new NotFoundError('Тест не найден');
   }
 
-  // Если есть groupId, логируем это
   if (attemptData.groupId) {
     console.log(
       `[TestAttemptService] Создание попытки с groupId: ${attemptData.groupId}`
     );
   }
 
-  // Устанавливаем начальные значения
   const newAttemptData = {
     ...attemptData,
     startedAt: new Date(),
@@ -95,11 +86,10 @@ export async function createTestAttempt(attemptData) {
 
   const createdAttempt = await TestAttemptRepository.createTestAttempt(newAttemptData);
 
-  // Увеличиваем счетчик популярности теста
   await TestRepository.incrementTestPopularity(attemptData.test);
 
   return createdAttempt;
-}
+};
 
 /**
  * Получение попытки прохождения теста по ID.
@@ -107,7 +97,7 @@ export async function createTestAttempt(attemptData) {
  * @returns {Promise<Object>} - Найденная попытка.
  * @throws {NotFoundError} - Если попытка не найдена.
  */
-export async function getTestAttemptById(id) {
+export const getTestAttemptById = async id => {
   if (!id) {
     throw new NotValidError('ID попытки не указан');
   }
@@ -118,14 +108,14 @@ export async function getTestAttemptById(id) {
   }
 
   return attempt;
-}
+};
 
 /**
  * Получение полной информации о попытке прохождения теста, включая данные о тесте и группе.
  * @param {string} attemptId - ID попытки.
  * @returns {Promise<Object>} - Полная информация о попытке.
  */
-export async function getTestAttemptWithDetails(attemptId) {
+export const getTestAttemptWithDetails = async attemptId => {
   if (!attemptId) {
     throw new NotValidError('ID попытки не указан');
   }
@@ -133,7 +123,6 @@ export async function getTestAttemptWithDetails(attemptId) {
   try {
     console.log(`[TestAttemptService] Получение попытки теста: ${attemptId}`);
 
-    // Получаем попытку с базовой информацией
     const attempt = await TestAttemptModel.findById(attemptId)
       .populate('user', 'firstName lastName email')
       .populate('test')
@@ -147,14 +136,12 @@ export async function getTestAttemptWithDetails(attemptId) {
 
     console.log(`[TestAttemptService] Загружены данные попытки ID=${attemptId}`);
 
-    // Логируем данные о тесте для отладки
     console.log(`[TestAttemptService] Данные о тесте:`, {
       _id: attempt.test?._id,
       title: attempt.test?.title,
       type: attempt.test?.type,
     });
 
-    // Получаем вопросы теста, если они есть
     if (attempt.test) {
       try {
         const questions = await QuestionModel.find({ test: attempt.test._id })
@@ -171,7 +158,6 @@ export async function getTestAttemptWithDetails(attemptId) {
       }
     }
 
-    // Для расчета времени прохождения, если нужно
     if (attempt.timeSpent && !attempt.duration) {
       console.log(
         `[TestAttemptService] Копируем timeSpent (${attempt.timeSpent}) в поле duration`
@@ -184,7 +170,7 @@ export async function getTestAttemptWithDetails(attemptId) {
     console.error(`[TestAttemptService] Ошибка при получении попытки: ${error.message}`);
     throw error;
   }
-}
+};
 
 /**
  * Проверка, является ли пользователь автором группы для данной попытки.
@@ -192,20 +178,18 @@ export async function getTestAttemptWithDetails(attemptId) {
  * @param {string} userId - ID пользователя.
  * @returns {Promise<boolean>} - Результат проверки.
  */
-export async function isGroupAuthorForAttempt(attemptId, userId) {
+export const isGroupAuthorForAttempt = async (attemptId, userId) => {
   if (!attemptId || !userId) {
     return false;
   }
 
   try {
-    // Получаем попытку
     const attempt = await TestAttemptModel.findById(attemptId);
 
     if (!attempt || !attempt.groupId) {
       return false;
     }
 
-    // Получаем информацию о группе через репозиторий
     const GroupRepository = await import('../repositories/GroupRepository.js');
     const group = await GroupRepository.getGroupById(attempt.groupId);
 
@@ -213,7 +197,6 @@ export async function isGroupAuthorForAttempt(attemptId, userId) {
       return false;
     }
 
-    // Проверяем, является ли пользователь автором группы
     return group.authorId.toString() === userId.toString();
   } catch (error) {
     console.error(
@@ -221,7 +204,7 @@ export async function isGroupAuthorForAttempt(attemptId, userId) {
     );
     return false;
   }
-}
+};
 
 /**
  * Получение попыток прохождения тестов пользователя.
@@ -229,13 +212,13 @@ export async function isGroupAuthorForAttempt(attemptId, userId) {
  * @param {Object} options - Опции запроса.
  * @returns {Promise<Array<Object>>} - Список попыток.
  */
-export async function getUserTestAttempts(userId, options = {}) {
+export const getUserTestAttempts = async (userId, options = {}) => {
   if (!userId) {
     throw new NotValidError('ID пользователя не указан');
   }
 
   return await TestAttemptRepository.getUserTestAttempts(userId, options);
-}
+};
 
 /**
  * Получение попыток прохождения конкретного теста.
@@ -243,13 +226,13 @@ export async function getUserTestAttempts(userId, options = {}) {
  * @param {Object} options - Опции запроса.
  * @returns {Promise<Array<Object>>} - Список попыток.
  */
-export async function getTestAttemptsByTestId(testId, options = {}) {
+export const getTestAttemptsByTestId = async (testId, options = {}) => {
   if (!testId) {
     throw new NotValidError('ID теста не указан');
   }
 
   return await TestAttemptRepository.getTestAttemptsByTestId(testId, options);
-}
+};
 
 /**
  * Получение попыток прохождения тестов автора.
@@ -258,7 +241,7 @@ export async function getTestAttemptsByTestId(testId, options = {}) {
  * @param {Object} options - Опции запроса.
  * @returns {Promise<Array<Object>>} - Список попыток.
  */
-export async function getAuthorTestsAttempts(authorId, testIds, options = {}) {
+export const getAuthorTestsAttempts = async (authorId, testIds, options = {}) => {
   if (!authorId) {
     throw new NotValidError('ID автора не указан');
   }
@@ -268,7 +251,7 @@ export async function getAuthorTestsAttempts(authorId, testIds, options = {}) {
   }
 
   return await TestAttemptRepository.getAuthorTestsAttempts(authorId, testIds, options);
-}
+};
 
 /**
  * Добавление ответа на вопрос к попытке прохождения теста.
@@ -276,7 +259,7 @@ export async function getAuthorTestsAttempts(authorId, testIds, options = {}) {
  * @param {Object} answer - Ответ на вопрос.
  * @returns {Promise<Object>} - Обновленная попытка.
  */
-export async function addAnswerToAttempt(attemptId, answer) {
+export const addAnswerToAttempt = async (attemptId, answer) => {
   if (!attemptId) {
     throw new NotValidError('ID попытки не указан');
   }
@@ -293,34 +276,29 @@ export async function addAnswerToAttempt(attemptId, answer) {
   }
 
   return await TestAttemptRepository.addAnswerToAttempt(attemptId, answer);
-}
+};
 
 /**
  * Вычисление результата прохождения теста.
  * @param {string} attemptId - ID попытки.
  * @returns {Promise<Object>} - Информация о результате.
  */
-export async function calculateTestResult(attemptId) {
+export const calculateTestResult = async attemptId => {
   const attempt = await TestAttemptRepository.getTestAttemptWithDetails(attemptId);
   if (!attempt) {
     throw new NotFoundError('Попытка прохождения теста не найдена');
   }
 
-  // Проверяем, есть ли ответы
   if (!attempt.answers || attempt.answers.length === 0) {
     console.log(
       `[TestAttemptService] Нет ответов для расчета результата. Используем систему приоритетов.`
     );
 
-    // Получаем все возможные результаты для этого теста
     const testResults = await ResultRepository.getResultsByTestId(attempt.test);
-
-    // Проверяем, является ли тест MBTI
     const mbtiTest = await TestRepository.getTestById(attempt.test);
     const isMBTI = mbtiTest && mbtiTest.title.match(/MBTI|Майерс-Бриггс/i);
 
     if (isMBTI) {
-      // Для MBTI при отсутствии ответов выбираем "Амбиверт"
       const ambivertResult = testResults.find(r => r.title === 'Амбиверт');
       if (ambivertResult) {
         console.log(`[TestAttemptService] Тест MBTI без ответов - выбираем "Амбиверт"`);
@@ -335,7 +313,6 @@ export async function calculateTestResult(attemptId) {
       }
     }
 
-    // Для других тестов берем результат из середины диапазона
     if (testResults.length > 0) {
       const middleResultIndex = Math.floor(testResults.length / 2);
       const middleResult = testResults[middleResultIndex];
@@ -361,14 +338,10 @@ export async function calculateTestResult(attemptId) {
   let totalScore = 0;
   const resultDetails = {};
 
-  // Вычисляем общий балл и детали результата
   for (const answer of attempt.answers) {
-    // Для вопросов с одним вариантом ответа
     if (answer.selectedOptions && answer.selectedOptions.length > 0) {
       for (const option of answer.selectedOptions) {
         totalScore += option.value || 0;
-
-        // Детали по категориям результатов (если есть)
         if (option.resultMapping && option.resultMapping.length > 0) {
           for (const mapping of option.resultMapping) {
             const resultId = mapping.result.toString();
@@ -381,15 +354,11 @@ export async function calculateTestResult(attemptId) {
       }
     }
 
-    // Для вопросов со шкалой
     if (answer.scaleValue !== undefined) {
       totalScore += answer.scaleValue || 0;
     }
-
-    // Для текстовых вопросов нет числового значения
   }
 
-  // Если нет деталей результатов по весам, инициализируем их нулями
   if (Object.keys(resultDetails).length === 0) {
     const testResults = await ResultRepository.getResultsByTestId(attempt.test);
     for (const result of testResults) {
@@ -400,13 +369,10 @@ export async function calculateTestResult(attemptId) {
     );
   }
 
-  // Находим подходящий результат теста
   let resultId = null;
 
   try {
-    // Сначала пробуем найти результат по весам в resultDetails, если они есть
     if (Object.keys(resultDetails).length > 0) {
-      // Выводим все веса для отладки
       console.log(`[TestAttemptService] Детали результатов (веса):`);
       for (const [id, weight] of Object.entries(resultDetails)) {
         const resultObj = await ResultRepository.getResultById(id);
@@ -414,11 +380,9 @@ export async function calculateTestResult(attemptId) {
         console.log(`[TestAttemptService] - ${resultTitle}: ${weight}`);
       }
 
-      // Находим результат с максимальным суммарным весом
       let maxWeight = -1;
       let maxWeightResultIds = [];
 
-      // Сначала находим максимальный вес
       for (const [id, weight] of Object.entries(resultDetails)) {
         if (weight > maxWeight) {
           maxWeight = weight;
@@ -433,9 +397,7 @@ export async function calculateTestResult(attemptId) {
         `[TestAttemptService] Количество результатов с максимальным весом: ${maxWeightResultIds.length}`
       );
 
-      // Если есть несколько результатов с одинаковым весом (включая случай, когда все веса равны нулю)
       if (maxWeightResultIds.length > 1 || maxWeight === 0) {
-        // Если максимальный вес равен нулю, значит все веса равны нулю, добавляем все результаты
         if (maxWeight === 0) {
           console.log(
             `[TestAttemptService] Все веса равны нулю, включаем все результаты`
@@ -443,7 +405,6 @@ export async function calculateTestResult(attemptId) {
           maxWeightResultIds = Object.keys(resultDetails);
         }
 
-        // Запрашиваем все результаты из базы данных
         const results = await ResultRepository.getResultsByIds(maxWeightResultIds);
         console.log(
           `[TestAttemptService] Результаты с равным весом: ${results
@@ -451,11 +412,9 @@ export async function calculateTestResult(attemptId) {
             .join(', ')}`
         );
 
-        // Если это тест MBTI и есть результаты с весами для "Амбиверт", "Интроверт" и "Экстраверт"
         const mbtiTest = await TestRepository.getTestById(attempt.test);
         if (mbtiTest && mbtiTest.title.match(/MBTI|Майерс-Бриггс/i)) {
           console.log(`[TestAttemptService] Обнаружен тест MBTI, применяем приоритеты`);
-          // Приоритеты: 1. Амбиверт, 2. Умеренный тип, 3. Экстраверт/Интроверт
           const priorityOrder = {
             Амбиверт: 1,
             'Умеренный экстраверт': 2,
@@ -464,7 +423,6 @@ export async function calculateTestResult(attemptId) {
             Интроверт: 3,
           };
 
-          // Сортируем результаты по приоритету
           results.sort((a, b) => {
             const priorityA = priorityOrder[a.title] || 10;
             const priorityB = priorityOrder[b.title] || 10;
@@ -483,7 +441,6 @@ export async function calculateTestResult(attemptId) {
             );
           }
 
-          // Берем результат с наивысшим приоритетом
           if (results.length > 0) {
             resultId = results[0]._id;
             console.log(
@@ -491,7 +448,6 @@ export async function calculateTestResult(attemptId) {
             );
           }
         } else {
-          // Для других тестов просто берем первый результат
           resultId = maxWeightResultIds[0];
           const resultObj = await ResultRepository.getResultById(resultId);
           console.log(
@@ -501,7 +457,6 @@ export async function calculateTestResult(attemptId) {
           );
         }
       } else if (maxWeightResultIds.length === 1) {
-        // Если только один результат с максимальным весом
         resultId = maxWeightResultIds[0];
         const resultObj = await ResultRepository.getResultById(resultId);
         console.log(
@@ -512,7 +467,6 @@ export async function calculateTestResult(attemptId) {
       }
     }
 
-    // Если не нашли по весам, используем классический метод по диапазону баллов
     if (!resultId) {
       const testResult = await ResultRepository.getResultByScore(
         attempt.test,
@@ -524,7 +478,6 @@ export async function calculateTestResult(attemptId) {
           `[TestAttemptService] Результат определен по диапазону баллов: ${testResult.title}`
         );
       } else {
-        // Если не смогли найти по диапазону баллов, пытаемся выбрать результат "Амбиверт" для MBTI теста
         const mbtiTest = await TestRepository.getTestById(attempt.test);
         if (mbtiTest && mbtiTest.title.match(/MBTI|Майерс-Бриггс/i)) {
           const results = await ResultRepository.getResultsByTestId(attempt.test);
@@ -542,7 +495,6 @@ export async function calculateTestResult(attemptId) {
     console.error(
       `[TestAttemptService] Ошибка при определении результата: ${error.message}`
     );
-    // Если результат не найден, оставляем resultId = null
   }
 
   return {
@@ -550,7 +502,7 @@ export async function calculateTestResult(attemptId) {
     result: resultId,
     resultDetails,
   };
-}
+};
 
 /**
  * Завершение попытки прохождения теста.
@@ -558,7 +510,7 @@ export async function calculateTestResult(attemptId) {
  * @param {Object} completionData - Данные о завершении.
  * @returns {Promise<Object>} - Обновленная попытка.
  */
-export async function completeTestAttempt(id, completionData = {}) {
+export const completeTestAttempt = async (id, completionData = {}) => {
   if (!id) {
     throw new NotValidError('ID попытки не указан');
   }
@@ -577,7 +529,6 @@ export async function completeTestAttempt(id, completionData = {}) {
     startedAt: attempt.startedAt,
   });
 
-  // Вычисляем результат, если не предоставлен
   let { score, result, resultDetails, timeSpent, rating, feedback, status, completedAt } =
     completionData;
 
@@ -589,19 +540,15 @@ export async function completeTestAttempt(id, completionData = {}) {
       resultDetails = calculatedResult.resultDetails;
     } catch (error) {
       console.log(`[TestAttemptService] Ошибка при расчете результата: ${error.message}`);
-      // Если не удалось рассчитать результат, просто продолжаем без него
     }
   }
 
-  // Вычисляем время прохождения, если не предоставлено
   if (timeSpent === undefined) {
     const now = new Date();
     const startTime = new Date(attempt.startedAt);
-    let calculatedTime = Math.floor((now - startTime) / 1000); // в секундах
+    let calculatedTime = Math.floor((now - startTime) / 1000);
 
-    // Ограничиваем максимальное время прохождения 2 часами (7200 секунд)
-    // Если время больше, считаем что пользователь был неактивен
-    const MAX_TEST_TIME = 7200; // 2 часа в секундах
+    const MAX_TEST_TIME = 7200;
 
     if (calculatedTime > MAX_TEST_TIME) {
       console.log(
@@ -612,8 +559,7 @@ export async function completeTestAttempt(id, completionData = {}) {
 
     timeSpent = calculatedTime;
   } else {
-    // Если время предоставлено извне, тоже проверяем на максимальное значение
-    const MAX_TEST_TIME = 7200; // 2 часа в секундах
+    const MAX_TEST_TIME = 7200;
     if (timeSpent > MAX_TEST_TIME) {
       console.log(
         `[TestAttemptService] Предоставленное время прохождения слишком большое: ${timeSpent} сек. Ограничено до ${MAX_TEST_TIME} сек.`
@@ -622,7 +568,6 @@ export async function completeTestAttempt(id, completionData = {}) {
     }
   }
 
-  // Устанавливаем статус и дату завершения, если не предоставлены
   if (!status) {
     status = 'completed';
   }
@@ -637,7 +582,6 @@ export async function completeTestAttempt(id, completionData = {}) {
     timeSpent,
   });
 
-  // Обновляем рейтинг теста, если указан
   if (rating !== undefined) {
     await TestRepository.updateTestRating(attempt.test, rating);
   }
@@ -660,14 +604,14 @@ export async function completeTestAttempt(id, completionData = {}) {
   });
 
   return updatedAttempt;
-}
+};
 
 /**
  * Прерывание попытки прохождения теста.
  * @param {string} id - ID попытки.
  * @returns {Promise<Object>} - Обновленная попытка.
  */
-export async function abandonTestAttempt(id) {
+export const abandonTestAttempt = async id => {
   if (!id) {
     throw new NotValidError('ID попытки не указан');
   }
@@ -682,14 +626,14 @@ export async function abandonTestAttempt(id) {
   }
 
   return await TestAttemptRepository.abandonTestAttempt(id);
-}
+};
 
 /**
  * Удаление попытки прохождения теста.
  * @param {string} id - ID попытки.
  * @returns {Promise<boolean>} - Результат удаления.
  */
-export async function deleteTestAttempt(id) {
+export const deleteTestAttempt = async id => {
   if (!id) {
     throw new NotValidError('ID попытки не указан');
   }
@@ -700,14 +644,14 @@ export async function deleteTestAttempt(id) {
   }
 
   return await TestAttemptRepository.deleteTestAttempt(id);
-}
+};
 
 /**
  * Полное удаление попытки прохождения теста вместе с ответами.
  * @param {string} id - ID попытки.
  * @returns {Promise<boolean>} - Результат удаления.
  */
-export async function deleteTestAttemptWithAnswers(id) {
+export const deleteTestAttemptWithAnswers = async id => {
   if (!id) {
     throw new NotValidError('ID попытки не указан');
   }
@@ -723,22 +667,20 @@ export async function deleteTestAttemptWithAnswers(id) {
     } ответами`
   );
 
-  // Удаляем попытку полностью (ответы удаляются автоматически, так как они хранятся в массиве answers)
   return await TestAttemptRepository.deleteTestAttempt(id);
-}
+};
 
 /**
  * Удаление всех попыток прохождения тестов пользователя.
  * @param {string} userId - ID пользователя.
  * @returns {Promise<Object>} - Результат операции.
  */
-export async function clearUserTestAttempts(userId) {
+export const clearUserTestAttempts = async userId => {
   if (!userId) {
     throw new NotValidError('ID пользователя не указан');
   }
 
   try {
-    // Удаляем все попытки прохождения тестов пользователя
     const result = await TestAttemptModel.deleteMany({ user: userId });
 
     console.log(`[TestAttemptService] Очищена история тестов пользователя ${userId}`);
@@ -753,14 +695,14 @@ export async function clearUserTestAttempts(userId) {
     console.error(`[TestAttemptService] Ошибка при очистке истории: ${error.message}`);
     throw error;
   }
-}
+};
 
 /**
  * Получение детальной информации об ответах на вопросы в попытке.
  * @param {string} attemptId - ID попытки.
  * @returns {Promise<Array<Object>>} - Список ответов с детальной информацией.
  */
-export async function getAttemptAnswersWithDetails(attemptId) {
+export const getAttemptAnswersWithDetails = async attemptId => {
   if (!attemptId) {
     throw new NotValidError('ID попытки не указан');
   }
@@ -784,7 +726,7 @@ export async function getAttemptAnswersWithDetails(attemptId) {
     console.error(`[TestAttemptService] Ошибка при получении ответов: ${error.message}`);
     throw error;
   }
-}
+};
 
 /**
  * Проверка завершенной попытки пользователя для теста в рамках конкретной группы.
@@ -793,7 +735,7 @@ export async function getAttemptAnswersWithDetails(attemptId) {
  * @param {string} groupId - ID группы.
  * @returns {Promise<Object|null>} - Найденная попытка или null.
  */
-export async function getUserCompletedAttemptInGroup(userId, testId, groupId) {
+export const getUserCompletedAttemptInGroup = async (userId, testId, groupId) => {
   if (!userId) {
     throw new NotValidError('ID пользователя не указан');
   }
@@ -811,7 +753,7 @@ export async function getUserCompletedAttemptInGroup(userId, testId, groupId) {
     testId,
     groupId
   );
-}
+};
 
 /**
  * Получает завершенные попытки теста для указанных пользователей и группы
@@ -820,7 +762,7 @@ export async function getUserCompletedAttemptInGroup(userId, testId, groupId) {
  * @param {string} groupId ID группы
  * @returns {Promise<Array>} Массив попыток
  */
-export async function getCompletedAttemptsByTestAndUsers(testId, userIds, groupId) {
+export const getCompletedAttemptsByTestAndUsers = async (testId, userIds, groupId) => {
   console.log(
     `[TestAttemptService] Получение завершенных попыток теста ${testId} для ${userIds.length} пользователей в группе ${groupId}`
   );
@@ -833,13 +775,12 @@ export async function getCompletedAttemptsByTestAndUsers(testId, userIds, groupI
     );
 
     console.log(`[TestAttemptService] Найдено ${attempts.length} завершенных попыток`);
-
     return attempts;
   } catch (error) {
     console.error(`[TestAttemptService] Ошибка при получении попыток: ${error.message}`);
     throw error;
   }
-}
+};
 
 /**
  * Получает все завершенные попытки теста в группе
@@ -847,7 +788,7 @@ export async function getCompletedAttemptsByTestAndUsers(testId, userIds, groupI
  * @param {string} groupId ID группы
  * @returns {Promise<Array>} Массив попыток
  */
-export async function getCompletedAttemptsByTestAndGroup(testId, groupId) {
+export const getCompletedAttemptsByTestAndGroup = async (testId, groupId) => {
   console.log(
     `[TestAttemptService] Получение всех завершенных попыток теста ${testId} в группе ${groupId}`
   );
@@ -859,10 +800,9 @@ export async function getCompletedAttemptsByTestAndGroup(testId, groupId) {
     );
 
     console.log(`[TestAttemptService] Найдено ${attempts.length} завершенных попыток`);
-
     return attempts;
   } catch (error) {
     console.error(`[TestAttemptService] Ошибка при получении попыток: ${error.message}`);
     throw error;
   }
-}
+};
