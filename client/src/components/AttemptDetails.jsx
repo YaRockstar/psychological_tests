@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, Navigate, useNavigate } from 'react-router-dom';
+import { useParams, Navigate, useNavigate } from 'react-router-dom';
 import { testAPI, userAPI } from '../utils/api';
 
-function AttemptDetails() {
+const AttemptDetails = () => {
   const { attemptId } = useParams();
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
@@ -20,19 +20,12 @@ function AttemptDetails() {
 
     setIsLoggedIn(true);
 
-    // Проверяем авторизацию пользователя и загружаем данные
     const fetchData = async () => {
       try {
-        // Получаем информацию о пользователе для проверки авторизации
         await userAPI.getCurrentUser();
 
-        // Загружаем данные о попытке для всех пользователей
         try {
           await loadAttemptDetails();
-
-          // Если мы дошли сюда и загрузка попытки успешна, то доступ разрешен
-          // Контроллер на сервере сам проверит доступ - является ли пользователь
-          // автором теста, автором группы или владельцем попытки
         } catch (err) {
           console.error('Ошибка при загрузке деталей попытки:', err);
           setError(err.response?.data?.message || 'Ошибка при загрузке деталей попытки');
@@ -54,16 +47,13 @@ function AttemptDetails() {
     fetchData();
   }, [attemptId]);
 
-  // Загрузка данных о попытке прохождения теста
   const loadAttemptDetails = async () => {
     try {
-      // Сначала пробуем загрузить как обычный пользователь
       let response;
       try {
         response = await testAPI.getTestAttemptById(attemptId);
         console.log('Успешно загружены данные попытки для пользователя');
       } catch (error) {
-        // Если не получилось, пробуем загрузить как автор
         console.log(
           'Попытка загрузить как пользователь не удалась, пробуем как автор',
           error.message
@@ -78,16 +68,14 @@ function AttemptDetails() {
       console.error('Ошибка при загрузке деталей попытки:', err);
       setError(err.response?.data?.message || 'Ошибка при загрузке деталей попытки');
       setLoading(false);
-      throw err; // Перебрасываем ошибку для обработки в fetchData
+      throw err;
     }
   };
 
-  // Если пользователь не авторизован, перенаправляем на страницу входа
   if (!isLoggedIn) {
     return <Navigate to="/login" />;
   }
 
-  // Если данные загружаются, показываем индикатор загрузки
   if (loading) {
     return (
       <div className="flex justify-center items-center py-10">
@@ -96,7 +84,6 @@ function AttemptDetails() {
     );
   }
 
-  // Если произошла ошибка, показываем сообщение об ошибке
   if (error) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -131,7 +118,6 @@ function AttemptDetails() {
     );
   }
 
-  // Если попытка не найдена
   if (!attempt) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -166,7 +152,6 @@ function AttemptDetails() {
           Детали прохождения теста
         </h1>
 
-        {/* Информация о пользователе */}
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-2">
             Информация о пользователе
@@ -183,7 +168,6 @@ function AttemptDetails() {
           </p>
         </div>
 
-        {/* Информация о прохождении */}
         <div className="mb-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-2">
             Информация о прохождении
@@ -211,7 +195,6 @@ function AttemptDetails() {
           </p>
         </div>
 
-        {/* Ответы на вопросы */}
         <div>
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Ответы на вопросы</h2>
 
@@ -254,6 +237,6 @@ function AttemptDetails() {
       </div>
     </div>
   );
-}
+};
 
 export default AttemptDetails;

@@ -2,21 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { userAPI } from '../utils/api';
 
-function Navbar() {
+const Navbar = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState('');
   const [userRole, setUserRole] = useState('');
   const location = useLocation();
 
-  // Проверяем авторизацию пользователя при загрузке страницы и смене роута
   useEffect(() => {
-    // Проверяем наличие токена
     const token = localStorage.getItem('token');
 
     if (token) {
       setIsLoggedIn(true);
 
-      // Сначала пробуем загрузить данные из localStorage
       const userData = localStorage.getItem('userData');
       if (userData) {
         try {
@@ -31,7 +28,6 @@ function Navbar() {
         }
       }
 
-      // Функция для загрузки данных пользователя с сервера
       const loadUserData = async () => {
         try {
           const response = await userAPI.getCurrentUser();
@@ -40,7 +36,6 @@ function Navbar() {
           setUserName(user.firstName || '');
           setUserRole(user.role || '');
 
-          // Сохраняем данные в localStorage для ускорения загрузки в будущем
           localStorage.setItem(
             'userData',
             JSON.stringify({
@@ -51,7 +46,6 @@ function Navbar() {
         } catch (error) {
           console.error('Ошибка при получении данных пользователя:', error);
           if (error.response && error.response.status === 401) {
-            // Если токен недействителен, удаляем его
             localStorage.removeItem('token');
             localStorage.removeItem('userData');
             setIsLoggedIn(false);
@@ -61,14 +55,13 @@ function Navbar() {
         }
       };
 
-      // Затем загружаем актуальные данные с сервера
       loadUserData();
     } else {
       setIsLoggedIn(false);
       setUserName('');
       setUserRole('');
     }
-  }, [location.pathname]); // Обновляем при изменении пути
+  }, [location.pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -86,7 +79,6 @@ function Navbar() {
           <Link to="/home" className="text-2xl font-bold text-indigo-600">
             PsyTests
           </Link>
-          {/* Ссылки для авторов */}
           {isLoggedIn && userRole === 'author' && (
             <>
               <Link
@@ -103,7 +95,6 @@ function Navbar() {
               </Link>
             </>
           )}
-          {/* Ссылка на все тесты доступна только не-авторам */}
           {(!isLoggedIn || userRole !== 'author') && (
             <Link
               to="/tests"
@@ -112,7 +103,6 @@ function Navbar() {
               Все тесты
             </Link>
           )}
-          {/* История тестов доступна только авторизованным не-авторам */}
           {isLoggedIn && userRole !== 'author' && (
             <Link
               to="/tests/history"
@@ -178,6 +168,6 @@ function Navbar() {
       </div>
     </nav>
   );
-}
+};
 
 export default Navbar;

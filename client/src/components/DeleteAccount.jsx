@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { userAPI } from '../utils/api';
 
-function DeleteAccount() {
+const DeleteAccount = () => {
   const [isConfirming, setIsConfirming] = useState(false);
   const [error, setError] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -23,7 +23,6 @@ function DeleteAccount() {
 
       await userAPI.deleteAccount();
 
-      // После успешного удаления - выход
       localStorage.removeItem('token');
       localStorage.removeItem('userData');
       window.location.href = '/';
@@ -97,6 +96,6 @@ function DeleteAccount() {
       )}
     </div>
   );
-}
+};
 
 export default DeleteAccount;

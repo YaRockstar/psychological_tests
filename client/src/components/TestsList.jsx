@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { testAPI, userAPI } from '../utils/api';
 
-function TestsList() {
+const TestsList = () => {
   const [tests, setTests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -183,7 +183,6 @@ function TestsList() {
         </div>
       </div>
 
-      {/* Сообщение об ошибке */}
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
           <p className="font-bold">Ошибка!</p>
@@ -191,7 +190,6 @@ function TestsList() {
         </div>
       )}
 
-      {/* Индикатор загрузки */}
       {loading ? (
         <div className="text-center py-10">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600"></div>
@@ -260,6 +258,6 @@ function TestsList() {
       )}
     </div>
   );
-}
+};
 
 export default TestsList;

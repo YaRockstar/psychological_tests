@@ -2,7 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Принудительно отключаем автоматическую темную тему для всего документа */
 html {
   color-scheme: light !important;
   background-color: #ffffff !important;
@@ -14,7 +13,6 @@ html {
   line-height: 1.5;
   font-weight: 400;
 
-  /* Принудительно устанавливаем светлую тему */
   color-scheme: light !important;
   color: #213547 !important;
   background-color: #ffffff !important;
@@ -40,7 +38,6 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
-  /* Принудительно устанавливаем светлый фон для body */
   background-color: #ffffff !important;
   color: #213547 !important;
 }
@@ -70,21 +67,6 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-/* Дополнительные правила для предотвращения влияния темной темы */
 * {
   color-scheme: light !important;
 }
-
-/* Убираем медиа-запрос для темной темы */
-/* @media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
-} */

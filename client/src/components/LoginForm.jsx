@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authAPI } from '../utils/api';
 
-function LoginForm() {
+const LoginForm = () => {
   const [credentials, setCredentials] = useState({
     email: '',
     password: '',
@@ -150,6 +150,6 @@ function LoginForm() {
       </div>
     </div>
   );
-}
+};
 
 export default LoginForm;

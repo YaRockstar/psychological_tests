@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
 import { groupAPI, userAPI } from '../utils/api';
 
-function JoinGroup() {
+const JoinGroup = () => {
   const { inviteCode } = useParams();
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('token'));
@@ -12,17 +12,14 @@ function JoinGroup() {
   const [group, setGroup] = useState(null);
 
   useEffect(() => {
-    // Проверяем авторизацию
     const token = localStorage.getItem('token');
     if (!token) {
       setIsAuthenticated(false);
       return;
     }
 
-    // Получаем информацию о пользователе и присоединяемся к группе
     const fetchUserDataAndJoinGroup = async () => {
       try {
-        // Проверяем данные пользователя в localStorage
         const userData = localStorage.getItem('userData');
         if (userData) {
           try {
@@ -32,16 +29,13 @@ function JoinGroup() {
           }
         }
 
-        // Проверяем авторизацию на сервере
         await userAPI.getCurrentUser();
 
-        // Если код приглашения указан, пытаемся получить информацию о группе
         if (inviteCode) {
           try {
             const groupResponse = await groupAPI.getGroupByInviteCode(inviteCode);
             setGroup(groupResponse.data);
 
-            // Автоматически присоединяемся к группе
             await joinGroup();
           } catch (error) {
             setError(
@@ -66,7 +60,6 @@ function JoinGroup() {
       }
     };
 
-    // Присоединение к группе
     const joinGroup = async () => {
       try {
         await groupAPI.joinGroup(inviteCode);
@@ -81,13 +74,11 @@ function JoinGroup() {
     fetchUserDataAndJoinGroup();
   }, [inviteCode]);
 
-  // Если пользователь не авторизован, сохраняем код приглашения и перенаправляем на вход
   if (!isAuthenticated) {
     localStorage.setItem('pendingInviteCode', inviteCode);
     return <Navigate to="/login" />;
   }
 
-  // Обработка перехода на главную страницу
   const handleGoHome = () => {
     navigate('/home');
   };
@@ -174,6 +165,6 @@ function JoinGroup() {
       </div>
     </div>
   );
-}
+};
 
 export default JoinGroup;

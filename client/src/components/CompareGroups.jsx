@@ -13,7 +13,6 @@ import {
 } from 'chart.js';
 import { Pie, Bar } from 'react-chartjs-2';
 
-// Регистрируем необходимые компоненты Chart.js
 ChartJS.register(
   ArcElement,
   Tooltip,
@@ -24,7 +23,7 @@ ChartJS.register(
   Title
 );
 
-function CompareGroups() {
+const CompareGroups = () => {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [comparing, setComparing] = useState(false);
@@ -86,7 +85,6 @@ function CompareGroups() {
     checkAuthAndLoadData();
   }, []);
 
-  // Загружаем сохраненные результаты сравнений
   const fetchComparisonResults = async (showResultsPage = true) => {
     try {
       setLoading(true);
@@ -105,7 +103,6 @@ function CompareGroups() {
     }
   };
 
-  // Обработчик удаления одного результата сравнения
   const handleDeleteResult = async resultId => {
     if (!resultId) return;
 
@@ -116,7 +113,6 @@ function CompareGroups() {
 
       await groupAPI.deleteComparisonResult(resultId);
 
-      // Обновляем список результатов
       const updatedResults = comparisonResults.filter(result => result._id !== resultId);
       setComparisonResults(updatedResults);
 
@@ -129,7 +125,6 @@ function CompareGroups() {
     }
   };
 
-  // Обработчик удаления всех результатов сравнения
   const handleDeleteAllResults = async () => {
     if (comparisonResults.length === 0) return;
 
@@ -148,7 +143,6 @@ function CompareGroups() {
 
       await groupAPI.deleteAllComparisonResults();
 
-      // Очищаем список результатов
       setComparisonResults([]);
 
       setSuccessMessage('Все результаты сравнения успешно удалены');
@@ -160,7 +154,6 @@ function CompareGroups() {
     }
   };
 
-  // Обработчик сравнения групп
   const handleCompareGroups = async () => {
     if (!selectedGroup1 || !selectedGroup2) {
       setError('Необходимо выбрать две группы для сравнения');
@@ -181,7 +174,6 @@ function CompareGroups() {
       const response = await groupAPI.compareGroups(selectedGroup1, selectedGroup2);
       console.log('Результат сравнения групп:', response.data);
 
-      // Проверяем, что получили корректные данные
       if (!response.data) {
         console.error('Получен пустой ответ от сервера');
         setError('Получен пустой ответ от сервера. Пожалуйста, повторите попытку.');
@@ -205,24 +197,20 @@ function CompareGroups() {
       setCurrentResult(response.data);
       setSuccessMessage('Сравнение групп успешно выполнено');
 
-      // Обновляем список результатов сравнений в фоновом режиме без переключения на них
       try {
         const resultsResponse = await groupAPI.getGroupComparisonResults();
         setComparisonResults(resultsResponse.data);
       } catch (error) {
         console.error('Ошибка при обновлении списка результатов:', error);
-        // Не показываем ошибку пользователю, так как основная операция сравнения успешна
       }
 
       setComparing(false);
     } catch (error) {
       console.error('Ошибка при сравнении групп:', error);
 
-      // Детализированная обработка ошибок
       let errorMessage = 'Не удалось выполнить сравнение групп';
 
       if (error.response) {
-        // Получаем более подробную информацию об ошибке
         const responseData = error.response.data;
         console.log('Детали ошибки:', responseData);
 
@@ -238,7 +226,6 @@ function CompareGroups() {
           console.error('Ошибка на сервере:', responseData.error);
         }
 
-        // Специальное сообщение для ошибки с undefined
         if (
           errorMessage.includes('Cannot read properties of undefined') ||
           errorMessage.includes('toString')
@@ -248,7 +235,6 @@ function CompareGroups() {
         }
       }
 
-      // Показываем пользователю специальное сообщение об ошибке статистического анализа
       if (
         errorMessage.includes('статистическом анализе') ||
         errorMessage.includes('недостаточно данных') ||
@@ -263,7 +249,6 @@ function CompareGroups() {
     }
   };
 
-  // Проверка возможности сравнить группы
   const canCompareGroups = (group1Id, group2Id) => {
     if (!group1Id || !group2Id || group1Id === group2Id) {
       return false;
@@ -278,29 +263,24 @@ function CompareGroups() {
       group1.testId === group2.testId &&
       group1.members &&
       group2.members &&
-      // Критерий хи-квадрат не требует равных размеров выборок
       group1.members.length > 0 &&
       group2.members.length > 0
     );
   };
 
-  // Получение информации о группе
   const getGroupInfo = groupId => {
     return groups.find(g => g._id === groupId) || {};
   };
 
-  // Вспомогательная функция для определения цвета в зависимости от значимости
   const getSignificanceColor = isSignificant => {
     return isSignificant ? 'text-red-600' : 'text-green-600';
   };
 
-  // Компонент для отображения круговой диаграммы
   const PieChartView = ({ table, group1Name, group2Name, groupIndex }) => {
     if (!table || Object.keys(table).length === 0) {
       return <p className="text-gray-500 italic">Нет данных для диаграммы</p>;
     }
 
-    // Формируем данные для диаграммы
     const labels = Object.keys(table);
     const data = {
       labels,
@@ -359,13 +339,11 @@ function CompareGroups() {
     );
   };
 
-  // Компонент для отображения столбчатой диаграммы сравнения
   const BarChartView = ({ table, group1Name, group2Name }) => {
     if (!table || Object.keys(table).length === 0) {
       return <p className="text-gray-500 italic">Нет данных для диаграммы</p>;
     }
 
-    // Формируем данные для диаграммы
     const labels = Object.keys(table);
     const data = {
       labels,
@@ -422,7 +400,6 @@ function CompareGroups() {
     );
   };
 
-  // Вспомогательная функция для отображения таблицы сопряженности
   const renderContingencyTable = (table, group1Name, group2Name) => {
     if (!table || Object.keys(table).length === 0) {
       return <p className="text-gray-500 italic">Нет данных для отображения</p>;
@@ -467,7 +444,6 @@ function CompareGroups() {
                 </tr>
               );
             })}
-            {/* Строка с итогами */}
             <tr className="bg-gray-100">
               <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
                 Всего
@@ -491,23 +467,20 @@ function CompareGroups() {
     );
   };
 
-  // Компонент для отображения подробной информации о вопросе
   const QuestionDetails = ({
     question,
     group1Name,
     group2Name,
     viewMode: externalViewMode,
   }) => {
-    const [internalViewMode, setViewMode] = useState('table'); // 'table', 'pie', 'bar'
+    const [internalViewMode, setViewMode] = useState('table');
 
-    // Используем внешний режим отображения, если он предоставлен, иначе используем внутренний
     const currentViewMode = externalViewMode || internalViewMode;
 
     return (
       <div className="border border-gray-200 rounded-md p-4 mb-4">
         <h3 className="font-medium text-lg mb-2">{question.questionText}</h3>
 
-        {/* Показываем уведомление, если недостаточно данных для анализа */}
         {question.insufficientData && (
           <div className="mb-4 p-3 bg-yellow-50 border border-yellow-100 rounded-md text-yellow-700">
             <div className="flex items-start">
@@ -571,7 +544,6 @@ function CompareGroups() {
           </div>
         </div>
         <div className="mb-3">
-          {/* Отображаем переключатель только если не передан внешний режим отображения */}
           {!externalViewMode && (
             <div className="flex justify-between items-center mb-2">
               <p className="font-medium">Распределение ответов:</p>
@@ -610,7 +582,6 @@ function CompareGroups() {
             </div>
           )}
 
-          {/* Отображаем распределение ответов, даже если недостаточно данных для статистического анализа */}
           {currentViewMode === 'table' &&
             renderContingencyTable(question.contingencyTable, group1Name, group2Name)}
           {currentViewMode === 'bar' && (
@@ -657,12 +628,9 @@ function CompareGroups() {
     );
   };
 
-  // Компонент для отображения значений хи-квадрат по вопросам
   const ChiSquareChartView = ({ questionResults }) => {
-    // Фильтруем вопросы с недостаточными данными
     const validQuestions = questionResults.filter(q => !q.insufficientData);
 
-    // Если нет вопросов с достаточными данными для анализа, показываем сообщение
     if (validQuestions.length === 0) {
       return (
         <div className="bg-yellow-50 border border-yellow-100 rounded-md p-4 text-yellow-700">
@@ -672,13 +640,9 @@ function CompareGroups() {
       );
     }
 
-    // Создаем копию массива и сортируем по значению хи-квадрат
     const sortedQuestions = [...validQuestions].sort((a, b) => b.chiSquare - a.chiSquare);
-
-    // Возьмем только топ-10 вопросов для лучшей читаемости
     const topQuestions = sortedQuestions.slice(0, 10);
 
-    // Сократим длинные тексты вопросов
     const shortenText = (text, maxLength = 30) => {
       if (text.length <= maxLength) return text;
       return text.substring(0, maxLength) + '...';
@@ -704,7 +668,7 @@ function CompareGroups() {
     };
 
     const options = {
-      indexAxis: 'y', // Горизонтальная диаграмма для лучшей читаемости
+      indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
@@ -758,13 +722,10 @@ function CompareGroups() {
    */
   const SavedResultDetails = ({ result }) => {
     const [expanded, setExpanded] = useState(false);
-    const [viewMode, setViewMode] = useState('table'); // 'table' или 'chart'
-    const [chartType, setChartType] = useState('bar'); // 'bar' или 'pie'
+    const [viewMode, setViewMode] = useState('table');
+    const [chartType, setChartType] = useState('bar');
 
-    // Проверяем, есть ли детальные результаты
     const hasDetails = result.questionResults && result.questionResults.length > 0;
-
-    // Определяем текущий режим отображения для передачи в QuestionDetails
     const currentViewMode = viewMode === 'chart' ? chartType : viewMode;
 
     return (
@@ -783,7 +744,6 @@ function CompareGroups() {
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-medium text-lg">Детальные результаты сравнения</h3>
 
-                  {/* Переключатель режима отображения */}
                   <div className="flex bg-gray-100 rounded-lg p-1">
                     <button
                       onClick={() => setViewMode('table')}
@@ -808,7 +768,6 @@ function CompareGroups() {
                   </div>
                 </div>
 
-                {/* Переключатель типа графика, если выбран режим графиков */}
                 {viewMode === 'chart' && (
                   <div className="flex justify-end mb-3">
                     <div className="flex bg-gray-100 rounded-lg p-1">
@@ -836,7 +795,6 @@ function CompareGroups() {
                   </div>
                 )}
 
-                {/* Топ вопросов по значению хи-квадрат */}
                 <div className="mb-6">
                   <h4 className="font-medium mb-2">
                     {result.questionResults.filter(q => !q.insufficientData).length > 0
@@ -846,7 +804,6 @@ function CompareGroups() {
                   <ChiSquareChartView questionResults={result.questionResults} />
                 </div>
 
-                {/* Результаты по каждому вопросу */}
                 <div className="space-y-6">
                   <h4 className="font-medium mb-2">
                     Результаты по всем вопросам ({result.questionResults.length}) в
@@ -876,17 +833,14 @@ function CompareGroups() {
     );
   };
 
-  // Если пользователь не авторизован, перенаправляем на страницу входа
   if (!isAuthenticated && !loading) {
     return <Navigate to="/login" />;
   }
 
-  // Если пользователь не автор, перенаправляем на домашнюю страницу
   if (userRole === 'user' && !loading) {
     return <Navigate to="/home" />;
   }
 
-  // Если данные все еще загружаются, показываем индикатор загрузки
   if (loading && !comparing) {
     return (
       <div className="flex justify-center items-center py-10">
@@ -915,7 +869,6 @@ function CompareGroups() {
         </div>
       </div>
 
-      {/* Сообщение об ошибке */}
       {error && (
         <div className="bg-red-100 border-l-4 border-red-400 p-4 mb-4">
           <div className="flex">
@@ -940,7 +893,6 @@ function CompareGroups() {
         </div>
       )}
 
-      {/* Сообщение об успешном действии */}
       {successMessage && (
         <div className="bg-green-100 border-l-4 border-green-400 p-4 mb-4">
           <div className="flex">
@@ -966,7 +918,6 @@ function CompareGroups() {
       )}
 
       {showResults ? (
-        // Отображение списка результатов сравнений
         <div className="bg-white shadow-md rounded-md p-6 mb-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold">История сравнений групп</h2>
@@ -1002,7 +953,6 @@ function CompareGroups() {
                   key={result._id}
                   className="border border-gray-200 rounded-md p-4 relative"
                 >
-                  {/* Кнопка удаления для отдельного результата */}
                   <button
                     onClick={() => handleDeleteResult(result._id)}
                     className="absolute top-2 right-2 text-gray-500 hover:text-red-500"
@@ -1038,7 +988,6 @@ function CompareGroups() {
                     <p>{result.testName}</p>
                   </div>
 
-                  {/* Отображение информации о малых выборках в списке результатов */}
                   {result.isSmallSample && (
                     <div className="mb-3">
                       <p className="font-medium text-amber-700">
@@ -1055,7 +1004,6 @@ function CompareGroups() {
                     Дата сравнения: {new Date(result.createdAt).toLocaleString()}
                   </div>
 
-                  {/* Кнопка для развертывания детальных результатов */}
                   <SavedResultDetails result={result} />
                 </div>
               ))}
@@ -1063,7 +1011,6 @@ function CompareGroups() {
           )}
         </div>
       ) : (
-        // Интерфейс сравнения групп
         <>
           <div className="bg-white shadow-md rounded-md p-6 mb-6">
             <div className="mb-4">
@@ -1146,7 +1093,6 @@ function CompareGroups() {
               )}
           </div>
 
-          {/* Отображение текущего результата сравнения */}
           {currentResult && (
             <div className="bg-white shadow-md rounded-md p-6">
               <h2 className="text-lg font-semibold mb-4">Результат сравнения</h2>
@@ -1180,7 +1126,6 @@ function CompareGroups() {
                   "Детальный анализ вопросов" ниже.
                 </p>
 
-                {/* Отображение информации о малых выборках */}
                 {currentResult.isSmallSample && (
                   <p className="mt-1 text-amber-700">
                     <span className="font-medium">Примечание о малой выборке:</span>{' '}
@@ -1190,7 +1135,6 @@ function CompareGroups() {
                 )}
               </div>
 
-              {/* Удаляем визуализацию общего результата и общую диаграмму, оставляем только ChiSquareChartView */}
               {currentResult.questionResults &&
                 currentResult.questionResults.length > 0 && (
                   <div className="mb-4">
@@ -1224,7 +1168,6 @@ function CompareGroups() {
                 </p>
               </div>
 
-              {/* Добавляем новую секцию для детального анализа вопросов */}
               <div className="mt-6 border-t pt-4">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-semibold text-lg">Детальный анализ вопросов</h3>
@@ -1290,6 +1233,6 @@ function CompareGroups() {
       )}
     </div>
   );
-}
+};
 
 export default CompareGroups;

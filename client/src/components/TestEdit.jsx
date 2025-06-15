@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { testAPI, resultAPI, questionAPI } from '../utils/api';
 
-function TestEdit() {
+const TestEdit = () => {
   const { testId } = useParams();
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(true);
@@ -26,7 +26,6 @@ function TestEdit() {
   const [questions, setQuestions] = useState([]);
   const [results, setResults] = useState([]);
 
-  // Состояния для формы создания вопроса
   const [showQuestionForm, setShowQuestionForm] = useState(false);
   const [isEditingQuestion, setIsEditingQuestion] = useState(false);
   const [editingQuestionId, setEditingQuestionId] = useState(null);
@@ -41,7 +40,6 @@ function TestEdit() {
     isRequired: true,
   });
 
-  // Состояния для формы создания результата
   const [showResultForm, setShowResultForm] = useState(false);
   const [isEditingResult, setIsEditingResult] = useState(false);
   const [editingResultId, setEditingResultId] = useState(null);
@@ -53,16 +51,13 @@ function TestEdit() {
     order: 1,
   });
 
-  // Проверка доступа и загрузка данных
   useEffect(() => {
-    // Проверяем авторизацию
     const token = localStorage.getItem('token');
     if (!token) {
       setIsAuthenticated(false);
       return;
     }
 
-    // Проверяем роль пользователя
     const userData = localStorage.getItem('userData');
     if (userData) {
       try {
@@ -73,23 +68,18 @@ function TestEdit() {
         } else {
           setIsAuthor(true);
 
-          // Загрузка данных теста
           const loadTestData = async () => {
             setIsLoading(true);
             try {
-              // Получаем данные теста
               const testResponse = await testAPI.getTestById(testId);
               const testWithQuestions = await testAPI.getTestWithQuestions(testId);
 
-              // Устанавливаем данные теста
               setTestData(testResponse.data);
 
-              // Устанавливаем вопросы и результаты
               if (testWithQuestions.data.questions) {
                 setQuestions(testWithQuestions.data.questions);
               }
 
-              // Получаем результаты теста
               const resultsResponse = await resultAPI.getResultsByTestId(testId);
               if (resultsResponse.data) {
                 setResults(resultsResponse.data);
@@ -114,7 +104,6 @@ function TestEdit() {
     }
   }, [testId]);
 
-  // Обработчики изменения данных теста
   const handleInputChange = e => {
     const { name, value } = e.target;
     setTestData({ ...testData, [name]: value });
@@ -138,7 +127,6 @@ function TestEdit() {
     setTestData({ ...testData, tags });
   };
 
-  // Обработчики формы создания вопроса
   const handleQuestionChange = e => {
     const { name, value } = e.target;
     setNewQuestion(prev => ({ ...prev, [name]: value }));
@@ -162,7 +150,6 @@ function TestEdit() {
     setNewQuestion(prev => ({ ...prev, options: updatedOptions }));
   };
 
-  // Функция для начала редактирования вопроса
   const startEditingQuestion = question => {
     setEditingQuestionId(question._id);
     setIsEditingQuestion(true);
@@ -183,7 +170,6 @@ function TestEdit() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Функция отмены редактирования вопроса
   const cancelQuestionEdit = () => {
     setShowQuestionForm(false);
     setIsEditingQuestion(false);
@@ -200,21 +186,17 @@ function TestEdit() {
     });
   };
 
-  // Обновление вопроса
   const updateQuestion = async e => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
     try {
-      // Обновляем существующий вопрос
       await questionAPI.updateQuestion(editingQuestionId, newQuestion);
 
-      // Получаем обновленный список вопросов
       const questionsResponse = await testAPI.getTestQuestions(testId);
       setQuestions(questionsResponse.data || []);
 
-      // Сбрасываем форму
       cancelQuestionEdit();
       setSuccess('Вопрос успешно обновлен!');
     } catch (error) {
@@ -227,9 +209,7 @@ function TestEdit() {
     }
   };
 
-  // Удаление вопроса
   const deleteQuestion = async questionId => {
-    // Запрашиваем подтверждение перед удалением
     if (
       !window.confirm(
         'Вы уверены, что хотите удалить этот вопрос? Это действие невозможно отменить.'
@@ -242,10 +222,8 @@ function TestEdit() {
     setError('');
 
     try {
-      // Удаляем вопрос через API
       await questionAPI.deleteQuestion(questionId);
 
-      // Получаем обновленный список вопросов
       const questionsResponse = await testAPI.getTestQuestions(testId);
       setQuestions(questionsResponse.data || []);
 
@@ -260,27 +238,22 @@ function TestEdit() {
     }
   };
 
-  // Создание нового вопроса
   const submitQuestion = async e => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
     try {
-      // Подготовка данных вопроса для отправки
       const questionData = {
         ...newQuestion,
         test: testId,
       };
 
-      // Создаем вопрос через API
       await questionAPI.createQuestion(questionData);
 
-      // Получаем обновленный список вопросов
       const questionsResponse = await testAPI.getTestQuestions(testId);
       setQuestions(questionsResponse.data || []);
 
-      // Сбрасываем форму
       setShowQuestionForm(false);
       setNewQuestion({
         text: '',
@@ -303,7 +276,6 @@ function TestEdit() {
     }
   };
 
-  // Функция для начала редактирования результата
   const startEditingResult = result => {
     setEditingResultId(result._id);
     setIsEditingResult(true);
@@ -318,7 +290,6 @@ function TestEdit() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Функция отмены редактирования результата
   const cancelResultEdit = () => {
     setShowResultForm(false);
     setIsEditingResult(false);
@@ -332,7 +303,6 @@ function TestEdit() {
     });
   };
 
-  // Обработчики формы создания результата
   const handleResultChange = e => {
     const { name, value } = e.target;
     const processedValue =
@@ -342,21 +312,15 @@ function TestEdit() {
     setNewResult(prev => ({ ...prev, [name]: processedValue }));
   };
 
-  // Обновление результата
   const updateResult = async e => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
     try {
-      // Обновляем существующий результат
       await resultAPI.updateResult(editingResultId, { ...newResult, test: testId });
-
-      // Получаем обновленный список результатов
       const resultsResponse = await resultAPI.getResultsByTestId(testId);
       setResults(resultsResponse.data || []);
-
-      // Сбрасываем форму
       cancelResultEdit();
       setSuccess('Результат успешно обновлен!');
     } catch (error) {
@@ -369,9 +333,7 @@ function TestEdit() {
     }
   };
 
-  // Удаление результата
   const deleteResult = async resultId => {
-    // Запрашиваем подтверждение перед удалением
     if (
       !window.confirm(
         'Вы уверены, что хотите удалить этот результат? Это действие невозможно отменить.'
@@ -384,10 +346,7 @@ function TestEdit() {
     setError('');
 
     try {
-      // Удаляем результат через API
       await resultAPI.deleteResult(resultId);
-
-      // Получаем обновленный список результатов
       const resultsResponse = await resultAPI.getResultsByTestId(testId);
       setResults(resultsResponse.data || []);
 
@@ -408,20 +367,15 @@ function TestEdit() {
     setError('');
 
     try {
-      // Подготовка данных результата для отправки
       const resultData = {
         ...newResult,
         test: testId,
       };
 
-      // Создаем результат через API
       await resultAPI.createResult(resultData);
-
-      // Получаем обновленный список результатов
       const resultsResponse = await resultAPI.getResultsByTestId(testId);
       setResults(resultsResponse.data || []);
 
-      // Сбрасываем форму
       setShowResultForm(false);
       setNewResult({
         title: '',
@@ -441,7 +395,6 @@ function TestEdit() {
     }
   };
 
-  // Сохранение данных теста
   const handleSaveTest = async e => {
     e.preventDefault();
     setIsLoading(true);
@@ -462,7 +415,6 @@ function TestEdit() {
     }
   };
 
-  // Публикация/снятие с публикации теста
   const handleTogglePublish = async () => {
     setIsLoading(true);
     setError('');
@@ -486,7 +438,6 @@ function TestEdit() {
     }
   };
 
-  // Удаление теста
   const handleDeleteTest = async () => {
     if (
       !window.confirm(
@@ -501,7 +452,7 @@ function TestEdit() {
 
     try {
       await testAPI.deleteTest(testId);
-      navigate('/profile'); // Перенаправляем на профиль после удаления
+      navigate('/profile');
     } catch (error) {
       if (error.response && error.response.data) {
         setError(error.response.data.message || 'Произошла ошибка при удалении теста');
@@ -553,7 +504,6 @@ function TestEdit() {
         </div>
       )}
 
-      {/* Навигация по вкладкам */}
       <div className="flex flex-wrap mb-6 border-b border-gray-200">
         <button
           className={`px-4 py-2 font-medium ${
@@ -781,7 +731,6 @@ function TestEdit() {
         </form>
       )}
 
-      {/* Вкладка с вопросами */}
       {activeTab === 'questions' && (
         <div className="bg-white p-6 rounded-lg shadow-md">
           <div className="flex justify-between items-center mb-4">
@@ -794,7 +743,6 @@ function TestEdit() {
             </button>
           </div>
 
-          {/* Форма добавления/редактирования вопроса */}
           {showQuestionForm && (
             <div className="mb-6 p-4 border rounded-lg bg-gray-50">
               <h3 className="text-lg font-medium mb-3">
@@ -958,7 +906,6 @@ function TestEdit() {
         </div>
       )}
 
-      {/* Вкладка с результатами */}
       {activeTab === 'results' && (
         <div className="bg-white p-6 rounded-lg shadow-md">
           <div className="flex justify-between items-center mb-4">
@@ -971,7 +918,6 @@ function TestEdit() {
             </button>
           </div>
 
-          {/* Форма добавления результата */}
           {showResultForm && (
             <div className="mb-6 p-4 border rounded-lg bg-gray-50">
               <h3 className="text-lg font-medium mb-3">
@@ -1121,6 +1067,6 @@ function TestEdit() {
       )}
     </div>
   );
-}
+};
 
 export default TestEdit;

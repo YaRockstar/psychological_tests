@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { groupAPI, userAPI, testAPI } from '../utils/api';
 
-function UserGroups() {
+const UserGroups = () => {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -13,7 +13,6 @@ function UserGroups() {
   const [groupTests, setGroupTests] = useState({});
   const [userAttempts, setUserAttempts] = useState({});
 
-  // Загружаем группы пользователя
   const fetchUserGroups = useCallback(async () => {
     try {
       setLoading(true);
@@ -21,27 +20,23 @@ function UserGroups() {
       const groupsData = response.data;
       setGroups(groupsData);
 
-      // Загружаем информацию об авторах групп
       const authorIds = [...new Set(groupsData.map(group => group.authorId))];
       await fetchAuthorsInfo(authorIds);
 
-      // Загружаем информацию о тестах групп
       const testIds = [...new Set(groupsData.map(group => group.testId).filter(Boolean))];
       await fetchTestsInfo(testIds);
 
-      // Проверяем попытки пользователя для каждой группы
       await checkUserAttemptsForGroups(groupsData);
 
       setLoading(false);
     } catch (error) {
-      console.error('Ошибка при загрузке групп:', error);
+      console.error(error);
       setError('Не удалось загрузить группы. Пожалуйста, попробуйте позже.');
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    // Проверяем авторизацию
     const token = localStorage.getItem('token');
     if (!token) {
       setIsLoggedIn(false);
@@ -51,11 +46,9 @@ function UserGroups() {
 
     setIsLoggedIn(true);
 
-    // Загружаем группы пользователя
     fetchUserGroups();
   }, [fetchUserGroups]);
 
-  // Загружаем информацию об авторах
   const fetchAuthorsInfo = async authorIds => {
     try {
       const authorsData = {};
@@ -75,11 +68,10 @@ function UserGroups() {
       console.log('Загруженные данные авторов:', authorsData);
       setAuthors(authorsData);
     } catch (error) {
-      console.error('Ошибка при загрузке данных авторов:', error);
+      console.error(error);
     }
   };
 
-  // Загружаем информацию о тестах
   const fetchTestsInfo = async testIds => {
     try {
       const testsData = {};
@@ -99,11 +91,10 @@ function UserGroups() {
       console.log('Загруженные данные тестов:', testsData);
       setGroupTests(testsData);
     } catch (error) {
-      console.error('Ошибка при загрузке данных тестов:', error);
+      console.error(error);
     }
   };
 
-  // Проверяем попытки пользователя для групп
   const checkUserAttemptsForGroups = async groupsData => {
     try {
       const attemptsData = {};
@@ -128,17 +119,15 @@ function UserGroups() {
       console.log('Загруженные данные попыток:', attemptsData);
       setUserAttempts(attemptsData);
     } catch (error) {
-      console.error('Ошибка при проверке попыток пользователя:', error);
+      console.error(error);
     }
   };
 
-  // Получение состояния попытки для группы
   const getUserAttemptForGroup = (testId, groupId) => {
     const key = `${testId}_${groupId}`;
     return userAttempts[key] || { hasAttempt: false };
   };
 
-  // Получение имени автора по ID
   const getAuthorName = authorId => {
     if (!authorId) return 'Неизвестный автор';
 
@@ -146,7 +135,6 @@ function UserGroups() {
     const author = authors[authorId];
     if (!author) return 'Загрузка...';
 
-    // Проверяем различные поля, которые могут содержать имя
     return (
       author.firstName ||
       author.name ||
@@ -156,13 +144,11 @@ function UserGroups() {
     );
   };
 
-  // Получение теста по ID
   const getTest = testId => {
     if (!testId) return null;
     return groupTests[testId] || null;
   };
 
-  // Обработчик присоединения к группе
   const handleJoinGroup = async e => {
     e.preventDefault();
     if (!inviteCode.trim()) {
@@ -174,7 +160,6 @@ function UserGroups() {
       setLoading(true);
       await groupAPI.joinGroup(inviteCode);
 
-      // Перезагружаем список групп
       await fetchUserGroups();
 
       setInviteCode('');
@@ -183,13 +168,12 @@ function UserGroups() {
 
       setLoading(false);
     } catch (error) {
-      console.error('Ошибка при присоединении к группе:', error);
+      console.error(error);
       setError(error.response?.data?.message || 'Не удалось присоединиться к группе');
       setLoading(false);
     }
   };
 
-  // Обработчик выхода из группы
   const handleLeaveGroup = async (groupId, groupName) => {
     if (!window.confirm(`Вы уверены, что хотите выйти из группы "${groupName}"?`)) {
       return;
@@ -199,20 +183,18 @@ function UserGroups() {
       setLoading(true);
       await groupAPI.leaveGroup(groupId);
 
-      // Удаляем группу из списка групп пользователя
       setGroups(prevGroups => prevGroups.filter(group => group._id !== groupId));
 
       setSuccessMessage(`Вы успешно вышли из группы "${groupName}"`);
       setTimeout(() => setSuccessMessage(''), 3000);
       setLoading(false);
     } catch (error) {
-      console.error('Ошибка при выходе из группы:', error);
+      console.error(error);
       setError(error.response?.data?.message || 'Не удалось выйти из группы');
       setLoading(false);
     }
   };
 
-  // Если пользователь не авторизован, перенаправляем на страницу входа
   if (!isLoggedIn) {
     return <Navigate to="/login" />;
   }
@@ -223,7 +205,6 @@ function UserGroups() {
         <h1 className="text-2xl font-bold text-gray-900">Мои группы</h1>
       </div>
 
-      {/* Сообщение об ошибке */}
       {error && (
         <div className="bg-red-100 border-l-4 border-red-400 p-4 mb-4">
           <div className="flex">
@@ -248,7 +229,6 @@ function UserGroups() {
         </div>
       )}
 
-      {/* Сообщение об успешном действии */}
       {successMessage && (
         <div className="bg-green-100 border-l-4 border-green-400 p-4 mb-4">
           <div className="flex">
@@ -273,7 +253,6 @@ function UserGroups() {
         </div>
       )}
 
-      {/* Форма для ввода кода приглашения */}
       <div className="mb-8 bg-white shadow-md rounded-md p-6">
         <h2 className="text-lg font-semibold mb-4">Присоединиться к группе</h2>
         <form onSubmit={handleJoinGroup} className="flex flex-col space-y-4">
@@ -308,7 +287,6 @@ function UserGroups() {
         </form>
       </div>
 
-      {/* Список групп */}
       <h2 className="text-xl font-semibold mb-4">Группы, в которых вы состоите</h2>
 
       {loading ? (
@@ -335,7 +313,6 @@ function UserGroups() {
                   {group.description || 'Нет описания'}
                 </p>
 
-                {/* Блок с информацией о связанном тесте */}
                 {group.testId && (
                   <div className="bg-indigo-50 p-4 rounded-md mb-4">
                     <h3 className="font-medium text-indigo-700 mb-2">Связанный тест:</h3>
@@ -439,6 +416,6 @@ function UserGroups() {
       )}
     </div>
   );
-}
+};
 
 export default UserGroups;

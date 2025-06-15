@@ -69,7 +69,6 @@ export const testAPI = {
   getTestWithQuestions: id => api.get(`/api/tests/${id}/details`),
   getTestQuestions: id => api.get(`/api/tests/${id}/questions`),
 
-  // Методы для прохождения тестов
   startTestAttempt: (testId, groupId) =>
     api.post(`/api/tests/${testId}/attempt`, {}, { params: groupId ? { groupId } : {} }),
   saveTestAnswer: (attemptId, answerData) =>
@@ -78,7 +77,6 @@ export const testAPI = {
     api.post(`/api/test-attempts/${attemptId}/complete`, data),
   abandonTestAttempt: attemptId => api.post(`/api/test-attempts/${attemptId}/abandon`),
 
-  // Методы для получения результатов
   getTestAttempts: () => api.get('/api/test-attempts'),
   getUserTestAttempts: () => api.get('/api/test-attempts'),
   getTestAttemptById: attemptId => api.get(`/api/test-attempts/${attemptId}`),
@@ -88,20 +86,16 @@ export const testAPI = {
   getTestResultsByTestId: testId => api.get(`/api/results/test/${testId}`),
   getGroupTestResults: groupId => api.get(`/api/tests/group/${groupId}/results`),
 
-  // Очистка истории тестов
   clearUserTestHistory: () => api.delete('/api/test-attempts/user/history'),
 
-  // Проверка, проходил ли пользователь тест в конкретной группе
   checkUserAttemptInGroup: (testId, groupId) =>
     api.get(`/api/test-attempts/check-group/${testId}/${groupId}`),
 
-  // Полное удаление попытки с ответами
   deleteTestAttemptWithAnswers: attemptId =>
     api.delete(`/api/test-attempts/${attemptId}/with-answers`),
 };
 
 export const groupAPI = {
-  // Методы для авторов тестов
   createGroup: groupData => api.post('/api/groups', groupData),
   getAuthorGroups: () => api.get('/api/groups/my'),
   updateGroup: (groupId, groupData) => api.put(`/api/groups/${groupId}`, groupData),
@@ -110,7 +104,6 @@ export const groupAPI = {
   removeUserFromGroup: (groupId, userId) =>
     api.delete(`/api/groups/${groupId}/users/${userId}`),
 
-  // Сравнение групп
   compareGroups: (group1Id, group2Id) => {
     console.log(`Отправка запроса на сравнение групп: ${group1Id} и ${group2Id}`);
     return api
@@ -134,7 +127,6 @@ export const groupAPI = {
   deleteAllComparisonResults: () =>
     api.delete('/api/group-comparisons/comparison-results'),
 
-  // Методы для пользователей
   getUserGroups: () => api.get('/api/groups/joined'),
   getGroupById: groupId => api.get(`/api/groups/${groupId}`),
   getGroupByInviteCode: inviteCode => api.get(`/api/groups/by-code/${inviteCode}`),

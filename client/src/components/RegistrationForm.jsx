@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { authAPI } from '../utils/api';
 
-function RegistrationForm() {
+const RegistrationForm = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -282,6 +282,6 @@ function RegistrationForm() {
       </div>
     </div>
   );
-}
+};
 
 export default RegistrationForm;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { userAPI } from '../utils/api';
 
-function ProfileEdit() {
+const ProfileEdit = () => {
   const [userData, setUserData] = useState({
     firstName: '',
     lastName: '',
@@ -20,7 +20,6 @@ function ProfileEdit() {
       try {
         setIsLoading(true);
 
-        // Пробуем сначала получить данные из localStorage для быстрого отображения
         const userFromStorage = localStorage.getItem('userData');
         if (userFromStorage) {
           try {
@@ -39,7 +38,6 @@ function ProfileEdit() {
           }
         }
 
-        // Затем делаем запрос к API для получения актуальных данных
         const response = await userAPI.getCurrentUser();
         const user = response.data;
 
@@ -54,8 +52,6 @@ function ProfileEdit() {
           setErrors({});
         }
       } catch {
-        // Если не удалось загрузить данные с сервера, но есть данные из localStorage,
-        // не показываем ошибку, т.к. у нас уже есть данные для отображения
         const hasLocalData = localStorage.getItem('userData');
         if (!hasLocalData) {
           setErrors({ general: 'Ошибка при загрузке данных пользователя' });
@@ -112,11 +108,8 @@ function ProfileEdit() {
       };
 
       const response = await userAPI.updateProfile(dataToUpdate);
-
-      // Получаем обновленные данные пользователя из ответа сервера
       const updatedUser = response.data;
 
-      // Обновляем данные пользователя в localStorage
       const userFromStorage = JSON.parse(localStorage.getItem('userData') || '{}');
       const newUserData = {
         ...userFromStorage,
@@ -254,6 +247,6 @@ function ProfileEdit() {
       </form>
     </div>
   );
-}
+};
 
 export default ProfileEdit;

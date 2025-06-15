@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { testAPI, userAPI } from '../utils/api';
 
-function AuthorTests() {
+const AuthorTests = () => {
   const [tests, setTests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -30,7 +30,7 @@ function AuthorTests() {
           localStorage.setItem('userData', JSON.stringify(userData));
         }
       } catch (error) {
-        console.error('Ошибка при получении данных пользователя:', error);
+        console.error(error);
         if (error.response && error.response.status === 401) {
           setIsAuthenticated(false);
         } else {
@@ -52,7 +52,7 @@ function AuthorTests() {
         const response = await testAPI.getAuthorTests();
         setTests(response.data);
       } catch (error) {
-        console.error('Ошибка при загрузке тестов автора:', error);
+        console.error(error);
         setError('Не удалось загрузить тесты');
         if (error.response && error.response.status === 401) {
           setIsAuthenticated(false);
@@ -85,7 +85,7 @@ function AuthorTests() {
       const response = await testAPI.getAuthorTests();
       setTests(response.data);
     } catch (error) {
-      console.error('Ошибка при изменении статуса публикации:', error);
+      console.error(error);
       alert('Не удалось изменить статус публикации теста');
     }
   };
@@ -99,7 +99,7 @@ function AuthorTests() {
       await testAPI.deleteTest(testId);
       setTests(tests.filter(test => test._id !== testId));
     } catch (error) {
-      console.error('Ошибка при удалении теста:', error);
+      console.error(error);
       alert('Не удалось удалить тест');
     }
   };
@@ -271,6 +271,6 @@ function AuthorTests() {
       )}
     </div>
   );
-}
+};
 
 export default AuthorTests;

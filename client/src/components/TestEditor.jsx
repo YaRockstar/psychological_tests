@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import { testAPI, userAPI } from '../utils/api';
 
-function TestEditor() {
+const TestEditor = () => {
   const { id } = useParams();
   const [test, setTest] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -608,6 +608,6 @@ function TestEditor() {
       )}
     </div>
   );
-}
+};
 
 export default TestEditor;

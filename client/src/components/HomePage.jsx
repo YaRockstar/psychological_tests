@@ -64,46 +64,7 @@ const HomePage = () => {
       return test.imageUrl;
     }
 
-    const defaultImages = {
-      personality: [
-        'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1517841905240-472988babdf9?ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1522556189639-b150ed9c4330?ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3',
-      ],
-      iq: [
-        'https://images.unsplash.com/photo-1456406644174-8ddd4cd52a06?ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1509228468518-180dd4864904?ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1544134242-1e8403022e9f?ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1532153955177-f59af40d6472?ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1501504905252-473c47e087f8?ixlib=rb-4.0.3',
-      ],
-      emotional: [
-        'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1531747118685-ca8fa6e08806?ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1531983412531-1f49a365ffed?ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1535295972055-1c762f4483e5?ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1517677129300-07b130802f46?ixlib=rb-4.0.3',
-      ],
-      aptitude: [
-        'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1501139083538-0139583c060f?ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1580894732930-0babd100d356?ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1497493292307-31c376b6e479?ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1519689680058-324335c77eba?ixlib=rb-4.0.3',
-      ],
-      career: [
-        'https://images.unsplash.com/photo-1553272725-086100aecf5e?ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1551836022-d5d88e9218df?ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1507679799987-c73779587ccf?ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?ixlib=rb-4.0.3',
-        'https://images.unsplash.com/photo-1560179707-f14e90ef3623?ixlib=rb-4.0.3',
-      ],
-    };
-
-    // Выбираем случайную картинку из массива для данного типа теста
-    const imagesForType = defaultImages[test.testType] || [
+    const imagesForType = [
       'https://images.unsplash.com/photo-1580894742597-87bc8789db3d?ixlib=rb-4.0.3',
       'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?ixlib=rb-4.0.3',
       'https://images.unsplash.com/photo-1579546929662-711aa81148cf?ixlib=rb-4.0.3',
@@ -111,7 +72,6 @@ const HomePage = () => {
       'https://images.unsplash.com/photo-1520262454473-a1a82276a574?ixlib=rb-4.0.3',
     ];
 
-    // Используем id теста для детерминированного выбора картинки
     const testIdSum = test._id
       .split('')
       .reduce((sum, char) => sum + char.charCodeAt(0), 0);

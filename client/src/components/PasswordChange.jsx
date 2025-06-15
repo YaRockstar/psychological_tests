@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { userAPI } from '../utils/api';
 import { useNavigate } from 'react-router-dom';
 
-function PasswordChange() {
+const PasswordChange = () => {
   const navigate = useNavigate();
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -21,7 +21,6 @@ function PasswordChange() {
       setErrors({ ...errors, [name]: '' });
     }
 
-    // Сбрасываем сообщение об успехе при любом изменении
     if (successMessage) {
       setSuccessMessage('');
     }
@@ -47,7 +46,6 @@ function PasswordChange() {
       }
     }
 
-    // Проверка на совпадение текущего и нового пароля
     if (passwordData.currentPassword === passwordData.newPassword) {
       newErrors.newPassword = 'Новый пароль должен отличаться от текущего';
     }
@@ -76,7 +74,6 @@ function PasswordChange() {
         newPassword: passwordData.newPassword,
       });
 
-      // Очищаем форму после успешного обновления
       setPasswordData({
         currentPassword: '',
         newPassword: '',
@@ -85,7 +82,6 @@ function PasswordChange() {
 
       setSuccessMessage('Пароль успешно изменен');
 
-      // Перенаправление на профиль через 2 секунды после успешной смены пароля
       setTimeout(() => {
         navigate('/profile');
       }, 2000);
@@ -190,6 +186,6 @@ function PasswordChange() {
       </form>
     </div>
   );
-}
+};
 
 export default PasswordChange;

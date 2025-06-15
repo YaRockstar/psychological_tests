@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { groupAPI, testAPI, userAPI } from '../utils/api';
 
-function CreateGroup() {
+const CreateGroup = () => {
   const [groupName, setGroupName] = useState('');
   const [groupDescription, setGroupDescription] = useState('');
   const [selectedTest, setSelectedTest] = useState('');
@@ -14,7 +14,6 @@ function CreateGroup() {
   const [userRole, setUserRole] = useState(null);
 
   useEffect(() => {
-    // Проверка аутентификации и загрузка данных
     const checkAuthAndLoadData = async () => {
       try {
         const token = localStorage.getItem('token');
@@ -25,11 +24,9 @@ function CreateGroup() {
           return;
         }
 
-        // Получаем данные о текущем пользователе с сервера
         const response = await userAPI.getCurrentUser();
         const user = response.data;
 
-        // Проверяем роль пользователя
         if (user.role !== 'author') {
           setUserRole('user');
           setLoading(false);
@@ -38,15 +35,13 @@ function CreateGroup() {
 
         setUserRole('author');
 
-        // Загружаем тесты автора
         const testsResponse = await testAPI.getAuthorTests();
         setTests(testsResponse.data);
 
         setLoading(false);
       } catch (error) {
-        console.error('Ошибка при проверке авторизации:', error);
+        console.error(error);
 
-        // Если ошибка авторизации, сбрасываем состояние
         if (error.response && error.response.status === 401) {
           localStorage.removeItem('token');
           localStorage.removeItem('userData');
@@ -62,7 +57,6 @@ function CreateGroup() {
     checkAuthAndLoadData();
   }, []);
 
-  // Обработчик создания группы
   const handleCreateGroup = async e => {
     e.preventDefault();
 
@@ -88,28 +82,24 @@ function CreateGroup() {
 
       setLoading(false);
     } catch (error) {
-      console.error('Ошибка при создании группы:', error);
+      console.error(error);
       setError(error.response?.data?.message || 'Не удалось создать группу');
       setLoading(false);
     }
   };
 
-  // Если пользователь не авторизован, перенаправляем на страницу входа
   if (!isAuthenticated && !loading) {
     return <Navigate to="/login" />;
   }
 
-  // Если пользователь не автор, перенаправляем на домашнюю страницу
   if (userRole === 'user' && !loading) {
     return <Navigate to="/home" />;
   }
 
-  // Если группа успешно создана, перенаправляем на страницу групп
   if (success) {
     return <Navigate to="/groups" />;
   }
 
-  // Если данные все еще загружаются, показываем индикатор загрузки
   if (loading) {
     return (
       <div className="flex justify-center items-center py-10">
@@ -130,7 +120,6 @@ function CreateGroup() {
         </Link>
       </div>
 
-      {/* Сообщение об ошибке */}
       {error && (
         <div className="bg-red-100 border-l-4 border-red-400 p-4 mb-4">
           <div className="flex">
@@ -229,6 +218,6 @@ function CreateGroup() {
       </div>
     </div>
   );
-}
+};
 
 export default CreateGroup;

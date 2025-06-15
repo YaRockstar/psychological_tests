@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link, Navigate } from 'react-router-dom';
 import { testAPI, userAPI } from '../utils/api';
 
-function TestResults() {
+const TestResults = () => {
   const { attemptId } = useParams();
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(true);
@@ -20,10 +20,8 @@ function TestResults() {
       return;
     }
 
-    // Проверяем роль пользователя
     const checkUserRole = async () => {
       try {
-        // Сначала пытаемся получить роль из localStorage
         const userData = localStorage.getItem('userData');
         if (userData) {
           try {
@@ -31,18 +29,16 @@ function TestResults() {
             if (parsedData.role === 'author') {
               setUserRole('author');
               setLoading(false);
-              return; // Выходим из функции, если пользователь - автор
+              return;
             }
-          } catch {
-            // Игнорируем ошибки парсинга
+          } catch (error) {
+            console.log(error);
           }
         }
 
-        // Затем проверяем на сервере
         const response = await userAPI.getCurrentUser();
         setUserRole(response.data.role || '');
 
-        // Если пользователь не автор, загружаем результаты
         if (response.data.role !== 'author') {
           await loadResults();
         } else {
@@ -62,14 +58,12 @@ function TestResults() {
       try {
         setLoading(true);
 
-        // ID попытки из URL или из localStorage
         let currentAttemptId = attemptId;
         const lastAttemptId = localStorage.getItem('lastTestAttemptId');
         const lastTestId = localStorage.getItem('lastTestId');
         const lastTestTitle = localStorage.getItem('lastTestTitle');
         const lastTestType = localStorage.getItem('lastTestType');
 
-        // Если есть сохраненная информация о тесте, используем её как запасной вариант
         if (lastTestTitle && lastTestId) {
           setTest({
             _id: lastTestId,
@@ -79,11 +73,9 @@ function TestResults() {
         }
 
         try {
-          // Сначала пробуем загрузить попытку из URL
           const attemptResponse = await testAPI.getTestAttemptById(currentAttemptId);
           setTestAttempt(attemptResponse.data);
 
-          // Загружаем данные о тесте
           if (attemptResponse.data.test) {
             const testId =
               typeof attemptResponse.data.test === 'object'
@@ -93,28 +85,23 @@ function TestResults() {
             const testResponse = await testAPI.getTestById(testId);
             setTest(testResponse.data);
           } else if (lastTestId) {
-            // Если в попытке нет ID теста, используем сохраненный
             const testResponse = await testAPI.getTestById(lastTestId);
             setTest(testResponse.data);
           }
 
-          // Получаем результат
           if (attemptResponse.data.result) {
             setResult(attemptResponse.data.result);
           }
         } catch (initialError) {
-          // Если ошибка доступа и есть сохраненная попытка, пробуем использовать её
           if (
             initialError.response &&
             initialError.response.status === 403 &&
             lastAttemptId
           ) {
             try {
-              // Пробуем загрузить последнюю сохраненную попытку
               const lastAttemptResponse = await testAPI.getTestAttemptById(lastAttemptId);
               setTestAttempt(lastAttemptResponse.data);
 
-              // Загружаем данные о тесте
               if (lastAttemptResponse.data.test) {
                 const testId =
                   typeof lastAttemptResponse.data.test === 'object'
@@ -124,23 +111,19 @@ function TestResults() {
                 const testResponse = await testAPI.getTestById(testId);
                 setTest(testResponse.data);
               } else if (lastTestId) {
-                // Если в попытке нет ID теста, используем сохраненный
                 const testResponse = await testAPI.getTestById(lastTestId);
                 setTest(testResponse.data);
               }
 
-              // Получаем результат
               if (lastAttemptResponse.data.result) {
                 setResult(lastAttemptResponse.data.result);
               }
             } catch {
-              // Прекращаем загрузку если у нас уже есть базовые данные о тесте из localStorage
               if (lastTestTitle) {
                 setLoading(false);
                 return;
               }
 
-              // Если и с последней попыткой проблема, напрямую пробуем загрузить тест
               if (lastTestId) {
                 try {
                   const testResponse = await testAPI.getTestById(lastTestId);
@@ -150,17 +133,14 @@ function TestResults() {
                 }
               }
 
-              // Продолжаем поиск любой доступной попытки
               try {
                 const attemptsResponse = await testAPI.getTestAttempts();
                 const attempts = attemptsResponse.data || [];
 
                 if (attempts.length > 0) {
-                  // Берем первую доступную попытку
                   const attempt = attempts[0];
                   setTestAttempt(attempt);
 
-                  // Загружаем данные о тесте
                   if (attempt.test) {
                     const testId =
                       typeof attempt.test === 'object' ? attempt.test._id : attempt.test;
@@ -169,7 +149,6 @@ function TestResults() {
                     setTest(testResponse.data);
                   }
 
-                  // Получаем результат
                   if (attempt.result) {
                     setResult(attempt.result);
                   }
@@ -183,10 +162,7 @@ function TestResults() {
               }
             }
           } else {
-            // Другая ошибка, не связанная с доступом
-            // Если у нас есть данные из localStorage, используем их
             if (lastTestTitle) {
-              // Создаем минимальный объект попытки
               setTestAttempt({
                 status: 'in-progress',
                 totalQuestions: 0,
@@ -217,7 +193,6 @@ function TestResults() {
     checkUserRole();
   }, [attemptId]);
 
-  // Форматирование даты
   const formatDate = dateString => {
     const date = new Date(dateString);
     return date.toLocaleString('ru-RU', {
@@ -229,7 +204,6 @@ function TestResults() {
     });
   };
 
-  // Форматирование времени прохождения
   const formatDuration = seconds => {
     if (!seconds) return 'Н/Д';
 
@@ -244,12 +218,10 @@ function TestResults() {
     }
   };
 
-  // Если пользователь не авторизован, перенаправляем на страницу входа
   if (!isAuthenticated) {
     return <Navigate to="/login" />;
   }
 
-  // Если пользователь - автор, перенаправляем на главную страницу
   if (userRole === 'author') {
     return <Navigate to="/home" />;
   }
@@ -342,7 +314,6 @@ function TestResults() {
                   : 'В процессе'}
               </p>
             </div>
-            {/* Показываем правильные ответы только для тестов не являющихся personality */}
             {(!test || test.testType !== 'personality') && (
               <div>
                 <p className="text-sm text-gray-500">Правильных ответов:</p>
@@ -370,7 +341,6 @@ function TestResults() {
           </div>
         )}
 
-        {/* Ответы на вопросы */}
         {testAttempt.answers && testAttempt.answers.length > 0 && (
           <div className="p-6 border-t border-gray-200">
             <h3 className="text-xl font-semibold text-center mb-4">Ваши ответы</h3>
@@ -432,6 +402,6 @@ function TestResults() {
       </div>
     </div>
   );
-}
+};
 
 export default TestResults;

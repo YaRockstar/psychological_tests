@@ -22,7 +22,7 @@ import AttemptDetails from './components/AttemptDetails';
 import CreateGroup from './components/CreateGroup';
 import CompareGroups from './components/CompareGroups';
 
-function App() {
+const App = () => {
   return (
     <Router>
       <Routes>
@@ -186,6 +186,6 @@ function App() {
       </Routes>
     </Router>
   );
-}
+};
 
 export default App;

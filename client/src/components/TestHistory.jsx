@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { testAPI, userAPI } from '../utils/api';
 
-function TestHistory() {
+const TestHistory = () => {
   const [testAttempts, setTestAttempts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -14,7 +14,6 @@ function TestHistory() {
   const [clearSuccess, setClearSuccess] = useState(null);
 
   useEffect(() => {
-    // Проверяем авторизацию
     const token = localStorage.getItem('token');
     if (!token) {
       setIsLoggedIn(false);
@@ -23,10 +22,8 @@ function TestHistory() {
 
     setIsLoggedIn(true);
 
-    // Получаем роль пользователя
     const fetchUserData = async () => {
       try {
-        // Сначала пробуем загрузить из localStorage
         const userData = localStorage.getItem('userData');
         if (userData) {
           try {
@@ -37,11 +34,9 @@ function TestHistory() {
           }
         }
 
-        // Затем проверяем на сервере
         const response = await userAPI.getCurrentUser();
         setUserRole(response.data.role || '');
 
-        // Если пользователь не автор, загружаем историю тестов
         if (response.data.role !== 'author') {
           await fetchTestHistory();
         }
@@ -55,23 +50,18 @@ function TestHistory() {
       }
     };
 
-    // Загружаем историю прохождения тестов
     const fetchTestHistory = async () => {
       setLoading(true);
       try {
-        // Получаем все попытки прохождения тестов пользователя
         const response = await testAPI.getUserTestAttempts();
 
-        // Проверяем, что в ответе есть данные
         if (!response || !response.data) {
           throw new Error('Сервер вернул пустой ответ');
         }
 
-        // Убедимся, что response.data - это массив
         const attemptsData = Array.isArray(response.data) ? response.data : [];
         console.log('Всего получено попыток:', attemptsData.length);
 
-        // Выводим в консоль информацию о каждой попытке для отладки
         attemptsData.forEach((attempt, index) => {
           console.log(`Попытка ${index + 1}:`, {
             id: attempt._id,
@@ -82,14 +72,12 @@ function TestHistory() {
           });
         });
 
-        // Фильтруем только завершенные попытки с временем прохождения и результатами
         const filteredAttempts = attemptsData.filter(attempt => {
           return attempt.status === 'completed' && attempt.timeSpent && attempt.result;
         });
 
         console.log('После фильтрации осталось попыток:', filteredAttempts.length);
 
-        // Сортируем по дате (сначала новые)
         const sortedAttempts = filteredAttempts.sort(
           (a, b) =>
             new Date(b.completedAt || b.startedAt) -
@@ -102,7 +90,6 @@ function TestHistory() {
         console.error('Ошибка при загрузке истории тестов:', err);
         setError('Не удалось загрузить историю тестов. Пожалуйста, попробуйте позже.');
 
-        // Если ошибка авторизации, перенаправляем на страницу входа
         if (err.response && err.response.status === 401) {
           localStorage.removeItem('token');
           localStorage.removeItem('userData');
@@ -114,9 +101,8 @@ function TestHistory() {
     };
 
     fetchUserData();
-  }, [clearSuccess]); // Перезагружаем данные после успешной очистки
+  }, [clearSuccess]);
 
-  // Функция очистки истории
   const clearHistory = async () => {
     setClearLoading(true);
     setClearError(null);
@@ -137,23 +123,19 @@ function TestHistory() {
     }
   };
 
-  // Закрытие модального окна
   const closeModal = () => {
     setIsModalOpen(false);
     setClearError(null);
   };
 
-  // Если пользователь не авторизован, перенаправляем на страницу входа
   if (!isLoggedIn) {
     return <Navigate to="/login" />;
   }
 
-  // Если пользователь - автор, перенаправляем на главную страницу
   if (userRole === 'author') {
     return <Navigate to="/home" />;
   }
 
-  // Функция для форматирования даты
   const formatDate = dateString => {
     if (!dateString) return 'Не завершен';
     const date = new Date(dateString);
@@ -166,12 +148,10 @@ function TestHistory() {
     });
   };
 
-  // Функция для получения статуса попытки на русском
   const getStatusText = () => {
     return 'Завершен';
   };
 
-  // Функция для форматирования времени прохождения
   const formatTimeSpent = seconds => {
     if (!seconds) return 'Н/Д';
 
@@ -190,7 +170,6 @@ function TestHistory() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">История пройденных тестов</h1>
 
-        {/* Кнопка очистки истории */}
         {testAttempts.length > 0 && (
           <button
             onClick={() => setIsModalOpen(true)}
@@ -202,7 +181,6 @@ function TestHistory() {
         )}
       </div>
 
-      {/* Сообщение об успешной очистке */}
       {clearSuccess && (
         <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4">
           <div className="flex">
@@ -339,7 +317,6 @@ function TestHistory() {
         </div>
       )}
 
-      {/* Модальное окно подтверждения очистки */}
       {isModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
           <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full">
@@ -402,6 +379,6 @@ function TestHistory() {
       )}
     </div>
   );
-}
+};
 
 export default TestHistory;

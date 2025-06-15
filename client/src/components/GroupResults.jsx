@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navigate, useParams, Link, useNavigate } from 'react-router-dom';
 import { testAPI, groupAPI, userAPI } from '../utils/api';
 
-function GroupResults() {
+const GroupResults = () => {
   const { groupId } = useParams();
   const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
   const [userRole, setUserRole] = useState('');
@@ -23,7 +23,6 @@ function GroupResults() {
 
     setIsLoggedIn(true);
 
-    // Проверяем роль пользователя
     const checkUserRole = async () => {
       try {
         const response = await userAPI.getCurrentUser();
@@ -51,38 +50,28 @@ function GroupResults() {
     checkUserRole();
   }, [groupId]);
 
-  // Загрузка данных группы и связанного теста
   const loadGroupData = async () => {
     try {
-      // Получаем информацию о группе
       const groupResponse = await groupAPI.getGroupById(groupId);
       setGroup(groupResponse.data);
 
-      // Получаем информацию о тесте
       const testResponse = await testAPI.getTestById(groupResponse.data.testId);
       setTest(testResponse.data);
 
-      // Получаем результаты прохождения теста участниками группы
       const resultsResponse = await testAPI.getGroupTestResults(groupId);
 
-      // Обрабатываем результаты для удаления дублирующихся вопросов
       const processedResults = resultsResponse.data.map(attempt => {
         if (attempt.answers && attempt.answers.length > 0) {
-          // Создаем мапу для отслеживания уникальных вопросов
           const uniqueQuestions = new Map();
 
-          // Фильтруем только уникальные вопросы
           const uniqueAnswers = attempt.answers.filter(answer => {
-            // Если вопрос уже был добавлен, не включаем его
             if (uniqueQuestions.has(answer.questionText)) {
               return false;
             }
-            // Иначе добавляем в мапу и включаем в результат
             uniqueQuestions.set(answer.questionText, true);
             return true;
           });
 
-          // Возвращаем попытку с уникальными вопросами
           return {
             ...attempt,
             answers: uniqueAnswers,
@@ -101,12 +90,10 @@ function GroupResults() {
     }
   };
 
-  // Если пользователь не авторизован, перенаправляем на страницу входа
   if (!isLoggedIn) {
     return <Navigate to="/login" />;
   }
 
-  // Если пользователь не автор, показываем сообщение об ошибке
   if (userRole && userRole !== 'author') {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -135,7 +122,6 @@ function GroupResults() {
     );
   }
 
-  // Если данные загружаются, показываем индикатор загрузки
   if (loading) {
     return (
       <div className="flex justify-center items-center py-10">
@@ -144,7 +130,6 @@ function GroupResults() {
     );
   }
 
-  // Если произошла ошибка, показываем сообщение об ошибке
   if (error) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -315,6 +300,6 @@ function GroupResults() {
       )}
     </div>
   );
-}
+};
 
 export default GroupResults;

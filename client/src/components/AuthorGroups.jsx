@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { groupAPI, userAPI, testAPI } from '../utils/api';
 
-function AuthorGroups() {
+const AuthorGroups = () => {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -12,12 +12,11 @@ function AuthorGroups() {
   const [newGroup, setNewGroup] = useState({ name: '', description: '', testId: '' });
   const [editingGroup, setEditingGroup] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
-  const [groupMembers, setGroupMembers] = useState({}); // Информация о пользователях по группам
-  const [selectedMember, setSelectedMember] = useState(null); // Выбранный пользователь для просмотра деталей
-  const [authorTests, setAuthorTests] = useState([]); // Тесты автора для выбора при создании группы
+  const [groupMembers, setGroupMembers] = useState({});
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [authorTests, setAuthorTests] = useState([]);
 
   useEffect(() => {
-    // Проверяем авторизацию
     const token = localStorage.getItem('token');
     if (!token) {
       setIsLoggedIn(false);
@@ -27,31 +26,26 @@ function AuthorGroups() {
 
     setIsLoggedIn(true);
 
-    // Получаем роль пользователя и группы
     const fetchUserDataAndGroups = async () => {
       try {
-        // Проверяем роль пользователя
         const userData = localStorage.getItem('userData');
         if (userData) {
           try {
             const parsedData = JSON.parse(userData);
 
-            // Если пользователь - автор, загружаем его группы
             if (parsedData.role === 'author') {
               console.log('Пользователь является автором, загружаем группы');
               await fetchAuthorGroups();
               await fetchAuthorTests();
             }
           } catch (error) {
-            console.error('Ошибка при парсинге данных пользователя:', error);
+            console.error(error);
           }
         }
 
-        // Проверяем на сервере
         const response = await userAPI.getCurrentUser();
         console.log('Данные пользователя с сервера:', response.data);
 
-        // Если пользователь - автор, загружаем его группы
         if (response.data.role === 'author') {
           console.log('Пользователь является автором по данным сервера');
           await fetchAuthorGroups();
@@ -61,7 +55,7 @@ function AuthorGroups() {
           setLoading(false);
         }
       } catch (err) {
-        console.error('Ошибка при получении данных пользователя:', err);
+        console.error(error);
         if (err.response && err.response.status === 401) {
           localStorage.removeItem('token');
           localStorage.removeItem('userData');
@@ -75,7 +69,6 @@ function AuthorGroups() {
       }
     };
 
-    // Загружаем группы автора
     const fetchAuthorGroups = async () => {
       try {
         setLoading(true);
@@ -83,34 +76,30 @@ function AuthorGroups() {
         const groupsData = response.data;
         setGroups(groupsData);
 
-        // Загружаем информацию о членах групп
         await loadGroupMembersInfo(groupsData);
 
         setLoading(false);
       } catch (error) {
-        console.error('Ошибка при загрузке групп:', error);
+        console.error(error);
         setError('Не удалось загрузить группы. Пожалуйста, попробуйте позже.');
         setLoading(false);
       }
     };
 
-    // Загрузка тестов автора
     const fetchAuthorTests = async () => {
       try {
         const response = await testAPI.getAuthorTests();
         setAuthorTests(response.data);
       } catch (error) {
-        console.error('Ошибка при загрузке тестов автора:', error);
+        console.error(error);
       }
     };
 
     fetchUserDataAndGroups();
   }, []);
 
-  // Загрузка информации о пользователях в группах
   const loadGroupMembersInfo = async groupsData => {
     try {
-      // Собираем уникальные ID пользователей из всех групп
       const allMemberIds = new Set();
       groupsData.forEach(group => {
         if (group.members && group.members.length > 0) {
@@ -120,7 +109,6 @@ function AuthorGroups() {
 
       console.log(`Загрузка данных для ${allMemberIds.size} участников групп`);
 
-      // Получаем информацию о каждом пользователе
       const membersInfo = {};
       for (const memberId of allMemberIds) {
         try {
@@ -128,12 +116,11 @@ function AuthorGroups() {
           console.log(`Получены данные пользователя ${memberId}:`, response.data);
           membersInfo[memberId] = response.data;
         } catch (error) {
-          console.error(`Ошибка при загрузке данных пользователя ${memberId}:`, error);
+          console.error(error);
           membersInfo[memberId] = { firstName: 'Неизвестный пользователь' };
         }
       }
 
-      // Организуем данные пользователей по группам
       const groupMembersData = {};
       groupsData.forEach(group => {
         groupMembersData[group._id] = {};
@@ -147,11 +134,10 @@ function AuthorGroups() {
       console.log('Загружены данные участников групп:', groupMembersData);
       setGroupMembers(groupMembersData);
     } catch (error) {
-      console.error('Ошибка при загрузке данных участников групп:', error);
+      console.error(error);
     }
   };
 
-  // Получение имени пользователя по ID
   const getMemberName = (groupId, memberId) => {
     if (!memberId) return 'Неизвестный пользователь';
     if (!groupMembers[groupId] || !groupMembers[groupId][memberId]) return 'Загрузка...';
@@ -162,30 +148,25 @@ function AuthorGroups() {
     );
   };
 
-  // Показать информацию о пользователе
   const showMemberDetails = (groupId, memberId) => {
     if (groupMembers[groupId] && groupMembers[groupId][memberId]) {
       setSelectedMember(groupMembers[groupId][memberId]);
     }
   };
 
-  // Закрыть модальное окно с информацией о пользователе
   const closeMemberDetails = () => {
     setSelectedMember(null);
   };
 
-  // Получение названия теста по ID
   const getTestName = testId => {
     const test = authorTests.find(test => test._id === testId);
     return test ? test.title : 'Тест не найден';
   };
 
-  // Если пользователь не авторизован, перенаправляем на страницу входа
   if (!isLoggedIn) {
     return <Navigate to="/login" />;
   }
 
-  // Если еще загружаются данные пользователя, показываем индикатор загрузки
   if (loading && !showCreateForm && !editingGroup) {
     return (
       <div className="flex justify-center items-center py-10">
@@ -194,7 +175,6 @@ function AuthorGroups() {
     );
   }
 
-  // Функция для создания новой группы
   const handleCreateGroup = async () => {
     if (!newGroup.name.trim()) {
       setError('Название группы обязательно');
@@ -210,11 +190,9 @@ function AuthorGroups() {
       setLoading(true);
       const response = await groupAPI.createGroup(newGroup);
 
-      // Добавляем новую группу в список групп
       const updatedGroups = [response.data, ...groups];
       setGroups(updatedGroups);
 
-      // Инициализируем данные участников для новой группы
       if (response.data.members && response.data.members.length > 0) {
         await loadGroupMembersInfo([response.data]);
       }
@@ -225,13 +203,12 @@ function AuthorGroups() {
       setTimeout(() => setSuccessMessage(''), 3000);
       setLoading(false);
     } catch (error) {
-      console.error('Ошибка при создании группы:', error);
+      console.error(error);
       setError(error.response?.data?.message || 'Не удалось создать группу');
       setLoading(false);
     }
   };
 
-  // Функция для обновления группы
   const handleUpdateGroup = async () => {
     if (!editingGroup || !editingGroup.name.trim()) {
       setError('Название группы обязательно');
@@ -245,32 +222,22 @@ function AuthorGroups() {
         description: editingGroup.description,
       });
 
-      // Обновляем группу в массиве
       const updatedGroups = groups.map(group =>
         group._id === editingGroup._id ? response.data : group
       );
-
-      // Обновляем данные в случае изменения состава участников
-      if (
-        response.data.members &&
-        JSON.stringify(response.data.members) !== JSON.stringify(editingGroup.members)
-      ) {
-        await loadGroupMembersInfo([response.data]);
-      }
-
       setGroups(updatedGroups);
+
       setEditingGroup(null);
       setSuccessMessage('Группа успешно обновлена');
       setTimeout(() => setSuccessMessage(''), 3000);
       setLoading(false);
     } catch (error) {
-      console.error('Ошибка при обновлении группы:', error);
+      console.error(error);
       setError(error.response?.data?.message || 'Не удалось обновить группу');
       setLoading(false);
     }
   };
 
-  // Функция для удаления группы
   const handleDeleteGroup = async groupId => {
     if (!window.confirm('Вы уверены, что хотите удалить эту группу?')) {
       return;
@@ -280,7 +247,6 @@ function AuthorGroups() {
       setLoading(true);
       await groupAPI.deleteGroup(groupId);
 
-      // Удаляем группу из массива
       const updatedGroups = groups.filter(group => group._id !== groupId);
       setGroups(updatedGroups);
 
@@ -294,20 +260,17 @@ function AuthorGroups() {
     }
   };
 
-  // Функция для обновления кода приглашения
   const handleRegenerateInviteCode = async groupId => {
     try {
       setLoading(true);
       const response = await groupAPI.regenerateInviteCode(groupId);
 
-      // Обновляем код приглашения в группе
       const updatedGroups = groups.map(group =>
         group._id === groupId ? { ...group, inviteCode: response.data.inviteCode } : group
       );
 
       setGroups(updatedGroups);
 
-      // Показываем код пользователю
       setShowInviteCode({
         ...showInviteCode,
         [groupId]: true,
@@ -323,7 +286,6 @@ function AuthorGroups() {
     }
   };
 
-  // Функция для удаления пользователя из группы
   const handleRemoveUserFromGroup = async (groupId, userId) => {
     const userName = getMemberName(groupId, userId);
     if (
@@ -338,16 +300,13 @@ function AuthorGroups() {
       setLoading(true);
       const response = await groupAPI.removeUserFromGroup(groupId, userId);
 
-      // Обновляем группу в массиве
       const updatedGroups = groups.map(group =>
         group._id === groupId ? response.data : group
       );
 
-      // Обновляем информацию о членах группы
       setGroupMembers(prevMembers => {
         const newMembers = { ...prevMembers };
         if (newMembers[groupId] && newMembers[groupId][userId]) {
-          // Удаляем пользователя из списка участников группы
           const { [userId]: _, ...restMembers } = newMembers[groupId];
           newMembers[groupId] = restMembers;
         }
@@ -367,7 +326,6 @@ function AuthorGroups() {
     }
   };
 
-  // Функция копирования кода приглашения
   const copyInviteLink = inviteCode => {
     navigator.clipboard
       .writeText(inviteCode)
@@ -401,7 +359,6 @@ function AuthorGroups() {
         </div>
       </div>
 
-      {/* Сообщение об ошибке */}
       {error && (
         <div className="bg-red-100 border-l-4 border-red-400 p-4 mb-4">
           <div className="flex">
@@ -426,7 +383,6 @@ function AuthorGroups() {
         </div>
       )}
 
-      {/* Сообщение об успешном действии */}
       {successMessage && (
         <div className="bg-green-100 border-l-4 border-green-400 p-4 mb-4">
           <div className="flex">
@@ -451,7 +407,6 @@ function AuthorGroups() {
         </div>
       )}
 
-      {/* Форма создания группы */}
       {showCreateForm && (
         <div className="bg-white shadow-md rounded-md p-6 mb-6">
           <h2 className="text-lg font-semibold mb-4">Создание новой группы</h2>
@@ -521,7 +476,6 @@ function AuthorGroups() {
         </div>
       )}
 
-      {/* Форма редактирования группы */}
       {editingGroup && (
         <div className="bg-white shadow-md rounded-md p-6 mb-6">
           <h2 className="text-lg font-semibold mb-4">Редактирование группы</h2>
@@ -570,7 +524,6 @@ function AuthorGroups() {
         </div>
       )}
 
-      {/* Модальное окно с информацией о пользователе */}
       {selectedMember && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
@@ -795,6 +748,6 @@ function AuthorGroups() {
       )}
     </div>
   );
-}
+};
 
 export default AuthorGroups;

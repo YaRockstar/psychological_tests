@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { testAPI, userAPI } from '../utils/api';
 
-function TestCreate() {
+const TestCreate = () => {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [isAuthor, setIsAuthor] = useState(false);
@@ -21,7 +21,6 @@ function TestCreate() {
     tags: [],
   });
 
-  // Проверяем авторизацию и роль пользователя
   useEffect(() => {
     const checkUserAuth = async () => {
       const token = localStorage.getItem('token');
@@ -32,7 +31,6 @@ function TestCreate() {
       }
 
       try {
-        // Получаем актуальные данные пользователя с сервера
         const response = await userAPI.getCurrentUser();
         const userData = response.data;
 
@@ -46,7 +44,6 @@ function TestCreate() {
           console.log('Пользователь подтвержден как автор');
           setIsAuthor(true);
 
-          // Обновляем данные в localStorage
           localStorage.setItem('userData', JSON.stringify(userData));
         }
       } catch (error) {
@@ -56,7 +53,6 @@ function TestCreate() {
           console.error('Статус ошибки:', error.response.status);
           console.error('Данные ошибки:', error.response.data);
 
-          // Если токен недействительный или сессия истекла
           if (error.response.status === 401) {
             console.log('Токен недействителен, перенаправление на страницу входа');
             setIsAuthenticated(false);
@@ -113,7 +109,6 @@ function TestCreate() {
       console.log('Тест успешно создан:', response.data);
       setSuccess('Тест успешно создан!');
 
-      // Перенаправляем на страницу редактирования вопросов
       setTimeout(() => {
         navigate(`/test/${response.data._id}/edit`);
       }, 1500);
@@ -124,7 +119,6 @@ function TestCreate() {
         console.error('Статус ошибки:', error.response.status);
         console.error('Данные ошибки:', error.response.data);
 
-        // Проверяем на ошибку авторизации
         if (error.response.status === 401) {
           console.log('Токен недействителен, перенаправление на страницу входа');
           setIsAuthenticated(false);
@@ -175,7 +169,6 @@ function TestCreate() {
 
       <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Название теста */}
           <div className="md:col-span-2">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="title">
               Название теста*
@@ -192,7 +185,6 @@ function TestCreate() {
             />
           </div>
 
-          {/* Описание теста */}
           <div className="md:col-span-2">
             <label
               className="block text-gray-700 text-sm font-bold mb-2"
@@ -212,7 +204,6 @@ function TestCreate() {
             />
           </div>
 
-          {/* URL изображения */}
           <div className="md:col-span-2">
             <label
               className="block text-gray-700 text-sm font-bold mb-2"
@@ -234,7 +225,6 @@ function TestCreate() {
             </p>
           </div>
 
-          {/* Тип теста */}
           <div>
             <label
               className="block text-gray-700 text-sm font-bold mb-2"
@@ -257,7 +247,6 @@ function TestCreate() {
             </select>
           </div>
 
-          {/* Ограничение по времени */}
           <div>
             <label
               className="block text-gray-700 text-sm font-bold mb-2"
@@ -277,7 +266,6 @@ function TestCreate() {
             />
           </div>
 
-          {/* Проходной балл */}
           <div>
             <label
               className="block text-gray-700 text-sm font-bold mb-2"
@@ -297,7 +285,6 @@ function TestCreate() {
             />
           </div>
 
-          {/* Публичный доступ */}
           <div className="md:col-span-2">
             <div className="flex items-center">
               <input
@@ -314,7 +301,6 @@ function TestCreate() {
             </div>
           </div>
 
-          {/* Теги */}
           <div className="md:col-span-2">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="tags">
               Теги (через запятую)
@@ -347,6 +333,6 @@ function TestCreate() {
       <div className="mt-6 text-center text-gray-600 text-sm">* - обязательные поля</div>
     </div>
   );
-}
+};
 
 export default TestCreate;

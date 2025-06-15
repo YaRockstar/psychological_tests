@@ -4,7 +4,7 @@ import DeleteAccount from './DeleteAccount';
 import PasswordChange from './PasswordChange';
 import ProfileEdit from './ProfileEdit';
 
-function ProfilePage() {
+const ProfilePage = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [activeTab, setActiveTab] = useState('profile');
 
@@ -73,6 +73,6 @@ function ProfilePage() {
       </div>
     </div>
   );
-}
+};
 
 export default ProfilePage;

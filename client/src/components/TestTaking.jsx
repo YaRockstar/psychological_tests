@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Navigate, useLocation } from 'react-router-dom';
 import { testAPI, userAPI } from '../utils/api';
 
-function TestTaking() {
+const TestTaking = () => {
   const { testId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -208,23 +208,18 @@ function TestTaking() {
     };
 
     try {
-      // Пытаемся сохранить ответ
       await testAPI.saveTestAnswer(testAttempt._id, answerData);
       setSuccessMessage('Ответ сохранен');
       setTimeout(() => setSuccessMessage(''), 2000);
     } catch (error) {
-      // Если получаем ответ 410 (Gone), это значит что предыдущая попытка была завершена
       if (error.response && error.response.status === 410) {
         try {
-          // Создаем новую попытку теста
           const newAttemptResponse = await testAPI.startTestAttempt(testId, groupId);
           const newAttemptId = newAttemptResponse.data._id;
 
-          // Сохраняем новый ID попытки
           setTestAttempt(newAttemptResponse.data);
           localStorage.setItem('lastTestAttemptId', newAttemptId);
 
-          // Пробуем сохранить ответ с новой попыткой
           await testAPI.saveTestAnswer(newAttemptId, answerData);
           setSuccessMessage('Ответ сохранен (создана новая попытка)');
           setTimeout(() => setSuccessMessage(''), 3000);
@@ -242,7 +237,6 @@ function TestTaking() {
     }
   };
 
-  // Навигация между вопросами
   const goToNextQuestion = () => {
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(prevIndex => prevIndex + 1);
@@ -255,7 +249,6 @@ function TestTaking() {
     }
   };
 
-  // Обработка завершения теста
   const handleSubmitTest = async () => {
     if (!testAttempt) {
       setError('Ошибка: Нет активной попытки прохождения теста.');
@@ -265,48 +258,37 @@ function TestTaking() {
     setIsSubmitting(true);
 
     try {
-      // Сохраняем ID попытки для последующего использования
       localStorage.setItem('lastTestAttemptId', testAttempt._id);
       localStorage.setItem('lastTestId', testId);
 
-      // Сохраняем название и детали теста для отображения на странице результатов
       if (test) {
         localStorage.setItem('lastTestTitle', test.title || '');
         localStorage.setItem('lastTestType', test.testType || '');
       }
 
-      // Вычисляем точное время прохождения
       const actualTimeSpent = Math.floor((new Date() - startTime) / 1000);
-
-      // Завершаем попытку теста с передачей реального времени
       await testAPI.completeTestAttempt(testAttempt._id, { timeSpent: actualTimeSpent });
-
-      // Перенаправляем пользователя на страницу результатов
       navigate(`/test-results/${testAttempt._id}`);
     } catch (error) {
       setIsSubmitting(false);
 
       if (error.response) {
-        // Если тест уже был завершен (400)
         if (error.response.status === 400) {
           navigate(`/test-results/${testAttempt._id}`);
           return;
         }
 
-        // Если нет доступа к попытке (403)
         if (error.response.status === 403) {
           setError('У вас нет доступа к этой попытке. Попробуйте пройти тест снова.');
           return;
         }
 
-        // Если попытка уже не активна (410)
         if (error.response.status === 410) {
           setError('Текущая попытка больше не актуальна. Начните новую попытку.');
           return;
         }
       }
 
-      // Общая ошибка
       setError('Произошла ошибка при завершении теста. Попробуйте еще раз.');
     }
   };
@@ -324,8 +306,8 @@ function TestTaking() {
       if (testAttempt && testAttempt._id) {
         await testAPI.deleteTestAttemptWithAnswers(testAttempt._id);
       }
-    } catch {
-      // Не показываем ошибку пользователю, так как мы все равно уходим со страницы
+    } catch (error) {
+      console.log(error);
     }
 
     if (groupId) {
@@ -359,7 +341,6 @@ function TestTaking() {
       <div className="bg-white p-8 rounded-lg shadow-md">
         <h3 className="text-xl font-semibold mb-6">{question.text}</h3>
 
-        {/* Отображение вариантов ответа в зависимости от типа вопроса */}
         {question.type === 'single' && (
           <div className="space-y-3">
             {question.options.map(option => (
@@ -544,7 +525,6 @@ function TestTaking() {
   return (
     <div className="w-full max-w-4xl mx-auto py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        {/* Заголовок теста */}
         <div className="mb-8">
           <div className="flex justify-between items-start mb-4">
             <div>
@@ -555,7 +535,6 @@ function TestTaking() {
             </div>
           </div>
 
-          {/* Информация о прогрессе */}
           <div className="flex justify-between items-center text-sm text-gray-600">
             <span>
               Вопрос {currentQuestionIndex + 1} из {questions.length}
@@ -570,7 +549,6 @@ function TestTaking() {
             </span>
           </div>
 
-          {/* Прогресс бар */}
           <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
             <div
               className="bg-blue-600 h-2 rounded-full transition-all duration-300"
@@ -582,7 +560,6 @@ function TestTaking() {
         </div>
       </div>
 
-      {/* Индикатор статуса ответа */}
       <div id="answer-status" className="text-center text-sm font-medium mb-2 h-6">
         {successMessage && (
           <span className="text-green-600 bg-green-50 px-3 py-1 rounded-md">
@@ -594,10 +571,8 @@ function TestTaking() {
         )}
       </div>
 
-      {/* Текущий вопрос */}
       <div className="mt-2">{renderCurrentQuestion()}</div>
 
-      {/* Навигационные кнопки */}
       <div className="mt-8 flex justify-between items-center">
         <button
           onClick={goToPrevQuestion}
@@ -611,7 +586,6 @@ function TestTaking() {
           Назад
         </button>
 
-        {/* Кнопка отказа от прохождения */}
         <button
           onClick={handleAbandonTest}
           className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
@@ -648,6 +622,6 @@ function TestTaking() {
       </div>
     </div>
   );
-}
+};
 
 export default TestTaking;
